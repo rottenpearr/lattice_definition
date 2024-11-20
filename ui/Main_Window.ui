@@ -411,12 +411,16 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Определение типа кристаллической решетки</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../src/resources.qrc">
+    <normaloff>:/icons/logo.svg</normaloff>:/icons/logo.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="2,0,5">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,2,6">
       <item>
        <widget class="QWidget" name="widget" native="true">
         <property name="font">
@@ -447,7 +451,7 @@ QPushButton:pressed {
 background-color: #69a84c;
 }</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,2">
          <item>
           <widget class="QLabel" name="label">
            <property name="font">
@@ -469,19 +473,6 @@ background-color: #69a84c;
           </widget>
          </item>
          <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Orientation::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
           <widget class="QPushButton" name="pushButton">
            <property name="font">
             <font>
@@ -490,11 +481,17 @@ background-color: #69a84c;
             </font>
            </property>
            <property name="text">
-            <string>ИНФО</string>
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="../src/resources.qrc">
              <normaloff>:/icons/help.svg</normaloff>:/icons/help.svg</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>24</width>
+             <height>24</height>
+            </size>
            </property>
           </widget>
          </item>
@@ -592,12 +589,7 @@ QComboBox QAbstractItemView QScrollBar:vertical {
         </item>
         <item>
          <property name="text">
-          <string>11</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>12</string>
+          <string>Впишите свое значение...</string>
          </property>
         </item>
        </widget>
@@ -621,27 +613,17 @@ border-radius: 15px;
           </property>
           <item>
            <property name="text">
-            <string>Новый элемент</string>
+            <string>1 Ион</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Новый элемент</string>
+            <string>2 Ион</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Новый элемент</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Новый элемент</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Новый элемент</string>
+            <string>3 Ион</string>
            </property>
           </item>
          </widget>
@@ -651,7 +633,7 @@ border-radius: 15px;
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,1,0,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -672,7 +654,7 @@ border-radius: none;
 }</string>
              </property>
              <property name="text">
-              <string>TextLabel</string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -684,9 +666,31 @@ border-radius: none;
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>TextLabel</string>
+         <widget class="QTextEdit" name="textEdit">
+          <property name="font">
+           <font>
+            <family>Segoe UI</family>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QTextEdit {
+background-color: none;
+border-radius: 15px;
+}</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+          <property name="html">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;Печеньки&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -696,6 +700,12 @@ border-radius: none;
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
          <widget class="QPushButton" name="pushButton_2">
+          <property name="font">
+           <font>
+            <family>Poppins</family>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
 background-color: #73a36a;
@@ -720,9 +730,15 @@ background-color: #69a84c;
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="2,1">
         <item>
          <widget class="QPushButton" name="pushButton_4">
+          <property name="font">
+           <font>
+            <family>Poppins</family>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
           <property name="styleSheet">
            <string notr="true">QPushButton {
 background-color: #73a36a;
@@ -741,6 +757,16 @@ background-color: #69a84c;
           </property>
           <property name="text">
            <string>СТАРТ</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../src/resources.qrc">
+            <normaloff>:/icons/check.svg</normaloff>:/icons/check.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -763,7 +789,17 @@ background-color: #69a84c;
 }</string>
           </property>
           <property name="text">
-           <string>РЕБУТ</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../src/resources.qrc">
+            <normaloff>:/icons/refresh.svg</normaloff>:/icons/refresh.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
           </property>
          </widget>
         </item>

@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>check.svg</file>
+    <file>refresh.svg</file>
     <file>help.svg</file>
     <file>logo.svg</file>
   </qresource>
