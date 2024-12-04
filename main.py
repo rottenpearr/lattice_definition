@@ -1,5 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox
+from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
@@ -29,7 +30,8 @@ class MainWindow(QMainWindow):
         self.temp_ions_data = {}  # Временный словарь для всех данных
 
     def populate_list(self):
-        self.ui.ions_list.clear()
+        self.ui.ions_list.clear()  # Очищаем список
+
         num_items_text = self.ui.combo_box_ions.currentText()
 
         if not num_items_text.isdigit() or int(num_items_text) <= 0:
@@ -37,8 +39,8 @@ class MainWindow(QMainWindow):
 
         num_items = int(num_items_text)
 
-        # Обновляем основной словарь на основе временного
-        self.ions_data = {i: self.temp_ions_data[i] for i in range(1, num_items + 1) if i in self.temp_ions_data}
+        # Обновляем основной словарь на основе временного, только если ключ существует
+        self.ions_data = {i: self.temp_ions_data.get(i) for i in range(1, num_items + 1)}
 
         for i in range(1, num_items + 1):
             item = QListWidgetItem(f"Ион {i}")
@@ -48,10 +50,95 @@ class MainWindow(QMainWindow):
             if saved_data:
                 summary = f"x: {saved_data[0]}, y: {saved_data[1]}, z: {saved_data[2]}"
                 item.setText(f"Ион {i} - {summary}")
+                item.setData(1, saved_data)  # Сохраняем координаты в элементе
             else:
-                item.setData(1, None)
+                item.setData(1, None)  # Сохраняем пустые данные, если нет координат
 
             self.ui.ions_list.addItem(item)
+
+        print("Обновленные данные ионов:", self.ions_data)
+
+    def check_all_values(self):
+        # Получаем количество выбранных ионов из ComboBox
+        num_items = int(self.ui.combo_box_ions.currentText())
+
+        # Получаем количество строк в QListWidget
+        list_item_count = self.ui.ions_list.count()
+
+        # Проверка на соответствие количества ионов и строк в списке
+        if num_items != list_item_count:
+            QMessageBox.warning(self, "Ошибка", f"Количество ионов должно быть равно {num_items}!")
+            return
+
+        # Проверка всех ионов на заполненность координат
+        all_filled = True
+        for index in range(self.ui.ions_list.count()):
+            item = self.ui.ions_list.item(index)
+            coords = item.data(1)  # Извлекаем сохранённые координаты
+
+            # Проверяем, что все значения координат заполнены
+            if not coords or any(val is None or val == '' for val in coords):
+                all_filled = False
+                break  # Прерываем цикл при первом незаполненном ионе
+
+        if all_filled:
+            QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
+
+            # Показываем элементы после нажатия на кнопку "Старт"
+            self.ui.widget_2.show()
+            self.ui.button_save.show()
+
+            # Отключаем возможность изменения количества ионов
+            self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox
+
+            # Отключаем возможность редактирования координат
+            for index in range(self.ui.ions_list.count()):
+                item = self.ui.ions_list.item(index)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Блокируем редактирование
+
+        else:
+            QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
+
+    def check_all_values(self):
+        # Получаем количество выбранных ионов из ComboBox
+        num_items = int(self.ui.combo_box_ions.currentText())
+
+        # Получаем количество строк в QListWidget
+        list_item_count = self.ui.ions_list.count()
+
+        # Проверка на соответствие количества ионов и строк в списке
+        if num_items != list_item_count:
+            QMessageBox.warning(self, "Ошибка", f"Количество ионов должно быть равно {num_items}!")
+            return
+
+        # Проверка всех ионов на заполненность координат
+        all_filled = True
+        for index in range(self.ui.ions_list.count()):
+            item = self.ui.ions_list.item(index)
+            coords = item.data(1)  # Извлекаем сохранённые координаты
+
+            # Проверяем, что все значения координат заполнены
+            if not coords or any(val is None or val == '' for val in coords):
+                all_filled = False
+                break  # Прерываем цикл при первом незаполненном ионе
+
+        if all_filled:
+            QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
+
+            # Показываем элементы после нажатия на кнопку "Старт"
+            self.ui.widget_2.show()
+            self.ui.button_save.show()
+
+            # Отключаем возможность изменения количества ионов
+            self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox
+
+            # Отключаем возможность редактирования координат
+            for index in range(self.ui.ions_list.count()):
+                item = self.ui.ions_list.item(index)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Блокируем редактирование
+
+        else:
+            QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 
     def open_input_dialog(self, item):
         ion_number = int(item.text().split()[1])
@@ -76,12 +163,25 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
 
     def check_all_values(self):
+        # Получаем количество выбранных ионов из ComboBox
+        num_items = int(self.ui.combo_box_ions.currentText())
+
+        # Получаем количество строк в QListWidget
+        list_item_count = self.ui.ions_list.count()
+
+        # Проверка на соответствие количества ионов и строк в списке
+        if num_items != list_item_count:
+            QMessageBox.warning(self, "Ошибка", f"Количество ионов должно быть равно {num_items}!")
+            return
+
         # Проверка всех ионов на заполненность координат
         all_filled = True
         for index in range(self.ui.ions_list.count()):
             item = self.ui.ions_list.item(index)
             coords = item.data(1)  # Извлекаем сохранённые координаты
-            if not coords or any(not val for val in coords):  # Проверяем, заполнены ли все значения
+
+            # Проверяем, что все значения координат заполнены
+            if not coords or any(val is None or val == '' for val in coords):
                 all_filled = False
                 break  # Прерываем цикл при первом незаполненном ионе
 
@@ -91,6 +191,15 @@ class MainWindow(QMainWindow):
             # Показываем элементы после нажатия на кнопку "Старт"
             self.ui.widget_2.show()
             self.ui.button_save.show()
+
+            # Отключаем возможность изменения количества ионов
+            self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox
+
+            # Отключаем возможность редактирования координат
+            for index in range(self.ui.ions_list.count()):
+                item = self.ui.ions_list.item(index)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Блокируем редактирование
+
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 
