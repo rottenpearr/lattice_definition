@@ -2,72 +2,76 @@ import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from Ion_Dialog_ui import Ui_Dialog
+from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
 
 
 # Инициализация главного окна
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()  # Инициализация интерфейса главного окна
+        self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.combo_box_ions.setEditable(True)  # Делаем QComboBox редактируемым
-        self.ui.combo_box_ions.addItems([str(i) for i in range(1, 11)])  # Добавляем варианты от 1 до 10
-        self.ui.combo_box_ions.currentTextChanged.connect(self.populate_list)  # Обрабатываем изменение текста
+        self.ui.combo_box_ions.setEditable(True)
+        self.ui.combo_box_ions.lineEdit().setPlaceholderText("Выберите количество ионов")
+        self.ui.combo_box_ions.addItems([str(i) for i in range(1, 11)])
+        self.ui.combo_box_ions.setCurrentIndex(-1)
 
+        self.ui.combo_box_ions.currentTextChanged.connect(self.populate_list)
         self.ui.ions_list.itemClicked.connect(self.open_input_dialog)
         self.ui.button_start.clicked.connect(self.check_all_values)
 
-        # Скрываем элементы до нажатия кнопки "Старт"
         self.ui.widget_2.hide()
         self.ui.button_save.hide()
+        # self.ui.button_restart.hide()
 
-        self.ions_data = {}  # Словарь для хранения данных о координатах
+        self.ions_data = {}  # Основной словарь для отображаемых данных
+        self.temp_ions_data = {}  # Временный словарь для всех данных
 
     def populate_list(self):
         self.ui.ions_list.clear()
         num_items_text = self.ui.combo_box_ions.currentText()
 
-        # Проверка на корректность ввода числа
         if not num_items_text.isdigit() or int(num_items_text) <= 0:
-            return  # Игнорируем некорректные значения
+            return
 
         num_items = int(num_items_text)
 
-        # Удаляем данные для ионов, которые больше не будут отображаться
-        self.ions_data = {k: v for k, v in self.ions_data.items() if k <= num_items}
+        # Обновляем основной словарь на основе временного
+        self.ions_data = {i: self.temp_ions_data[i] for i in range(1, num_items + 1) if i in self.temp_ions_data}
 
         for i in range(1, num_items + 1):
             item = QListWidgetItem(f"Ион {i}")
 
-            # Если данные для этого иона уже были сохранены, восстанавливаем их
+            # Восстанавливаем данные, если они есть во временном словаре
             saved_data = self.ions_data.get(i)
             if saved_data:
                 summary = f"x: {saved_data[0]}, y: {saved_data[1]}, z: {saved_data[2]}"
                 item.setText(f"Ион {i} - {summary}")
             else:
-                item.setData(1, None)  # Для хранения дополнительной информации (изначально None)
+                item.setData(1, None)
 
             self.ui.ions_list.addItem(item)
 
     def open_input_dialog(self, item):
-        ion_number = int(item.text().split()[1])  # Извлекаем номер иона
-        saved_data = item.data(1)  # Получаем сохраненные данные (x, y, z) или None
+        ion_number = int(item.text().split()[1])
+        saved_data = self.ions_data.get(ion_number)
         dialog = InputDialog(self)
 
-        # Если есть сохранённые данные, устанавливаем их в поля
         if saved_data:
             dialog.set_values(*saved_data)
 
-        # Открываем диалог
-        if dialog.exec() == QDialog.Accepted:  # Проверяем, нажата ли кнопка "ОК"
+        if dialog.exec() == QDialog.Accepted:
             x, y, z = dialog.get_values()
-            if x and y and z:  # Проверяем, что все поля заполнены
+            if x and y and z:
                 summary = f"x: {x}, y: {y}, z: {z}"
                 item.setText(f"Ион {ion_number} - {summary}")
-                item.setData(1, (x, y, z))  # Сохраняем данные для дальнейшего использования
-                self.ions_data[ion_number] = (x, y, z)  # Сохраняем данные в словарь
+
+                # Сохраняем данные в оба словаря
+                self.ions_data[ion_number] = (x, y, z)
+                self.temp_ions_data[ion_number] = (x, y, z)
+
+                print("Текущие данные ионов:", self.ions_data)  # Выводим основной словарь
             else:
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
 
