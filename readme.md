@@ -19,10 +19,18 @@
 
 * python 3.10+
 * requirements.txt
-* MySQL 8.0+ Server (localhost:3306)
+* MySQL 8.0+ Server (localhost:3306) + `pip install mysql-connector-python` + root password
 
 ## Дополнительно
 
 Если понадобится:
 
-* cursor.execute("\! chcp 1251")
+* cursor.execute("\\! chcp 1251")
+
+# Задачи
+
+- [ ] Сделать формат для сохранения json (не в одну строку)
+- [ ] Скрипт cif->json
+- [ ] Скрипт json->MySQL отдельный файл
+- [ ] Подумать какие поля и как выводить в UI
+- [ ] 3D-визуализация? (+ готовые инструменты)
