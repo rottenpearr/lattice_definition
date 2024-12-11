@@ -25,7 +25,7 @@
 
 Если понадобится:
 
-* cursor.execute("\! chcp 1251")
+* cursor.execute("\\! chcp 1251")
 
 # Задачи
 
