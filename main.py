@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
                 item.setText(f"Ион {ion_number} - {summary}")
                 item.setData(Qt.UserRole, (x, y, z))  # Сохраняем данные в item
 
-                # Сохраняем данные в временный словарь
+                # Сохраняем данные во временный словарь
                 self.temp_ions_data[ion_number] = (x, y, z)
 
                 print("Текущие данные ионов:", self.temp_ions_data)  # Выводим словарь для отладки
