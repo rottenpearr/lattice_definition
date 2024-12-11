@@ -1,10 +1,5 @@
 import mysql.connector
-
-db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'root',
-}
+from config import db_config
 
 sql_file_path = 'init.sql'
 
