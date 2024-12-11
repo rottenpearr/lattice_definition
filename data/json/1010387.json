@@ -44,7 +44,7 @@
         "_atom_type_oxidation_number"
       ]
     ],
-    "name": "1000041",
+    "name": "1010387",
     "precisions": {
       "_atom_site_attached_hydrogens": [
         null,
@@ -113,9 +113,6 @@
       "_journal_year": [
         null
       ],
-      "_refine_ls_R_factor_all": [
-        null
-      ],
       "_space_group_IT_number": [
         null
       ],
@@ -131,7 +128,6 @@
       "_journal_name_full",
       "_journal_page_first",
       "_journal_page_last",
-      "_journal_paper_doi",
       "_journal_volume",
       "_journal_year",
       "_chemical_formula_structural",
@@ -150,7 +146,7 @@
       "_cell_length_b",
       "_cell_length_c",
       "_cell_volume",
-      "_refine_ls_R_factor_all",
+      "_cod_original_formula_sum",
       "_cod_database_code",
       "_symmetry_equiv_pos_as_xyz",
       "_atom_site_attached_hydrogens",
@@ -251,6 +247,9 @@
       "_cod_database_code": [
         "INT"
       ],
+      "_cod_original_formula_sum": [
+        "SQSTRING"
+      ],
       "_journal_coden_ASTM": [
         "UQSTRING"
       ],
@@ -263,9 +262,6 @@
       "_journal_page_last": [
         "INT"
       ],
-      "_journal_paper_doi": [
-        "UQSTRING"
-      ],
       "_journal_volume": [
         "INT"
       ],
@@ -273,14 +269,10 @@
         "INT"
       ],
       "_publ_author_name": [
-        "SQSTRING",
         "SQSTRING"
       ],
       "_publ_section_title": [
         "TEXTFIELD"
-      ],
-      "_refine_ls_R_factor_all": [
-        "FLOAT"
       ],
       "_space_group_IT_number": [
         "INT"
@@ -518,7 +510,7 @@
         "0.5"
       ],
       "_atom_site_label": [
-        "Na1",
+        "H1",
         "Cl1"
       ],
       "_atom_site_occupancy": [
@@ -530,7 +522,7 @@
         "4"
       ],
       "_atom_site_type_symbol": [
-        "Na1+",
+        "H1+",
         "Cl1-"
       ],
       "_atom_type_oxidation_number": [
@@ -538,7 +530,7 @@
         "-1.000"
       ],
       "_atom_type_symbol": [
-        "Na1+",
+        "H1+",
         "Cl1-"
       ],
       "_cell_angle_alpha": [
@@ -554,59 +546,55 @@
         "4"
       ],
       "_cell_length_a": [
-        "5.62"
+        "5.46"
       ],
       "_cell_length_b": [
-        "5.62"
+        "5.46"
       ],
       "_cell_length_c": [
-        "5.62"
+        "5.46"
       ],
       "_cell_volume": [
-        "177.5"
+        "162.8"
       ],
       "_chemical_formula_structural": [
-        "Na Cl"
+        "H Cl"
       ],
       "_chemical_formula_sum": [
-        "Cl Na"
+        "Cl H"
       ],
       "_chemical_name_systematic": [
-        "Sodium chloride"
+        "Hydrogen chloride"
       ],
       "_cod_database_code": [
-        "1000041"
+        "1010387"
+      ],
+      "_cod_original_formula_sum": [
+        "H Cl"
       ],
       "_journal_coden_ASTM": [
-        "ACCRA9"
+        "GCITA9"
       ],
       "_journal_name_full": [
-        "Acta Crystallographica (1,1948-23,1967)"
+        "Gazzetta Chimica Italiana"
       ],
       "_journal_page_first": [
-        "926"
+        "425"
       ],
       "_journal_page_last": [
-        "932"
-      ],
-      "_journal_paper_doi": [
-        "10.1107/S0365110X65002244"
+        "439"
       ],
       "_journal_volume": [
-        "18"
+        "63"
       ],
       "_journal_year": [
-        "1965"
+        "1933"
       ],
       "_publ_author_name": [
-        "Abrahams, S C",
-        "Bernstein, J L"
+        "Natta, G"
       ],
       "_publ_section_title": [
-        "\nAccuracy of an automatic diffractometer. measurement of the sodium\nchloride structure factors"
-      ],
-      "_refine_ls_R_factor_all": [
-        "0.022"
+        "\nStruttura e polimorfismo degli acidi alogenidrici"
       ],
       "_space_group_IT_number": [
         "225"

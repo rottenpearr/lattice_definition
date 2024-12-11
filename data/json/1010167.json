@@ -44,52 +44,33 @@
         "_atom_type_oxidation_number"
       ]
     ],
-    "name": "1001127",
+    "name": "1010167",
     "precisions": {
       "_atom_site_attached_hydrogens": [
-        null,
-        null,
-        null,
         null,
         null
       ],
       "_atom_site_fract_x": [
-        0.002,
-        0.003,
-        0.006,
-        0.004,
-        0.008
+        null,
+        null
       ],
       "_atom_site_fract_y": [
-        0.025,
-        0.031,
-        0.039,
-        0.028,
-        0.034
+        null,
+        null
       ],
       "_atom_site_fract_z": [
-        0.003,
-        0.003,
-        0.009,
-        0.005,
-        0.013
+        null,
+        null
       ],
       "_atom_site_occupancy": [
-        null,
-        null,
-        null,
         null,
         null
       ],
       "_atom_site_symmetry_multiplicity": [
         null,
-        null,
-        null,
-        null,
         null
       ],
       "_atom_type_oxidation_number": [
-        null,
         null,
         null
       ],
@@ -97,7 +78,7 @@
         null
       ],
       "_cell_angle_beta": [
-        1
+        null
       ],
       "_cell_angle_gamma": [
         null
@@ -106,18 +87,21 @@
         null
       ],
       "_cell_length_a": [
-        0.05
+        0.004
       ],
       "_cell_length_b": [
-        0.05
+        0.004
       ],
       "_cell_length_c": [
-        0.05
+        0.004
       ],
       "_cell_volume": [
         null
       ],
       "_cod_database_code": [
+        null
+      ],
+      "_exptl_crystal_density_meas": [
         null
       ],
       "_journal_page_first": [
@@ -130,9 +114,6 @@
         null
       ],
       "_journal_year": [
-        null
-      ],
-      "_refine_ls_R_factor_all": [
         null
       ],
       "_space_group_IT_number": [
@@ -150,6 +131,7 @@
       "_journal_name_full",
       "_journal_page_first",
       "_journal_page_last",
+      "_journal_paper_doi",
       "_journal_volume",
       "_journal_year",
       "_chemical_formula_structural",
@@ -168,7 +150,7 @@
       "_cell_length_b",
       "_cell_length_c",
       "_cell_volume",
-      "_refine_ls_R_factor_all",
+      "_exptl_crystal_density_meas",
       "_cod_database_code",
       "_symmetry_equiv_pos_as_xyz",
       "_atom_site_attached_hydrogens",
@@ -187,81 +169,49 @@
     "types": {
       "_atom_site_Wyckoff_symbol": [
         "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
         "UQSTRING"
       ],
       "_atom_site_attached_hydrogens": [
-        "INT",
-        "INT",
-        "INT",
         "INT",
         "INT"
       ],
       "_atom_site_calc_flag": [
         "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
         "UQSTRING"
       ],
       "_atom_site_fract_x": [
-        "FLOAT",
-        "FLOAT",
-        "FLOAT",
         "FLOAT",
         "FLOAT"
       ],
       "_atom_site_fract_y": [
         "FLOAT",
-        "FLOAT",
-        "FLOAT",
-        "FLOAT",
         "FLOAT"
       ],
       "_atom_site_fract_z": [
-        "FLOAT",
-        "FLOAT",
-        "FLOAT",
         "FLOAT",
         "FLOAT"
       ],
       "_atom_site_label": [
         "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
         "UQSTRING"
       ],
       "_atom_site_occupancy": [
-        "FLOAT",
-        "FLOAT",
-        "FLOAT",
         "FLOAT",
         "FLOAT"
       ],
       "_atom_site_symmetry_multiplicity": [
         "INT",
-        "INT",
-        "INT",
-        "INT",
         "INT"
       ],
       "_atom_site_type_symbol": [
-        "UQSTRING",
-        "UQSTRING",
-        "UQSTRING",
         "UQSTRING",
         "UQSTRING"
       ],
       "_atom_type_oxidation_number": [
         "FLOAT",
-        "FLOAT",
         "FLOAT"
       ],
       "_atom_type_symbol": [
-        "UQSTRING",
         "UQSTRING",
         "UQSTRING"
       ],
@@ -269,7 +219,7 @@
         "INT"
       ],
       "_cell_angle_beta": [
-        "FLOAT"
+        "INT"
       ],
       "_cell_angle_gamma": [
         "INT"
@@ -296,10 +246,13 @@
         "SQSTRING"
       ],
       "_chemical_name_systematic": [
-        "TEXTFIELD"
+        "SQSTRING"
       ],
       "_cod_database_code": [
         "INT"
+      ],
+      "_exptl_crystal_density_meas": [
+        "FLOAT"
       ],
       "_journal_coden_ASTM": [
         "UQSTRING"
@@ -312,6 +265,9 @@
       ],
       "_journal_page_last": [
         "INT"
+      ],
+      "_journal_paper_doi": [
+        "UQSTRING"
       ],
       "_journal_volume": [
         "INT"
@@ -326,9 +282,6 @@
       "_publ_section_title": [
         "TEXTFIELD"
       ],
-      "_refine_ls_R_factor_all": [
-        "FLOAT"
-      ],
       "_space_group_IT_number": [
         "INT"
       ],
@@ -339,6 +292,50 @@
         "UQSTRING"
       ],
       "_symmetry_equiv_pos_as_xyz": [
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
+        "UQSTRING",
         "UQSTRING",
         "UQSTRING",
         "UQSTRING",
@@ -353,169 +350,184 @@
     },
     "values": {
       "_atom_site_Wyckoff_symbol": [
-        "e",
-        "e",
-        "e",
-        "e",
-        "e"
+        "d",
+        "a"
       ],
       "_atom_site_attached_hydrogens": [
-        "0",
-        "0",
-        "0",
         "0",
         "0"
       ],
       "_atom_site_calc_flag": [
         "d",
-        "d",
-        "d",
-        "d",
         "d"
       ],
       "_atom_site_fract_x": [
-        "0.023(2)",
-        "0.311(3)",
-        "0.103(6)",
-        "0.349(4)",
-        "0.051(8)"
+        "0.5",
+        "0."
       ],
       "_atom_site_fract_y": [
-        "0.230(25)",
-        "0.784(31)",
-        "0.029(39)",
-        "0.338(28)",
-        "0.431(34)"
+        "0.",
+        "0."
       ],
       "_atom_site_fract_z": [
-        "0.176(3)",
-        "0.299(3)",
-        "0.350(9)",
-        "0.084(5)",
-        "0.252(13)"
+        "0.",
+        "0."
       ],
       "_atom_site_label": [
-        "Cl1",
-        "Na1",
-        "O1",
-        "O2",
-        "O3"
+        "Cu1",
+        "N1"
       ],
       "_atom_site_occupancy": [
-        "1.",
-        "1.",
-        "1.",
         "1.",
         "1."
       ],
       "_atom_site_symmetry_multiplicity": [
-        "4",
-        "4",
-        "4",
-        "4",
-        "4"
+        "3",
+        "1"
       ],
       "_atom_site_type_symbol": [
-        "Cl5+",
-        "Na1+",
-        "O2-",
-        "O2-",
-        "O2-"
+        "Cu1+",
+        "N3-"
       ],
       "_atom_type_oxidation_number": [
-        "5.000",
         "1.000",
-        "-2.000"
+        "-3.000"
       ],
       "_atom_type_symbol": [
-        "Cl5+",
-        "Na1+",
-        "O2-"
+        "Cu1+",
+        "N3-"
       ],
       "_cell_angle_alpha": [
         "90"
       ],
       "_cell_angle_beta": [
-        "110.(1)"
+        "90"
       ],
       "_cell_angle_gamma": [
         "90"
       ],
       "_cell_formula_units_Z": [
-        "4"
+        "1"
       ],
       "_cell_length_a": [
-        "8.78(5)"
+        "3.807(4)"
       ],
       "_cell_length_b": [
-        "5.17(5)"
+        "3.807(4)"
       ],
       "_cell_length_c": [
-        "6.88(5)"
+        "3.807(4)"
       ],
       "_cell_volume": [
-        "293.5"
+        "55.2"
       ],
       "_chemical_formula_structural": [
-        "Na (Cl O3)"
+        "Cu3 N"
       ],
       "_chemical_formula_sum": [
-        "Cl Na O3"
+        "Cu3 N"
       ],
       "_chemical_name_systematic": [
-        "\nSodium chlorate - metastable high temperature (255C) phase III"
+        "Copper(I) nitride"
       ],
       "_cod_database_code": [
-        "1001127"
+        "1010167"
+      ],
+      "_exptl_crystal_density_meas": [
+        "5.84"
       ],
       "_journal_coden_ASTM": [
-        "BUFCAE"
+        "ZAACAB"
       ],
       "_journal_name_full": [
-        "\nBulletin de la Societe Francaise de Mineralogie et de Cristallographie\n(72,1949-100,1977)"
+        "\nZeitschrift fuer Anorganische und Allgemeine Chemie"
       ],
       "_journal_page_first": [
-        "18"
+        "282"
       ],
       "_journal_page_last": [
-        "20"
+        "287"
+      ],
+      "_journal_paper_doi": [
+        "10.1002/zaac.19382390307"
       ],
       "_journal_volume": [
-        "96"
+        "239"
       ],
       "_journal_year": [
-        "1973"
+        "1938"
       ],
       "_publ_author_name": [
-        "Meyer, D",
-        "Gasperin, M"
+        "Juza, R",
+        "Hahn, H"
       ],
       "_publ_section_title": [
-        "\nEtude Structurale d'une Phase haute Temperature instable du Chlorate de\nSodium"
-      ],
-      "_refine_ls_R_factor_all": [
-        "0.16"
+        "\nUeber die Kristallstrukturen von Cu~3~ N, Ga N und In N"
       ],
       "_space_group_IT_number": [
-        "14"
+        "221"
       ],
       "_symmetry_Int_Tables_number": [
-        "14"
+        "221"
       ],
       "_symmetry_cell_setting": [
-        "monoclinic"
+        "cubic"
       ],
       "_symmetry_equiv_pos_as_xyz": [
         "x,y,z",
-        "1/2-x,1/2+y,-z",
+        "y,z,x",
+        "z,x,y",
+        "x,z,y",
+        "y,x,z",
+        "z,y,x",
+        "x,-y,-z",
+        "y,-z,-x",
+        "z,-x,-y",
+        "x,-z,-y",
+        "y,-x,-z",
+        "z,-y,-x",
+        "-x,y,-z",
+        "-y,z,-x",
+        "-z,x,-y",
+        "-x,z,-y",
+        "-y,x,-z",
+        "-z,y,-x",
+        "-x,-y,z",
+        "-y,-z,x",
+        "-z,-x,y",
+        "-x,-z,y",
+        "-y,-x,z",
+        "-z,-y,x",
         "-x,-y,-z",
-        "1/2+x,1/2-y,z"
+        "-y,-z,-x",
+        "-z,-x,-y",
+        "-x,-z,-y",
+        "-y,-x,-z",
+        "-z,-y,-x",
+        "-x,y,z",
+        "-y,z,x",
+        "-z,x,y",
+        "-x,z,y",
+        "-y,x,z",
+        "-z,y,x",
+        "x,-y,z",
+        "y,-z,x",
+        "z,-x,y",
+        "x,-z,y",
+        "y,-x,z",
+        "z,-y,x",
+        "x,y,-z",
+        "y,z,-x",
+        "z,x,-y",
+        "x,z,-y",
+        "y,x,-z",
+        "z,y,-x"
       ],
       "_symmetry_space_group_name_H-M": [
-        "P 1 21/a 1"
+        "P m -3 m"
       ],
       "_symmetry_space_group_name_Hall": [
-        "-P 2yab"
+        "-P 4 2 3"
       ]
     }
   },

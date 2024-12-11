@@ -17,6 +17,9 @@
       "_atom_site_type_symbol": 2,
       "_atom_type_oxidation_number": 3,
       "_atom_type_symbol": 3,
+      "_cod_related_entry_code": 4,
+      "_cod_related_entry_database": 4,
+      "_cod_related_entry_id": 4,
       "_publ_author_name": 0,
       "_symmetry_equiv_pos_as_xyz": 1
     },
@@ -42,9 +45,14 @@
       [
         "_atom_type_symbol",
         "_atom_type_oxidation_number"
+      ],
+      [
+        "_cod_related_entry_id",
+        "_cod_related_entry_database",
+        "_cod_related_entry_code"
       ]
     ],
-    "name": "1000041",
+    "name": "1010876",
     "precisions": {
       "_atom_site_attached_hydrogens": [
         null,
@@ -101,6 +109,12 @@
       "_cod_database_code": [
         null
       ],
+      "_cod_related_entry_code": [
+        null
+      ],
+      "_cod_related_entry_id": [
+        null
+      ],
       "_journal_page_first": [
         null
       ],
@@ -111,9 +125,6 @@
         null
       ],
       "_journal_year": [
-        null
-      ],
-      "_refine_ls_R_factor_all": [
         null
       ],
       "_space_group_IT_number": [
@@ -131,7 +142,6 @@
       "_journal_name_full",
       "_journal_page_first",
       "_journal_page_last",
-      "_journal_paper_doi",
       "_journal_volume",
       "_journal_year",
       "_chemical_formula_structural",
@@ -150,7 +160,6 @@
       "_cell_length_b",
       "_cell_length_c",
       "_cell_volume",
-      "_refine_ls_R_factor_all",
       "_cod_database_code",
       "_symmetry_equiv_pos_as_xyz",
       "_atom_site_attached_hydrogens",
@@ -164,7 +173,10 @@
       "_atom_site_type_symbol",
       "_atom_site_Wyckoff_symbol",
       "_atom_type_oxidation_number",
-      "_atom_type_symbol"
+      "_atom_type_symbol",
+      "_cod_related_entry_id",
+      "_cod_related_entry_code",
+      "_cod_related_entry_database"
     ],
     "types": {
       "_atom_site_Wyckoff_symbol": [
@@ -251,20 +263,26 @@
       "_cod_database_code": [
         "INT"
       ],
+      "_cod_related_entry_code": [
+        "INT"
+      ],
+      "_cod_related_entry_database": [
+        "UQSTRING"
+      ],
+      "_cod_related_entry_id": [
+        "INT"
+      ],
       "_journal_coden_ASTM": [
         "UQSTRING"
       ],
       "_journal_name_full": [
-        "SQSTRING"
+        "TEXTFIELD"
       ],
       "_journal_page_first": [
         "INT"
       ],
       "_journal_page_last": [
         "INT"
-      ],
-      "_journal_paper_doi": [
-        "UQSTRING"
       ],
       "_journal_volume": [
         "INT"
@@ -274,13 +292,11 @@
       ],
       "_publ_author_name": [
         "SQSTRING",
+        "SQSTRING",
         "SQSTRING"
       ],
       "_publ_section_title": [
         "TEXTFIELD"
-      ],
-      "_refine_ls_R_factor_all": [
-        "FLOAT"
       ],
       "_space_group_IT_number": [
         "INT"
@@ -495,7 +511,7 @@
     "values": {
       "_atom_site_Wyckoff_symbol": [
         "a",
-        "b"
+        "c"
       ],
       "_atom_site_attached_hydrogens": [
         "0",
@@ -507,19 +523,19 @@
       ],
       "_atom_site_fract_x": [
         "0.",
-        "0.5"
+        "0.25"
       ],
       "_atom_site_fract_y": [
         "0.",
-        "0.5"
+        "0.25"
       ],
       "_atom_site_fract_z": [
         "0.",
-        "0.5"
+        "0.25"
       ],
       "_atom_site_label": [
-        "Na1",
-        "Cl1"
+        "O1",
+        "Na1"
       ],
       "_atom_site_occupancy": [
         "1.",
@@ -527,19 +543,19 @@
       ],
       "_atom_site_symmetry_multiplicity": [
         "4",
-        "4"
+        "8"
       ],
       "_atom_site_type_symbol": [
-        "Na1+",
-        "Cl1-"
+        "O2-",
+        "Na1+"
       ],
       "_atom_type_oxidation_number": [
-        "1.000",
-        "-1.000"
+        "-2.000",
+        "1.000"
       ],
       "_atom_type_symbol": [
-        "Na1+",
-        "Cl1-"
+        "O2-",
+        "Na1+"
       ],
       "_cell_angle_alpha": [
         "90"
@@ -554,59 +570,63 @@
         "4"
       ],
       "_cell_length_a": [
-        "5.62"
+        "5.55"
       ],
       "_cell_length_b": [
-        "5.62"
+        "5.55"
       ],
       "_cell_length_c": [
-        "5.62"
+        "5.55"
       ],
       "_cell_volume": [
-        "177.5"
+        "171.0"
       ],
       "_chemical_formula_structural": [
-        "Na Cl"
+        "Na2 O"
       ],
       "_chemical_formula_sum": [
-        "Cl Na"
+        "Na2 O"
       ],
       "_chemical_name_systematic": [
-        "Sodium chloride"
+        "Disodium oxide"
       ],
       "_cod_database_code": [
-        "1000041"
+        "1010876"
+      ],
+      "_cod_related_entry_code": [
+        "66599"
+      ],
+      "_cod_related_entry_database": [
+        "ChemSpider"
+      ],
+      "_cod_related_entry_id": [
+        "1"
       ],
       "_journal_coden_ASTM": [
-        "ACCRA9"
+        "ZEELAI"
       ],
       "_journal_name_full": [
-        "Acta Crystallographica (1,1948-23,1967)"
+        "\n Zeitschrift f\\\"ur Elektrochemie und angewandte physikalische Chemie"
       ],
       "_journal_page_first": [
-        "926"
+        "588"
       ],
       "_journal_page_last": [
-        "932"
-      ],
-      "_journal_paper_doi": [
-        "10.1107/S0365110X65002244"
+        "593"
       ],
       "_journal_volume": [
-        "18"
+        "40"
       ],
       "_journal_year": [
-        "1965"
+        "1934"
       ],
       "_publ_author_name": [
-        "Abrahams, S C",
-        "Bernstein, J L"
+        "Zintl, E.",
+        "Harder, A.",
+        "Dauth, B."
       ],
       "_publ_section_title": [
-        "\nAccuracy of an automatic diffractometer. measurement of the sodium\nchloride structure factors"
-      ],
-      "_refine_ls_R_factor_all": [
-        "0.022"
+        "\nGitterstruktur der Oxide, Sulfide, Selenide und Telluride des Lithiums,\nNatriums und Kaliums"
       ],
       "_space_group_IT_number": [
         "225"

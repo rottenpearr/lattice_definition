@@ -17,6 +17,9 @@
       "_atom_site_type_symbol": 2,
       "_atom_type_oxidation_number": 3,
       "_atom_type_symbol": 3,
+      "_cod_related_entry_code": 4,
+      "_cod_related_entry_database": 4,
+      "_cod_related_entry_id": 4,
       "_publ_author_name": 0,
       "_symmetry_equiv_pos_as_xyz": 1
     },
@@ -42,9 +45,14 @@
       [
         "_atom_type_symbol",
         "_atom_type_oxidation_number"
+      ],
+      [
+        "_cod_related_entry_id",
+        "_cod_related_entry_database",
+        "_cod_related_entry_code"
       ]
     ],
-    "name": "1000041",
+    "name": "1000044",
     "precisions": {
       "_atom_site_attached_hydrogens": [
         null,
@@ -101,6 +109,17 @@
       "_cod_database_code": [
         null
       ],
+      "_cod_related_entry_code": [
+        null,
+        null
+      ],
+      "_cod_related_entry_id": [
+        null,
+        null
+      ],
+      "_exptl_crystal_density_meas": [
+        null
+      ],
       "_journal_page_first": [
         null
       ],
@@ -111,9 +130,6 @@
         null
       ],
       "_journal_year": [
-        null
-      ],
-      "_refine_ls_R_factor_all": [
         null
       ],
       "_space_group_IT_number": [
@@ -136,6 +152,7 @@
       "_journal_year",
       "_chemical_formula_structural",
       "_chemical_formula_sum",
+      "_chemical_name_mineral",
       "_chemical_name_systematic",
       "_space_group_IT_number",
       "_symmetry_cell_setting",
@@ -150,7 +167,7 @@
       "_cell_length_b",
       "_cell_length_c",
       "_cell_volume",
-      "_refine_ls_R_factor_all",
+      "_exptl_crystal_density_meas",
       "_cod_database_code",
       "_symmetry_equiv_pos_as_xyz",
       "_atom_site_attached_hydrogens",
@@ -164,7 +181,10 @@
       "_atom_site_type_symbol",
       "_atom_site_Wyckoff_symbol",
       "_atom_type_oxidation_number",
-      "_atom_type_symbol"
+      "_atom_type_symbol",
+      "_cod_related_entry_id",
+      "_cod_related_entry_code",
+      "_cod_related_entry_database"
     ],
     "types": {
       "_atom_site_Wyckoff_symbol": [
@@ -245,11 +265,29 @@
       "_chemical_formula_sum": [
         "SQSTRING"
       ],
+      "_chemical_name_mineral": [
+        "UQSTRING"
+      ],
       "_chemical_name_systematic": [
         "SQSTRING"
       ],
       "_cod_database_code": [
         "INT"
+      ],
+      "_cod_related_entry_code": [
+        "INT",
+        "INT"
+      ],
+      "_cod_related_entry_database": [
+        "UQSTRING",
+        "UQSTRING"
+      ],
+      "_cod_related_entry_id": [
+        "INT",
+        "INT"
+      ],
+      "_exptl_crystal_density_meas": [
+        "FLOAT"
       ],
       "_journal_coden_ASTM": [
         "UQSTRING"
@@ -274,13 +312,11 @@
       ],
       "_publ_author_name": [
         "SQSTRING",
+        "SQSTRING",
         "SQSTRING"
       ],
       "_publ_section_title": [
         "TEXTFIELD"
-      ],
-      "_refine_ls_R_factor_all": [
-        "FLOAT"
       ],
       "_space_group_IT_number": [
         "INT"
@@ -518,8 +554,8 @@
         "0.5"
       ],
       "_atom_site_label": [
-        "Na1",
-        "Cl1"
+        "Ca1",
+        "O1"
       ],
       "_atom_site_occupancy": [
         "1.",
@@ -530,16 +566,16 @@
         "4"
       ],
       "_atom_site_type_symbol": [
-        "Na1+",
-        "Cl1-"
+        "Ca2+",
+        "O2-"
       ],
       "_atom_type_oxidation_number": [
-        "1.000",
-        "-1.000"
+        "2.000",
+        "-2.000"
       ],
       "_atom_type_symbol": [
-        "Na1+",
-        "Cl1-"
+        "Ca2+",
+        "O2-"
       ],
       "_cell_angle_alpha": [
         "90"
@@ -554,59 +590,75 @@
         "4"
       ],
       "_cell_length_a": [
-        "5.62"
+        "4.799"
       ],
       "_cell_length_b": [
-        "5.62"
+        "4.799"
       ],
       "_cell_length_c": [
-        "5.62"
+        "4.799"
       ],
       "_cell_volume": [
-        "177.5"
+        "110.5"
       ],
       "_chemical_formula_structural": [
-        "Na Cl"
+        "Ca O"
       ],
       "_chemical_formula_sum": [
-        "Cl Na"
+        "Ca O"
+      ],
+      "_chemical_name_mineral": [
+        "Lime"
       ],
       "_chemical_name_systematic": [
-        "Sodium chloride"
+        "Calcium oxide"
       ],
       "_cod_database_code": [
-        "1000041"
+        "1000044"
+      ],
+      "_cod_related_entry_code": [
+        "5254016",
+        "0014079"
+      ],
+      "_cod_related_entry_database": [
+        "ChemSpider",
+        "AMCSD"
+      ],
+      "_cod_related_entry_id": [
+        "1",
+        "2"
+      ],
+      "_exptl_crystal_density_meas": [
+        "3.35"
       ],
       "_journal_coden_ASTM": [
-        "ACCRA9"
+        "JACSAT"
       ],
       "_journal_name_full": [
-        "Acta Crystallographica (1,1948-23,1967)"
+        "Journal of the American Chemical Society"
       ],
       "_journal_page_first": [
-        "926"
+        "2043"
       ],
       "_journal_page_last": [
-        "932"
+        "2046"
       ],
       "_journal_paper_doi": [
-        "10.1107/S0365110X65002244"
+        "10.1021/ja01186a018"
       ],
       "_journal_volume": [
-        "18"
+        "70"
       ],
       "_journal_year": [
-        "1965"
+        "1948"
       ],
       "_publ_author_name": [
-        "Abrahams, S C",
-        "Bernstein, J L"
+        "Primak, W",
+        "Kaufman, H",
+        "Ward, R"
       ],
       "_publ_section_title": [
-        "\nAccuracy of an automatic diffractometer. measurement of the sodium\nchloride structure factors"
-      ],
-      "_refine_ls_R_factor_all": [
-        "0.022"
+        "\nX-Ray Diffraction Studies of Systems Involved in the Preparation of\nAlkaline Earth Sulfide and Selenide Phosphors"
       ],
       "_space_group_IT_number": [
         "225"
