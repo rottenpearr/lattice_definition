@@ -4,8 +4,9 @@ from pathlib import Path
 
 from config import db_config
 
-json_file_path = Path("../data/json/1000041.json")
+json_file_path = Path("../data/json/1000041.json")  # TODO: sys.argv
 
+ion_ids = []
 
 def insert_data(cursor, data):
     _chemical_name_systematic = data["data"]["values"]["_chemical_name_systematic"][0]
@@ -39,12 +40,24 @@ def insert_data(cursor, data):
         INSERT INTO substances (name, cell_length_a, cell_length_b, cell_length_c, cell_volume, cell_angle_alpha, cell_angle_beta, cell_angle_gamma, space_group_IT_number, symmetry_space_group_name_Hall, symmetry_space_group_name_H_M, lattice_type_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
-        (_chemical_name_systematic, _cell_length_a, _cell_length_b, _cell_length_c, _cell_volume, _cell_angle_alpha, _cell_angle_beta, _cell_angle_gamma, _space_group_IT_number, _symmetry_space_group_name_Hall, _symmetry_space_group_name_H_M, _lattice_type_id)
+        (_chemical_name_systematic,
+         _cell_length_a,
+         _cell_length_b,
+         _cell_length_c,
+         _cell_volume,
+         _cell_angle_alpha,
+         _cell_angle_beta,
+         _cell_angle_gamma,
+         _space_group_IT_number,
+         _symmetry_space_group_name_Hall,
+         _symmetry_space_group_name_H_M,
+         _lattice_type_id)
     )
     substance_id = cursor.lastrowid  # Получаем ID вставленной строки
 
     _atom_site_label_list = data["data"]["values"]["_atom_site_label"]
     _atom_site_type_symbol_list = data["data"]["values"]["_atom_site_type_symbol"]
+    _atom_type_oxidation_number_list = data["data"]["values"]["_atom_type_oxidation_number"]
     _atom_site_symmetry_multiplicity_list = data["data"]["values"]["_atom_site_symmetry_multiplicity"]
     _atom_site_Wyckoff_symbol_list = data["data"]["values"]["_atom_site_Wyckoff_symbol"]
     _atom_site_fract_x_list = data["data"]["values"]["_atom_site_fract_x"]
@@ -58,11 +71,24 @@ def insert_data(cursor, data):
     for ion in range(ion_amount):
         cursor.execute(
             """
-            INSERT INTO ions_library (substance_id, atom_site_label, atom_site_type_symbol, atom_site_symmetry_multiplicity, atom_site_Wyckoff_symbol, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z, atom_site_occupancy, atom_site_attached_hydrogens, atom_site_calc_flag)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO ions_library (substance_id, atom_site_label, atom_site_type_symbol, atom_type_oxidation_number,atom_site_symmetry_multiplicity, atom_site_Wyckoff_symbol, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z, atom_site_occupancy, atom_site_attached_hydrogens, atom_site_calc_flag)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (substance_id, _atom_site_label_list[ion], _atom_site_type_symbol_list[ion], int(_atom_site_symmetry_multiplicity_list[ion]), _atom_site_Wyckoff_symbol_list[ion], float(_atom_site_fract_x_list[ion]), float(_atom_site_fract_y_list[ion]), float(_atom_site_fract_z_list[ion]), float(_atom_site_occupancy_list[ion]), int(_atom_site_attached_hydrogens_list[ion]), _atom_site_calc_flag_list[ion])
+            (substance_id,
+             _atom_site_label_list[ion],
+             _atom_site_type_symbol_list[ion],
+             float(_atom_type_oxidation_number_list[ion]),
+             int(_atom_site_symmetry_multiplicity_list[ion]),
+             _atom_site_Wyckoff_symbol_list[ion],
+             float(_atom_site_fract_x_list[ion]),
+             float(_atom_site_fract_y_list[ion]),
+             float(_atom_site_fract_z_list[ion]),
+             float(_atom_site_occupancy_list[ion]),
+             int(_atom_site_attached_hydrogens_list[ion]),
+             _atom_site_calc_flag_list[ion])
         )
+        ion_id = cursor.lastrowid
+        ion_ids.append(ion_id)
 
 
 conn = mysql.connector.connect(**db_config)
@@ -73,6 +99,12 @@ try:
         data = json.load(file)
         insert_data(cursor, data)
     conn.commit()
+
+    # Запись идентификаторов ионов
+    with open("ion_ids.txt", "w") as file:
+        for ion_id in ion_ids:
+            file.write(str(ion_id) + "\n")
+
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:
     conn.rollback()

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS ions_library (
     substance_id INT NOT NULL,
     atom_site_label VARCHAR(255),
     atom_site_type_symbol VARCHAR(255),
+    atom_type_oxidation_number FLOAT,
     atom_site_symmetry_multiplicity INT,
     atom_site_Wyckoff_symbol VARCHAR(10),
     atom_site_fract_x FLOAT,
@@ -51,7 +52,6 @@ CREATE TABLE IF NOT EXISTS ions_library (
 CREATE TABLE IF NOT EXISTS ions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ion_library_id INT NOT NULL,
-    atom_type_oxidation_number FLOAT,
     atom_site_fract_x FLOAT,
     atom_site_fract_y FLOAT,
     atom_site_fract_z FLOAT,

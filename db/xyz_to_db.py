@@ -1,86 +1,65 @@
 import mysql.connector
+from pathlib import Path
+
 from config import db_config
 
-def insert_data(cursor, crystalline_system, lattice_system, description, ions, substances):
-    """
-    Вставка данных в базу: lattice_type, ions, substances
-    """
-    # Вставка данных в lattice_type
-    cursor.execute(
-        """
-        INSERT INTO lattice_type (crystalline_system, lattice_system, description)
-        VALUES (%s, %s, %s)
-        """,
-        (crystalline_system, lattice_system, description)
-    )
-    lattice_type_id = cursor.lastrowid  # Получаем ID вставленной строки
+xyz_file_path = Path("../data/xyz/1000041.xyz")  # TODO: sys.args
+ion_ids_file_path = Path("ion_ids.txt")
 
-    # Вставка данных об ионах
-    for ion in ions:
+
+def parse_txt(ion_ids_file_path):
+    with open(ion_ids_file_path, "r") as file:
+        lines = file.readlines()
+    return list(int(item) for item in lines)
+
+
+def parse_xyz(xyz_file_path):
+    with open(xyz_file_path, "r") as file:
+        lines = file.readlines()
+
+    atom_count = int(lines[0].strip())  # Первая строка содержит количество атомов
+    data = []  # Список для хранения данных об атомах
+
+    # Считываем данные об атомах (начиная с 3-й строки)
+    for line in lines[2:2 + atom_count]:
+        parts = line.split()
+        atom_type = parts[0]  # Тип атома (например, Cl, Na)
+        x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+        data.append([atom_type, x, y, z])
+
+    return data
+
+
+def insert_data(cursor, data, ion_ids):
+    id = 0
+    if not data:
+        return
+    current_atom_type = data[0][0]
+    for atom_data in data:
+        if current_atom_type != atom_data[0]:
+            current_atom_type = atom_data[0]
+            id += 1
+        ion_library_id = ion_ids[id]
         cursor.execute(
             """
-            INSERT INTO ions (lattice_type_id, x, y, z)
+            INSERT INTO ions (ion_library_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
             VALUES (%s, %s, %s, %s)
             """,
-            (lattice_type_id, ion["x"], ion["y"], ion["z"])
+            (ion_library_id, atom_data[1], atom_data[2], atom_data[3])
         )
 
-    # Вставка данных о веществах
-    for substance in substances:
-        cursor.execute(
-            """
-            INSERT INTO substances (name, lattice_type_id, similarity_coefficient)
-            VALUES (%s, %s, %s)
-            """,
-            (substance["name"], lattice_type_id, substance["similarity_coefficient"])
-        )
-
-def parse_xyz(file_path):
-    """
-    Парсинг XYZ файла и подготовка данных для вставки
-    """
-    ions = []
-    with open(file_path, "r") as file:
-        lines = file.readlines()
-        num_atoms = int(lines[0].strip())  # Количество атомов
-        description = lines[1].strip()     # Описание структуры
-
-        # Чтение атомов и их координат
-        for line in lines[2:2 + num_atoms]:
-            parts = line.split()
-            atom_type = parts[0]  # Тип атома (например, C, H, O)
-            x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
-            ions.append({"atom_type": atom_type, "x": x, "y": y, "z": z})
-
-    # Пример данных о веществах
-    substances = [{"name": "Sample Substance", "similarity_coefficient": 0.85}]
-
-    return description, ions, substances
-
-# Подключение к базе данных
 conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
 
 try:
-    # Путь к XYZ файлу
-    xyz_file = "example.xyz"
-
-    # Парсинг XYZ файла
-    crystalline_system = "Триклинная"  # Пример системы (можно изменить)
-    lattice_system = "P"  # Пример решетки
-    description, ions, substances = parse_xyz(xyz_file)
-
-    # Вставка данных в базу
-    insert_data(cursor, crystalline_system, lattice_system, description, ions, substances)
-
-    # Подтверждение транзакции
+    ion_ids = parse_txt(ion_ids_file_path)
+    data = parse_xyz(xyz_file_path)
+    insert_data(cursor, data, ion_ids)
     conn.commit()
     print("Данные успешно добавлены в базу данных.")
-
 except Exception as e:
     conn.rollback()
     print(f"Произошла ошибка: {e}")
-
 finally:
     cursor.close()
     conn.close()
