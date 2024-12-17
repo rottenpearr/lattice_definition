@@ -7,34 +7,50 @@ USE crystal_lattice_db;
 -- Создание таблицы для типов кристаллических решёток
 CREATE TABLE IF NOT EXISTS lattice_type (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    crystalline_system VARCHAR(255) NOT NULL,
-    lattice_system VARCHAR(255) NOT NULL,
-    description TEXT
-);
-
--- Создание таблицы для ионов
-CREATE TABLE IF NOT EXISTS ions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
     lattice_type_id INT NOT NULL,
-    x FLOAT NOT NULL,
-    y FLOAT NOT NULL,
-    z FLOAT NOT NULL,
-    FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
-);
-
--- Создание таблицы для библиотеки ионов
-CREATE TABLE IF NOT EXISTS ion_library (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    ion_id INT NOT NULL,
-    charge FLOAT NOT NULL,
-    FOREIGN KEY (ion_id) REFERENCES ions(id) ON DELETE CASCADE
+    symmetry_cell_setting VARCHAR(255) NOT NULL,
+    description TEXT
 );
 
 -- Создание таблицы для веществ
 CREATE TABLE IF NOT EXISTS substances (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    cell_length_a FLOAT,
+    cell_length_b FLOAT,
+    cell_length_c FLOAT,
+    cell_angle_alpha FLOAT,
+    cell_angle_beta FLOAT,
+    cell_angle_gamma FLOAT,
+    space_group_IT_number VARCHAR(255),
     lattice_type_id INT NOT NULL,
-    similarity_coefficient FLOAT,
     FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
+);
+
+-- Создание таблицы для библиотеки начальных ионов
+CREATE TABLE IF NOT EXISTS ions_library (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    substance_id INT NOT NULL,
+    atom_site_label VARCHAR(255),
+    atom_site_type_symbol VARCHAR(255),
+    atom_site_symmetry_multiplicity INT,
+    atom_site_Wyckoff_symbol VARCHAR(10),
+    atom_site_fract_x FLOAT,
+    atom_site_fract_y FLOAT,
+    atom_site_fract_z FLOAT,
+    atom_site_occupancy FLOAT,
+    atom_site_attached_hydrogens INT,
+    atom_site_calc_flag VARCHAR(255),
+    FOREIGN KEY (substance_id) REFERENCES substances(id) ON DELETE CASCADE
+);
+
+-- Создание таблицы для ионов
+CREATE TABLE IF NOT EXISTS ions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ion_library_id INT NOT NULL,
+    atom_type_oxidation_number FLOAT,
+    atom_site_fract_x FLOAT,
+    atom_site_fract_y FLOAT,
+    atom_site_fract_z FLOAT,
+    FOREIGN KEY (ion_library_id) REFERENCES ions_library(id) ON DELETE CASCADE
 );
