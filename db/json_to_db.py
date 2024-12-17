@@ -18,7 +18,7 @@ def insert_data(cursor, data):
     _cell_angle_gamma = float(data["data"]["values"]["_cell_angle_gamma"][0])
     _space_group_IT_number = data["data"]["values"]["_space_group_IT_number"][0]
     _symmetry_space_group_name_Hall = data["data"]["values"]["_symmetry_space_group_name_Hall"][0]
-    _symmetry_space_group_name_H_M = data["data"]["values"]["_symmetry_space_group_name_H_M"][0]
+    _symmetry_space_group_name_H_M = data["data"]["values"]["_symmetry_space_group_name_H-M"][0]
     lattice_type_name = data["data"]["values"]["_symmetry_cell_setting"][0]
     cursor.execute(
         """
