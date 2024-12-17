@@ -14,6 +14,8 @@
 ### Скрипты
 
 * main.py - запуск приложения с интерфейсом
+* json_to_db.py - Добавляет информацию из json файла в базу данных. Заполняет таблицы substances и ions_library.
+* xyz_to_db.py - Добавляет информацию из xyz файла в базу данных. Заполняет таблицу ions.
 
 ## Требования
 
@@ -22,6 +24,8 @@
 * MySQL 8.0+ Server (localhost:3306) + `pip install mysql-connector-python` + root password
 
 ## Дополнительно
+
+База lattice_type заполнена стандартными ...
 
 Если понадобится:
 
@@ -37,10 +41,26 @@
 - [ ] Подумать какие поля и как выводить в UI
 - [ ] 3D-визуализация? (+ готовые инструменты)
 - [ ] возможно авто-сортировка файлов по категориям
+- [ ] id для иона?????
+- [ ] как сделать lattice_types_init py? в db_init или фулл идентичный модуль?
 
 Баги:
 - [ ] если не создана база данных, то при подключении будет давать ошибку
 
+## Cheatsheet
+
+* Пересоздать бд
+
+```bash
+drop database crystal_lattice_db;
+create database crystal_lattice_db;
+use crystal_lattice_db;
+show tables;
+select * from lattice_type;
+select * from substances;
+select * from ions_library;
+select * from ions;
+```
 
 ## Информация о VESTA:
 
@@ -77,3 +97,5 @@
 ![img_3.png](info_examples/img_3.png)
 
 И он делает с каждым элементом вот эти вот преобразования, и по факту получаем решеточку
+
+
