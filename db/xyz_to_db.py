@@ -1,16 +1,17 @@
 import mysql.connector
 from pathlib import Path
+from glob import glob
 
 from config import db_config
 
-xyz_file_path = Path("../data/xyz/1000041.xyz")  # TODO: sys.args
-ion_ids_file_path = Path("ion_ids.txt")
+xyz_files_path = Path("../data/xyz")
+lattice_type_id_file_path = Path("lattice_type_id.txt")
 
 
 def parse_txt(ion_ids_file_path):
     with open(ion_ids_file_path, "r") as file:
-        lines = file.readlines()
-    return list(int(item) for item in lines)
+        id = file.readline()
+    return int(id)
 
 
 def parse_xyz(xyz_file_path):
@@ -30,32 +31,27 @@ def parse_xyz(xyz_file_path):
     return data
 
 
-def insert_data(cursor, data, ion_ids):
-    id = 0
-    if not data:
-        return
-    current_atom_type = data[0][0]
+def insert_data(cursor, data, lattice_type_id):
     for atom_data in data:
-        if current_atom_type != atom_data[0]:
-            current_atom_type = atom_data[0]
-            id += 1
-        ion_library_id = ion_ids[id]
         cursor.execute(
             """
-            INSERT INTO ions (ion_library_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
+            INSERT INTO ions_library (lattice_type_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
             VALUES (%s, %s, %s, %s)
             """,
-            (ion_library_id, atom_data[1], atom_data[2], atom_data[3])
+            (lattice_type_id, atom_data[1], atom_data[2], atom_data[3])
         )
 
 conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
 
 try:
-    ion_ids = parse_txt(ion_ids_file_path)
-    data = parse_xyz(xyz_file_path)
-    insert_data(cursor, data, ion_ids)
+    lattice_type_id = parse_txt(lattice_type_id_file_path)
+    xyz_files = glob(str(xyz_files_path / "*.xyz"))
+    for xyz_file in xyz_files:
+        data = parse_xyz(xyz_file)
+        insert_data(cursor, data, lattice_type_id)
     conn.commit()
+    print(f"Обработано файлов: {len(xyz_files)}.")
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:
     conn.rollback()

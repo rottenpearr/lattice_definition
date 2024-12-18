@@ -1,22 +1,26 @@
 import json
 import mysql.connector
 from pathlib import Path
+from glob import glob
 
 from config import db_config
 
-json_file_path = Path("../data/json/1000041.json")  # TODO: sys.argv
-
-ion_ids = []
+json_files_path = Path("../data/json")
 
 def insert_data(cursor, data):
-    _chemical_name_systematic = data["data"]["values"]["_chemical_name_systematic"][0]
-    _cell_length_a = float(data["data"]["values"]["_cell_length_a"][0])
-    _cell_length_b = float(data["data"]["values"]["_cell_length_b"][0])
-    _cell_length_c = float(data["data"]["values"]["_cell_length_c"][0])
-    _cell_volume = float(data["data"]["values"]["_cell_volume"][0])
-    _cell_angle_alpha = float(data["data"]["values"]["_cell_angle_alpha"][0])
-    _cell_angle_beta = float(data["data"]["values"]["_cell_angle_beta"][0])
-    _cell_angle_gamma = float(data["data"]["values"]["_cell_angle_gamma"][0])
+    global lattice_type_id
+
+    try:
+        _chemical_name_systematic = data["data"]["values"]["_chemical_name_systematic"][0]
+    except Exception as _:
+        _chemical_name_systematic = "No chemical name"
+    _cell_length_a = float(data["data"]["values"]["_cell_length_a"][0].split("(")[0])
+    _cell_length_b = float(data["data"]["values"]["_cell_length_b"][0].split("(")[0])
+    _cell_length_c = float(data["data"]["values"]["_cell_length_c"][0].split("(")[0])
+    _cell_volume = float(data["data"]["values"]["_cell_volume"][0].split("(")[0])
+    _cell_angle_alpha = float(data["data"]["values"]["_cell_angle_alpha"][0].split("(")[0])
+    _cell_angle_beta = float(data["data"]["values"]["_cell_angle_beta"][0].split("(")[0])
+    _cell_angle_gamma = float(data["data"]["values"]["_cell_angle_gamma"][0].split("(")[0])
     _space_group_IT_number = data["data"]["values"]["_space_group_IT_number"][0]
     _symmetry_space_group_name_Hall = data["data"]["values"]["_symmetry_space_group_name_Hall"][0]
     _symmetry_space_group_name_H_M = data["data"]["values"]["_symmetry_space_group_name_H-M"][0]
@@ -34,6 +38,8 @@ def insert_data(cursor, data):
         _lattice_type_id = result[0]
     else:
         _lattice_type_id = None  # такой результат выдаст ошибку
+
+    lattice_type_id = _lattice_type_id
 
     cursor.execute(
         """
@@ -60,50 +66,49 @@ def insert_data(cursor, data):
     _atom_type_oxidation_number_list = data["data"]["values"]["_atom_type_oxidation_number"]
     _atom_site_symmetry_multiplicity_list = data["data"]["values"]["_atom_site_symmetry_multiplicity"]
     _atom_site_Wyckoff_symbol_list = data["data"]["values"]["_atom_site_Wyckoff_symbol"]
-    _atom_site_fract_x_list = data["data"]["values"]["_atom_site_fract_x"]
-    _atom_site_fract_y_list = data["data"]["values"]["_atom_site_fract_y"]
-    _atom_site_fract_z_list = data["data"]["values"]["_atom_site_fract_z"]
     _atom_site_occupancy_list = data["data"]["values"]["_atom_site_occupancy"]
     _atom_site_attached_hydrogens_list = data["data"]["values"]["_atom_site_attached_hydrogens"]
     _atom_site_calc_flag_list = data["data"]["values"]["_atom_site_calc_flag"]
 
     ion_amount = len(_atom_site_label_list)
+    oxidation_id = 0
+    oxidation_ion = _atom_site_type_symbol_list[0]
     for ion in range(ion_amount):
+        if _atom_site_type_symbol_list[ion] != oxidation_ion:
+            oxidation_id += 1
+            oxidation_ion = _atom_site_type_symbol_list[ion]
         cursor.execute(
             """
-            INSERT INTO ions_library (substance_id, atom_site_label, atom_site_type_symbol, atom_type_oxidation_number,atom_site_symmetry_multiplicity, atom_site_Wyckoff_symbol, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z, atom_site_occupancy, atom_site_attached_hydrogens, atom_site_calc_flag)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO ions (substance_id, atom_site_label, atom_site_type_symbol, atom_type_oxidation_number,atom_site_symmetry_multiplicity, atom_site_Wyckoff_symbol, atom_site_occupancy, atom_site_attached_hydrogens, atom_site_calc_flag)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (substance_id,
              _atom_site_label_list[ion],
              _atom_site_type_symbol_list[ion],
-             float(_atom_type_oxidation_number_list[ion]),
+             float(_atom_type_oxidation_number_list[oxidation_id].split("(")[0]),
              int(_atom_site_symmetry_multiplicity_list[ion]),
              _atom_site_Wyckoff_symbol_list[ion],
-             float(_atom_site_fract_x_list[ion]),
-             float(_atom_site_fract_y_list[ion]),
-             float(_atom_site_fract_z_list[ion]),
-             float(_atom_site_occupancy_list[ion]),
+             float(_atom_site_occupancy_list[ion].split("(")[0]),
              int(_atom_site_attached_hydrogens_list[ion]),
              _atom_site_calc_flag_list[ion])
         )
-        ion_id = cursor.lastrowid
-        ion_ids.append(ion_id)
 
 
 conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
 
 try:
-    with open(json_file_path, "r") as file:
-        data = json.load(file)
-        insert_data(cursor, data)
+    lattice_type_id = None
+
+    json_files = glob(str(json_files_path / "*.json"))
+    for json_file in json_files:
+        with open(json_file, "r") as file:
+            data = json.load(file)
+            insert_data(cursor, data)
     conn.commit()
 
-    # Запись идентификаторов ионов
-    with open("ion_ids.txt", "w") as file:
-        for ion_id in ion_ids:
-            file.write(str(ion_id) + "\n")
+    with open("lattice_type_id.txt", "w") as file:
+        file.write(str(lattice_type_id))
 
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:

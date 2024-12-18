@@ -3,7 +3,9 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialo
 from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
+from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
+
+# from db.ions_query import
 
 
 # Инициализация главного окна
