@@ -1,17 +1,6 @@
 import mysql.connector
-from pathlib import Path
-from glob import glob
-
+import sys
 from config import db_config
-
-xyz_files_path = Path("../data/xyz")
-lattice_type_id_file_path = Path("lattice_type_id.txt")
-
-
-def parse_txt(ion_ids_file_path):
-    with open(ion_ids_file_path, "r") as file:
-        id = file.readline()
-    return int(id)
 
 
 def parse_xyz(xyz_file_path):
@@ -38,20 +27,18 @@ def insert_data(cursor, data, lattice_type_id):
             INSERT INTO ions_library (lattice_type_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
             VALUES (%s, %s, %s, %s)
             """,
-            (lattice_type_id, atom_data[1], atom_data[2], atom_data[3])
+            (int(lattice_type_id), atom_data[1], atom_data[2], atom_data[3])
         )
 
 conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
 
 try:
-    lattice_type_id = parse_txt(lattice_type_id_file_path)
-    xyz_files = glob(str(xyz_files_path / "*.xyz"))
-    for xyz_file in xyz_files:
-        data = parse_xyz(xyz_file)
-        insert_data(cursor, data, lattice_type_id)
+    xyz_file_path = sys.argv[1]
+    lattice_type_id = sys.argv[2]
+    data = parse_xyz(xyz_file_path)
+    insert_data(cursor, data, lattice_type_id)
     conn.commit()
-    print(f"Обработано файлов: {len(xyz_files)}.")
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:
     conn.rollback()

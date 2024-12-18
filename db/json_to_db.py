@@ -1,4 +1,6 @@
 import json
+import sys
+
 import mysql.connector
 from pathlib import Path
 from glob import glob
@@ -98,13 +100,11 @@ conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
 
 try:
+    json_file_path = sys.argv[1]
     lattice_type_id = None
-
-    json_files = glob(str(json_files_path / "*.json"))
-    for json_file in json_files:
-        with open(json_file, "r") as file:
-            data = json.load(file)
-            insert_data(cursor, data)
+    with open(json_file_path, "r") as file:
+        data = json.load(file)
+        insert_data(cursor, data)
     conn.commit()
 
     with open("lattice_type_id.txt", "w") as file:
