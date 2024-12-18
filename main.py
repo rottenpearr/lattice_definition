@@ -48,8 +48,6 @@ def check_coords(ions):
     substance_probabilities = {name: (count / substance_total) * 100 for name, count in substance_counts.items()}
     sorted_substance_probabilities = sorted(substance_probabilities.items(), key=lambda x: x[1], reverse=True)
 
-    print()
-
     if not sorted_lattice_probabilities:
         return False
 
