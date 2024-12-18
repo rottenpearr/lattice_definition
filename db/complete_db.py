@@ -10,6 +10,10 @@ def parse_txt(lattice_type_id_path):
 
 
 def main():
+    subprocess.run(["python", Path("db_init.py")])
+    subprocess.run(["python", Path("lattice_types_init.py")])
+
+    print("Запись данных из всех файлов в базу данных:")
     files_path = Path("../data/json")
     files = glob(str(files_path / "*.json"))
     for file_path in files:
@@ -23,6 +27,8 @@ def main():
         lattice_type_id = parse_txt(lattice_type_id_path)
 
         subprocess.run(["python", Path("xyz_to_db.py"), xyz_file_path, str(lattice_type_id)])
+
+    print("База данных полностью инициализирована.")
 
 if __name__ == "__main__":
     main()
