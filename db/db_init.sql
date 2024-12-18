@@ -49,8 +49,10 @@ CREATE TABLE IF NOT EXISTS ions (
 CREATE TABLE IF NOT EXISTS ions_library (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lattice_type_id INT NOT NULL,
+    substance_id INT NOT NULL,
     atom_site_fract_x FLOAT,
     atom_site_fract_y FLOAT,
     atom_site_fract_z FLOAT,
-    FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
+    FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE,
+    FOREIGN KEY (substance_id) REFERENCES substances(id) ON DELETE CASCADE
 );

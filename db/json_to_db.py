@@ -10,7 +10,7 @@ from config import db_config
 json_files_path = Path("../data/json")
 
 def insert_data(cursor, data):
-    global lattice_type_id
+    global lattice_type_id, substance_id
 
     try:
         _chemical_name_systematic = data["data"]["values"]["_chemical_name_systematic"][0]
@@ -102,13 +102,16 @@ cursor = conn.cursor()
 try:
     json_file_path = sys.argv[1]
     lattice_type_id = None
+    substance_id = None
     with open(json_file_path, "r") as file:
         data = json.load(file)
         insert_data(cursor, data)
     conn.commit()
 
-    with open("lattice_type_id.txt", "w") as file:
+    with open("json_additional_data.txt", "w") as file:
         file.write(str(lattice_type_id))
+        file.write("\n")
+        file.write(str(substance_id))
 
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:

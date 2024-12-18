@@ -1,11 +1,124 @@
 import sys
+
+import mysql.connector
 from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox
 from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
+from db.config import db_config
+from collections import Counter
 
-# from db.ions_query import
+
+def get_similar_xyz_from_db(coordinates):
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    print(coordinates)
+    results = []
+    try:
+        query = """
+            SELECT * FROM ions_library
+            WHERE atom_site_fract_x = %s AND atom_site_fract_y = %s AND atom_site_fract_z = %s
+        """
+        for x, y, z in list(coordinates.values()):
+            cursor.execute(query, (x, y, z))
+            results.append(cursor.fetchall())
+    except Exception as e:
+        conn.rollback()
+        print(f"Произошла ошибка: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+    print(results)
+    return results
+
+
+def check_coords(ions):
+    ions = ions[0]
+    lattice_list = [item[1] for item in ions]
+    substance_list = [item[2] for item in ions]
+
+    lattice_counts = Counter(lattice_list)
+    lattice_total = sum(lattice_counts.values())
+    lattice_probabilities = {name: (count / lattice_total) * 100 for name, count in lattice_counts.items()}
+    sorted_lattice_probabilities = sorted(lattice_probabilities.items(), key=lambda x: x[1], reverse=True)
+
+    substance_counts = Counter(substance_list)
+    substance_total = sum(substance_counts.values())
+    substance_probabilities = {name: (count / substance_total) * 100 for name, count in substance_counts.items()}
+    sorted_substance_probabilities = sorted(substance_probabilities.items(), key=lambda x: x[1], reverse=True)
+
+    print()
+
+    if not sorted_lattice_probabilities:
+        return False
+
+    lattice_names = []
+    substance_names = []
+
+    lattice_info_list = []
+    lattice_info = None
+    top_lattice_id = sorted_lattice_probabilities[0][0]
+    top_lattice_probability = sorted_lattice_probabilities[0][1]
+
+    substance_info_list = []
+    substance_info = None
+    top_substance_id = sorted_substance_probabilities[0][0]
+    top_substance_probability = sorted_substance_probabilities[0][1]
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        query = """
+            SELECT * FROM lattice_type
+            WHERE id = %s
+        """
+        for id in lattice_list:
+            cursor.execute(query, [id])
+            lattice_info_list.append(cursor.fetchall())
+
+        query = """
+            SELECT * FROM substances
+            WHERE id = %s
+        """
+        for id in substance_list:
+            cursor.execute(query, [id])
+            substance_info_list.append(cursor.fetchall())
+
+        for lattice in lattice_info_list:
+            lattice = lattice[0]
+            if not ([lattice[0], lattice[2]] in lattice_names):
+                lattice_names.append([lattice[0], lattice[2]])
+            if lattice[0] == top_lattice_id:
+                lattice_info = lattice
+
+        for substance in substance_info_list:
+            substance = substance[0]
+            if not([substance[0], substance[1]] in substance_names):
+                substance_names.append([substance[0], substance[1]])
+            if substance[0] == top_substance_id:
+                substance_info = substance
+
+        for i in range(len(lattice_names)):
+            id = lattice_names[i][0]
+            probability = lattice_probabilities[id]
+            lattice_names[i].append(probability)
+
+        for i in range(len(substance_names)):
+            id = substance_names[i][0]
+            probability = substance_probabilities[id]
+            substance_names[i].append(probability)
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Произошла ошибка: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return [[lattice_names, substance_names], [lattice_info, top_lattice_probability], [substance_info, top_substance_probability]]
+
 
 
 # Инициализация главного окна
@@ -50,7 +163,7 @@ class MainWindow(QMainWindow):
                 item.setData(Qt.UserRole, (None, None, None))  # Устанавливаем пустые данные
             self.ui.ions_list.addItem(item)
 
-        print("Обновленные данные ионов:", self.temp_ions_data)  # Проверка данных в консоли
+        # print("Обновленные данные ионов:", self.temp_ions_data)  # Проверка данных в консоли
 
     def open_input_dialog(self, item):
         ion_number = int(item.text().split()[1])
@@ -70,7 +183,7 @@ class MainWindow(QMainWindow):
                 # Сохраняем данные во временный словарь
                 self.temp_ions_data[ion_number] = (x, y, z)
 
-                print("Текущие данные ионов:", self.temp_ions_data)  # Выводим словарь для отладки
+                # print("Текущие данные ионов:", self.temp_ions_data)  # Выводим словарь для отладки
             else:
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
 
@@ -86,11 +199,40 @@ class MainWindow(QMainWindow):
                 all_filled = False
                 break  # Прерываем цикл при первом незаполненном ионе
 
+        coords = get_similar_xyz_from_db(self.temp_ions_data)
+        query_data = check_coords(coords)
+
+        if not query_data:
+            QMessageBox.warning(self, "Поиск не дал результатов", "Попробуйте ввести другие значения!")
+            return
+
+        result_lattice_types = query_data[0][0]
+        result_substances = query_data[0][1]
+        result_possible_lattice = query_data[1][0]
+        result_possible_lattice_probability = query_data[1][1]
+        result_possible_substance = query_data[2][0]
+        result_possible_substance_probability = query_data[2][1]
+
+        result_lattice_types = " ".join(list(str(item[1]) + " " + str(item[2]) + "%;" for item in result_lattice_types))
+        result_substances = " ".join(list(str(item[1]) + " " + str(item[2]) + "%;" for item in result_substances))
+        result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"({result_possible_lattice_probability}%)"
+        result_possible_lattice_description = str(result_possible_lattice[3])
+        result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability}%)"
+        result_possible_substance_description = str(result_possible_substance[-3]) + " " + str(result_possible_substance[-2]) + "..."  # TODO: добавить еще описание
+
         if all_filled:
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
             self.ui.widget_2.show()
             self.ui.button_save.show()
             self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox после проверки
+            self.ui.info_lattice.setText(
+                f"Подходящие типы кристаллической решетки: {result_lattice_types}\n"
+                f"Наиболее вероятный тип: {result_possible_lattice_name}\n"
+                f"Описание типа: {result_possible_lattice_description}\n"
+                f"Возможное вещество: {result_substances}\n"
+                f"Наиболее вероятное вещество: {result_possible_substance_name}\n"
+                f"Описание вещества: {result_possible_substance_description}"
+            )
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 

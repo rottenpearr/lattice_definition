@@ -20,14 +20,14 @@ def parse_xyz(xyz_file_path):
     return data
 
 
-def insert_data(cursor, data, lattice_type_id):
+def insert_data(cursor, data, lattice_type_id, substance_id):
     for atom_data in data:
         cursor.execute(
             """
-            INSERT INTO ions_library (lattice_type_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO ions_library (lattice_type_id, substance_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
+            VALUES (%s, %s, %s, %s, %s)
             """,
-            (int(lattice_type_id), atom_data[1], atom_data[2], atom_data[3])
+            (int(lattice_type_id), substance_id, atom_data[1], atom_data[2], atom_data[3])
         )
 
 conn = mysql.connector.connect(**db_config)
@@ -35,9 +35,10 @@ cursor = conn.cursor()
 
 try:
     xyz_file_path = sys.argv[1]
-    lattice_type_id = sys.argv[2]
     data = parse_xyz(xyz_file_path)
-    insert_data(cursor, data, lattice_type_id)
+    lattice_type_id = sys.argv[2]
+    substance_id = sys.argv[3]
+    insert_data(cursor, data, lattice_type_id, substance_id)
     conn.commit()
     print("Данные успешно добавлены в базу данных.")
 except Exception as e:
