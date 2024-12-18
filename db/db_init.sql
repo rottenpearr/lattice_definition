@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS substances (
 );
 
 -- Создание таблицы для библиотеки начальных ионов
-CREATE TABLE IF NOT EXISTS ions_library (
+CREATE TABLE IF NOT EXISTS ions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     substance_id INT NOT NULL,
     atom_site_label VARCHAR(255),
@@ -49,11 +49,11 @@ CREATE TABLE IF NOT EXISTS ions_library (
 );
 
 -- Создание таблицы для ионов
-CREATE TABLE IF NOT EXISTS ions (
+CREATE TABLE IF NOT EXISTS ions_library (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    ion_library_id INT NOT NULL,
+    lattice_type_id INT NOT NULL,
     atom_site_fract_x FLOAT,
     atom_site_fract_y FLOAT,
     atom_site_fract_z FLOAT,
-    FOREIGN KEY (ion_library_id) REFERENCES ions_library(id) ON DELETE CASCADE
+    FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
 );
