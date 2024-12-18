@@ -1,7 +1,13 @@
 import sys
+from pathlib import Path
 
 import mysql.connector
-from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox
+from PySide6 import QtWidgets
+from PySide6.QtGui import QPixmap
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox, QWidget, QVBoxLayout, \
+    QFrame
 from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
@@ -13,7 +19,6 @@ from collections import Counter
 def get_similar_xyz_from_db(coordinates):
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
-    print(coordinates)
     results = []
     try:
         query = """
@@ -29,7 +34,6 @@ def get_similar_xyz_from_db(coordinates):
     finally:
         cursor.close()
         conn.close()
-    print(results)
     return results
 
 
@@ -86,8 +90,8 @@ def check_coords(ions):
 
         for lattice in lattice_info_list:
             lattice = lattice[0]
-            if not ([lattice[0], lattice[2]] in lattice_names):
-                lattice_names.append([lattice[0], lattice[2]])
+            if not ([lattice[0], lattice[2], lattice[1]] in lattice_names):
+                lattice_names.append([lattice[0], lattice[2], lattice[1]])
             if lattice[0] == top_lattice_id:
                 lattice_info = lattice
 
@@ -211,12 +215,14 @@ class MainWindow(QMainWindow):
         result_possible_substance = query_data[2][0]
         result_possible_substance_probability = query_data[2][1]
 
-        result_lattice_types = " ".join(list(str(item[1]) + " " + str(item[2]) + "%;" for item in result_lattice_types))
+        result_lattice_types = " ".join(list(str(item[1]) + " " + str(item[3]) + "%;" for item in result_lattice_types))
         result_substances = " ".join(list(str(item[1]) + " " + str(item[2]) + "%;" for item in result_substances))
         result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"({result_possible_lattice_probability}%)"
         result_possible_lattice_description = str(result_possible_lattice[3])
         result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability}%)"
         result_possible_substance_description = str(result_possible_substance[-3]) + " " + str(result_possible_substance[-2]) + "..."  # TODO: добавить еще описание
+
+        image_name = Path("data/images/" + str(result_possible_lattice[1]) + ".png").resolve()
 
         if all_filled:
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
@@ -231,6 +237,19 @@ class MainWindow(QMainWindow):
                 f"Наиболее вероятное вещество: {result_possible_substance_name}\n"
                 f"Описание вещества: {result_possible_substance_description}"
             )
+            png_label = self.ui.lattice_widget
+            image_path = str(image_name)
+            pixmap = QPixmap(image_path)
+            pixmap = pixmap.scaled(
+                png_label.size(),
+                aspectMode=Qt.AspectRatioMode.KeepAspectRatio
+            )
+            png_label.setPixmap(pixmap)
+
+            # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
+            # layout.addWidget(self.ui.lattice_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+            # self.ui.widget_2.setLayout(layout)
+
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 

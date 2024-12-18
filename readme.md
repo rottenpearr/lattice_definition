@@ -104,6 +104,8 @@ for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.
 - [ ] lattice_type -> lattice_types
 - [ ] Все FLOAT поля в SQL -> DECIMAL(10, 6). 6 или бывают cif где больше? Можем поставить для всех 10 знаков. Потому что.
 - [ ] Координаты в формат 0.0-1.0.
+- [ ] self.ui.lattice_widget -> label
+- [ ] Пикчу по центру
 
 ### Что? Вопросы
 
@@ -157,3 +159,28 @@ for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.
 ![img_3.png](info_examples/img_3.png)
 
 И он делает с каждым элементом вот эти вот преобразования, и по факту получаем решеточку
+
+## Тестовое
+
+```python
+            # svg_container = self.ui.widget_2
+            # svg_widget = QSvgWidget(str(image_name), self)
+            # svg_widget.setParent(svg_container)
+            # svg_widget.setGeometry(svg_container.rect())  # Устанавливаем размер в пределах контейнера
+            # svg_widget.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+            # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
+            # layout.setContentsMargins(0, 0, 0, 0)
+            # layout.addWidget(svg_widget)
+            # svg_widget.show()
+
+            # self.bg = QFrame()
+            # # self.bg.setStyleSheet("background-color: #333;")
+            # self.bg_layout = QVBoxLayout(self.bg)
+            # file = str(image_name)
+            # self.get_size = QSvgRenderer(file)
+            # self.svg_widget = QSvgWidget(file)
+            # self.svg_widget.setFixedSize(self.get_size.defaultSize())
+            # self.bg_layout.addWidget(self.svg_widget) # , Qt.AlignmentFlag.AlignCenter, Qt.AlignmentFlag.AlignCenter)
+            # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
+            # layout.addWidget(self.svg_widget)
+```
