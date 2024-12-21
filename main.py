@@ -16,6 +16,7 @@ from db.config import db_config
 from db.ions_query import get_similar_xyz_from_db, check_coords
 from collections import Counter
 import csv
+from generate_report import save_docx
 
 
 # Инициализация главного окна
@@ -46,9 +47,13 @@ class MainWindow(QMainWindow):
 
         self.ui.pushButton.clicked.connect(self.open_csv_file)
 
+        self.ui.button_restart.clicked.connect(self.restart)
+        self.ui.button_save.clicked.connect(self.save)
+
         self.ui.widget_2.hide()
         self.ui.button_save.hide()
 
+        self.image_name = ""
         self.ions_data = {}  # Словарь для всех данных
 
     def handle_custom_option(self, index):
@@ -118,8 +123,7 @@ class MainWindow(QMainWindow):
                 summary = f"x: {x}, y: {y}, z: {z}"
                 item.setText(f"Ион {ion_number} - {summary}")
                 item.setData(Qt.UserRole, (x, y, z))  # Сохраняем данные в item
-                # Сохраняем данные в словарь
-                self.ions_data[ion_number] = (x, y, z)
+                self.ions_data[ion_number] = (x, y, z)  # Сохраняем данные в словарь
             else:
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
 
@@ -167,15 +171,23 @@ class MainWindow(QMainWindow):
         result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"({result_possible_lattice_probability}%)"
         result_possible_lattice_description = str(result_possible_lattice[3])
         result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability}%)"
-        result_possible_substance_description = str(result_possible_substance[-3]) + " " + str(result_possible_substance[-2]) + "..."  # TODO: добавить еще описание
+        result_possible_substance_description = (f"Длина ребра ячейки по оси a = {str(result_possible_substance[2])}; "
+                                                 f"Длина ребра ячейки по оси b = {str(result_possible_substance[3])}; "
+                                                 f"Длина ребра ячейки по оси c = {str(result_possible_substance[4])}; "
+                                                 f"Объем элементарной ячейки кристалла (куб. Ангстрем) = {str(result_possible_substance[5])}; "
+                                                 f"Угол между осями b и c (альфа) = {str(result_possible_substance[6])}; "
+                                                 f"Угол между осями a и c (бета) = {str(result_possible_substance[7])}; "
+                                                 f"Угол между осями a и b (гамма) = {str(result_possible_substance[8])}; "
+                                                 f"Номер пространственной группы (по МТК) = {str(result_possible_substance[9])}; "
+                                                 f"Пространственная группа (Hall-notation) = {str(result_possible_substance[10])}; "
+                                                 f"Пространственная группа (Hermann-Mauguin notation) = {str(result_possible_substance[11])};")
 
-        image_name = Path("data/images/" + str(result_possible_lattice[1]) + ".png").resolve()
+        self.image_name = Path("data/images/" + str(result_possible_lattice[1]) + ".png").resolve()
 
         if all_filled:
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
             self.ui.widget_2.show()
             self.ui.button_save.show()
-            # self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox после проверки
             self.ui.info_lattice.setText(
                 f"Подходящие типы кристаллической решетки: {result_lattice_types}\n"
                 f"Наиболее вероятный тип: {result_possible_lattice_name}\n"
@@ -185,7 +197,7 @@ class MainWindow(QMainWindow):
                 f"Описание вещества: {result_possible_substance_description}"
             )
             png_label = self.ui.lattice_widget
-            image_path = str(image_name)
+            image_path = str(self.image_name)
             pixmap = QPixmap(image_path)
             pixmap = pixmap.scaled(
                 png_label.size(),
@@ -197,6 +209,16 @@ class MainWindow(QMainWindow):
             # self.ui.widget_2.setLayout(layout)
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
+
+    def restart(self):
+        self.ions_data = {}
+        self.ui.combo_box_ions.setCurrentText("")
+        self.populate_list()
+        self.ui.info_lattice.setText("")
+        self.ui.lattice_widget.clear()
+
+    def save(self):
+        save_docx(self.ui.info_lattice.toPlainText(), self.image_name)
 
 
 # Инициализация окна для ввода координат
