@@ -7,120 +7,15 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox, QWidget, QVBoxLayout, \
-    QFrame
+    QFrame, QFileDialog
 from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
 from db.config import db_config
+from db.ions_query import get_similar_xyz_from_db, check_coords
 from collections import Counter
-
-
-def get_similar_xyz_from_db(coordinates):
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    results = []
-    try:
-        query = """
-            SELECT * FROM ions_library
-            WHERE atom_site_fract_x = %s AND atom_site_fract_y = %s AND atom_site_fract_z = %s
-        """
-        for x, y, z in list(coordinates.values()):
-            cursor.execute(query, (x, y, z))
-            results.append(cursor.fetchall())
-    except Exception as e:
-        conn.rollback()
-        print(f"Произошла ошибка: {e}")
-    finally:
-        cursor.close()
-        conn.close()
-    return results
-
-
-def check_coords(ions):
-    ions = ions[0]
-    lattice_list = [item[1] for item in ions]
-    substance_list = [item[2] for item in ions]
-
-    lattice_counts = Counter(lattice_list)
-    lattice_total = sum(lattice_counts.values())
-    lattice_probabilities = {name: (count / lattice_total) * 100 for name, count in lattice_counts.items()}
-    sorted_lattice_probabilities = sorted(lattice_probabilities.items(), key=lambda x: x[1], reverse=True)
-
-    substance_counts = Counter(substance_list)
-    substance_total = sum(substance_counts.values())
-    substance_probabilities = {name: (count / substance_total) * 100 for name, count in substance_counts.items()}
-    sorted_substance_probabilities = sorted(substance_probabilities.items(), key=lambda x: x[1], reverse=True)
-
-    if not sorted_lattice_probabilities:
-        return False
-
-    lattice_names = []
-    substance_names = []
-
-    lattice_info_list = []
-    lattice_info = None
-    top_lattice_id = sorted_lattice_probabilities[0][0]
-    top_lattice_probability = sorted_lattice_probabilities[0][1]
-
-    substance_info_list = []
-    substance_info = None
-    top_substance_id = sorted_substance_probabilities[0][0]
-    top_substance_probability = sorted_substance_probabilities[0][1]
-
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-    try:
-        query = """
-            SELECT * FROM lattice_type
-            WHERE id = %s
-        """
-        for id in lattice_list:
-            cursor.execute(query, [id])
-            lattice_info_list.append(cursor.fetchall())
-
-        query = """
-            SELECT * FROM substances
-            WHERE id = %s
-        """
-        for id in substance_list:
-            cursor.execute(query, [id])
-            substance_info_list.append(cursor.fetchall())
-
-        for lattice in lattice_info_list:
-            lattice = lattice[0]
-            if not ([lattice[0], lattice[2], lattice[1]] in lattice_names):
-                lattice_names.append([lattice[0], lattice[2], lattice[1]])
-            if lattice[0] == top_lattice_id:
-                lattice_info = lattice
-
-        for substance in substance_info_list:
-            substance = substance[0]
-            if not([substance[0], substance[1]] in substance_names):
-                substance_names.append([substance[0], substance[1]])
-            if substance[0] == top_substance_id:
-                substance_info = substance
-
-        for i in range(len(lattice_names)):
-            id = lattice_names[i][0]
-            probability = lattice_probabilities[id]
-            lattice_names[i].append(probability)
-
-        for i in range(len(substance_names)):
-            id = substance_names[i][0]
-            probability = substance_probabilities[id]
-            substance_names[i].append(probability)
-
-    except Exception as e:
-        conn.rollback()
-        print(f"Произошла ошибка: {e}")
-    finally:
-        cursor.close()
-        conn.close()
-
-    return [[lattice_names, substance_names], [lattice_info, top_lattice_probability], [substance_info, top_substance_probability]]
-
+import csv
 
 
 # Инициализация главного окна
@@ -147,7 +42,9 @@ class MainWindow(QMainWindow):
         self.ui.button_start.clicked.connect(self.check_all_values)
 
         self.permitted_symbols = [str(i) for i in range(10)]
-        self.ui.combo_box_ions.currentTextChanged.connect(self.check_ion_amount)
+        self.permitted_symbols.append(".")
+
+        self.ui.pushButton.clicked.connect(self.open_csv_file)
 
         self.ui.widget_2.hide()
         self.ui.button_save.hide()
@@ -164,6 +61,7 @@ class MainWindow(QMainWindow):
 
 
     def populate_list(self):
+        self.check_ion_amount()
         self.ui.ions_list.clear()  # Очищаем список
         num_items_text = self.ui.combo_box_ions.currentText()
 
@@ -171,7 +69,6 @@ class MainWindow(QMainWindow):
             return
 
         num_items = int(num_items_text)
-
         # Перезаполняем ions_list данными из self.ions_data
         for i in range(1, num_items + 1):
             item = QListWidgetItem(f"Ион {i}")
@@ -184,7 +81,28 @@ class MainWindow(QMainWindow):
                 item.setData(Qt.UserRole, (None, None, None))  # Устанавливаем пустые данные
             self.ui.ions_list.addItem(item)
 
-        # print("Обновленные данные ионов:", self.ions_data)  # Проверка данных в консоли
+    def open_csv_file(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "Открыть CSV файл", "", "CSV Files (*.csv);;All Files (*)")
+        if file_name:
+            with open(str(Path(file_name))) as csvfile:
+                csv_data = list(csv.reader(csvfile, delimiter=";"))
+                count = len(csv_data)
+                if count == 0 or count > 1000:
+                    QMessageBox.warning(self, "Ошибка", "Количество строк должно быть в пределах 1-1000!")
+                    return
+                self.ions_data = {}
+                id = 1
+                for row in csv_data:
+                    xyz = row[0] + row[1] + row[2]
+                    for elem in xyz:
+                        if not elem in self.permitted_symbols:
+                            QMessageBox.warning(self, "Ошибка", f"Недопустимый формат записи! Символ: {elem}")
+                            self.ions_data = {}
+                            return
+                    self.ions_data[id] = row
+                    id += 1
+                self.ui.combo_box_ions.setEditText(str(count))
+                self.populate_list()
 
     def open_input_dialog(self, item):
         ion_number = int(item.text().split()[1])
@@ -200,11 +118,8 @@ class MainWindow(QMainWindow):
                 summary = f"x: {x}, y: {y}, z: {z}"
                 item.setText(f"Ион {ion_number} - {summary}")
                 item.setData(Qt.UserRole, (x, y, z))  # Сохраняем данные в item
-
-                # Сохраняем данные во временный словарь
+                # Сохраняем данные в словарь
                 self.ions_data[ion_number] = (x, y, z)
-
-                # print("Текущие данные ионов:", self.ions_data)  # Выводим словарь для отладки
             else:
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
 
@@ -214,8 +129,11 @@ class MainWindow(QMainWindow):
         for symbol in text:
             if symbol in self.permitted_symbols:
                 new_next += symbol
-        if int(new_next) > 1000:
-            new_next = "1000"
+        try:
+            if int(new_next) > 1000:
+                new_next = "1000"
+        except ValueError:
+            pass
         self.ui.combo_box_ions.setCurrentText(new_next)
 
     def check_all_values(self):
@@ -231,7 +149,7 @@ class MainWindow(QMainWindow):
                 break  # Прерываем цикл при первом незаполненном ионе
 
         coords = get_similar_xyz_from_db(self.ions_data)
-        query_data = check_coords(coords)
+        query_data = check_coords(coords, int(self.ui.combo_box_ions.currentText()))
 
         if not query_data:
             QMessageBox.warning(self, "Поиск не дал результатов", "Попробуйте ввести другие значения!")
@@ -257,7 +175,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
             self.ui.widget_2.show()
             self.ui.button_save.show()
-            self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox после проверки
+            # self.ui.combo_box_ions.setDisabled(True)  # Блокируем QComboBox после проверки
             self.ui.info_lattice.setText(
                 f"Подходящие типы кристаллической решетки: {result_lattice_types}\n"
                 f"Наиболее вероятный тип: {result_possible_lattice_name}\n"
@@ -274,11 +192,9 @@ class MainWindow(QMainWindow):
                 aspectMode=Qt.AspectRatioMode.KeepAspectRatio
             )
             png_label.setPixmap(pixmap)
-
             # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
             # layout.addWidget(self.ui.lattice_widget, alignment=Qt.AlignmentFlag.AlignCenter)
             # self.ui.widget_2.setLayout(layout)
-
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 
