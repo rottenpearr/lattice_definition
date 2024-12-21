@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Main_Window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.0
+## Created by: Qt User Interface Compiler version 6.7.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -213,9 +213,34 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
-        self.verticalLayout.setStretch(0, 1)
-        self.verticalLayout.setStretch(1, 2)
-        self.verticalLayout.setStretch(2, 6)
+        self.verticalLayout_6 = QVBoxLayout()
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setStyleSheet(u"QPushButton {\n"
+"background-color: #73a36a;\n"
+"color: #000000;\n"
+"border-radius: 5px;\n"
+"padding: 8px;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"background-color: #96d389;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"background-color: #69a84c;\n"
+"}")
+        icon2 = QIcon()
+        icon2.addFile(u":/icons/download.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.pushButton.setIcon(icon2)
+        self.pushButton.setIconSize(QSize(24, 24))
+
+        self.verticalLayout_6.addWidget(self.pushButton)
+
+
+        self.verticalLayout.addLayout(self.verticalLayout_6)
+
 
         self.horizontalLayout.addLayout(self.verticalLayout)
 
@@ -307,9 +332,9 @@ class Ui_MainWindow(object):
 "QPushButton:pressed {\n"
 "background-color: #69a84c;\n"
 "}")
-        icon2 = QIcon()
-        icon2.addFile(u":/icons/check.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.button_start.setIcon(icon2)
+        icon3 = QIcon()
+        icon3.addFile(u":/icons/check.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.button_start.setIcon(icon3)
         self.button_start.setIconSize(QSize(24, 24))
 
         self.horizontalLayout_4.addWidget(self.button_start)
@@ -330,9 +355,9 @@ class Ui_MainWindow(object):
 "QPushButton:pressed {\n"
 "background-color: #69a84c;\n"
 "}")
-        icon3 = QIcon()
-        icon3.addFile(u":/icons/refresh.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.button_restart.setIcon(icon3)
+        icon4 = QIcon()
+        icon4.addFile(u":/icons/refresh.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.button_restart.setIcon(icon4)
         self.button_restart.setIconSize(QSize(24, 24))
 
         self.horizontalLayout_4.addWidget(self.button_restart)
@@ -360,6 +385,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"\u041e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0442\u0438\u043f\u0430 \u043a\u0440\u0438\u0441\u0442\u0430\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u043e\u0439 \u0440\u0435\u0448\u0435\u0442\u043a\u0438", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u0422\u0418\u041f \u0420\u0415\u0428\u0415\u0422\u041a\u0418", None))
         self.button_info.setText("")
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0410\u0413\u0420\u0423\u0417\u0418\u0422\u042c \u0418\u0417 \u0424\u0410\u0419\u041b\u0410", None))
         self.lattice_widget.setText("")
         self.info_lattice.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
