@@ -146,10 +146,13 @@ class MainWindow(QMainWindow):
         self.ui.ions_list.itemClicked.connect(self.open_input_dialog)
         self.ui.button_start.clicked.connect(self.check_all_values)
 
+        self.permitted_symbols = [str(i) for i in range(10)]
+        self.ui.combo_box_ions.currentTextChanged.connect(self.check_ion_amount)
+
         self.ui.widget_2.hide()
         self.ui.button_save.hide()
 
-        self.temp_ions_data = {}  # Временный словарь для всех данных
+        self.ions_data = {}  # Словарь для всех данных
 
     def handle_custom_option(self, index):
         # Если выбран элемент "Впишите свой вариант"
@@ -169,10 +172,10 @@ class MainWindow(QMainWindow):
 
         num_items = int(num_items_text)
 
-        # Перезаполняем ions_list данными из self.temp_ions_data
+        # Перезаполняем ions_list данными из self.ions_data
         for i in range(1, num_items + 1):
             item = QListWidgetItem(f"Ион {i}")
-            saved_data = self.temp_ions_data.get(i)  # Проверяем, есть ли данные для этого иона
+            saved_data = self.ions_data.get(i)  # Проверяем, есть ли данные для этого иона
             if saved_data:
                 summary = f"x: {saved_data[0]}, y: {saved_data[1]}, z: {saved_data[2]}"
                 item.setText(f"Ион {i} - {summary}")
@@ -181,7 +184,7 @@ class MainWindow(QMainWindow):
                 item.setData(Qt.UserRole, (None, None, None))  # Устанавливаем пустые данные
             self.ui.ions_list.addItem(item)
 
-        # print("Обновленные данные ионов:", self.temp_ions_data)  # Проверка данных в консоли
+        # print("Обновленные данные ионов:", self.ions_data)  # Проверка данных в консоли
 
     def open_input_dialog(self, item):
         ion_number = int(item.text().split()[1])
@@ -199,11 +202,21 @@ class MainWindow(QMainWindow):
                 item.setData(Qt.UserRole, (x, y, z))  # Сохраняем данные в item
 
                 # Сохраняем данные во временный словарь
-                self.temp_ions_data[ion_number] = (x, y, z)
+                self.ions_data[ion_number] = (x, y, z)
 
-                # print("Текущие данные ионов:", self.temp_ions_data)  # Выводим словарь для отладки
+                # print("Текущие данные ионов:", self.ions_data)  # Выводим словарь для отладки
             else:
                 QMessageBox.warning(self, "Ошибка", "Все поля x, y, z должны быть заполнены!")
+
+    def check_ion_amount(self):
+        text = self.ui.combo_box_ions.currentText()
+        new_next = ""
+        for symbol in text:
+            if symbol in self.permitted_symbols:
+                new_next += symbol
+        if int(new_next) > 1000:
+            new_next = "1000"
+        self.ui.combo_box_ions.setCurrentText(new_next)
 
     def check_all_values(self):
         # Проверка всех ионов на заполненность координат
@@ -217,7 +230,7 @@ class MainWindow(QMainWindow):
                 all_filled = False
                 break  # Прерываем цикл при первом незаполненном ионе
 
-        coords = get_similar_xyz_from_db(self.temp_ions_data)
+        coords = get_similar_xyz_from_db(self.ions_data)
         query_data = check_coords(coords)
 
         if not query_data:
@@ -277,9 +290,29 @@ class InputDialog(QDialog):
         self.ui = Ui_Dialog()  # Инициализация интерфейса окна ввода координат
         self.ui.setupUi(self)
 
+        self.permitted_symbols = [str(i) for i in range(10)]
+        self.permitted_symbols.append(".")
+        self.ui.lineEdit_X.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_X))
+        self.ui.lineEdit_Y.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_Y))
+        self.ui.lineEdit_Z.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_Z))
+
         # Подключаем кнопки "ОК" и "Отмена" к методам accept() и reject()
         self.ui.pushButton_2.clicked.connect(self.accept)
         self.ui.pushButton.clicked.connect(self.reject)
+
+    def check_coordinate(self, item):
+        text = item.text()
+        new_next = ""
+        for symbol in text:
+            if symbol in self.permitted_symbols:
+                new_next += symbol
+        if new_next == "":
+            new_next = ""
+        elif float(new_next) > 1.0:
+            new_next = "1.0"
+        elif float(new_next) < 0.0:
+            new_next = "0.0"
+        item.setText(new_next)
 
     def get_values(self):
         # Получаем значения из QLineEdit полей
