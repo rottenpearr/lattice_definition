@@ -262,6 +262,7 @@ class Ui_MainWindow(object):
 "border: none;\n"
 "border-radius: none;\n"
 "}")
+        self.lattice_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.horizontalLayout_5.addWidget(self.lattice_widget)
 
