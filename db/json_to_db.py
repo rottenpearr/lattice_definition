@@ -113,7 +113,7 @@ try:
         file.write("\n")
         file.write(str(substance_id))
 
-    print("Данные успешно добавлены в базу данных.")
+    print("Данные из json успешно добавлены в базу данных.")
 except Exception as e:
     conn.rollback()
     print(f"Произошла ошибка: {e}")

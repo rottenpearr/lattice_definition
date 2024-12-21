@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS ions_library (
     atom_site_fract_x DECIMAL(10, 6),
     atom_site_fract_y DECIMAL(10, 6),
     atom_site_fract_z DECIMAL(10, 6),
+    atom_site_normalized_x DECIMAL(10, 6),
+    atom_site_normalized_y DECIMAL(10, 6),
+    atom_site_normalized_z DECIMAL(10, 6),
     FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE,
     FOREIGN KEY (substance_id) REFERENCES substances(id) ON DELETE CASCADE
 );

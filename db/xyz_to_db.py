@@ -1,6 +1,7 @@
 import mysql.connector
 import sys
 from config import db_config
+from coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 
 
 def parse_xyz(xyz_file_path):
@@ -20,14 +21,16 @@ def parse_xyz(xyz_file_path):
     return data
 
 
-def insert_data(cursor, data, lattice_type_id, substance_id):
-    for atom_data in data:
+def insert_data(cursor, data, normalized_data, lattice_type_id, substance_id):
+    for i in range(len(data)):
         cursor.execute(
             """
-            INSERT INTO ions_library (lattice_type_id, substance_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO ions_library (lattice_type_id, substance_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z,
+            atom_site_normalized_x, atom_site_normalized_y, atom_site_normalized_z)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (int(lattice_type_id), substance_id, atom_data[1], atom_data[2], atom_data[3])
+            (int(lattice_type_id), substance_id, data[i][1], data[i][2], data[i][3],
+             normalized_data[i][1], normalized_data[i][2], normalized_data[i][3])
         )
 
 conn = mysql.connector.connect(**db_config)
@@ -36,11 +39,13 @@ cursor = conn.cursor()
 try:
     xyz_file_path = sys.argv[1]
     data = parse_xyz(xyz_file_path)
+    shifted_data = shift_coordinates(data)
+    normalized_data = normalize_coordinates(shifted_data)
     lattice_type_id = sys.argv[2]
     substance_id = sys.argv[3]
-    insert_data(cursor, data, lattice_type_id, substance_id)
+    insert_data(cursor, data, normalized_data, lattice_type_id, substance_id)
     conn.commit()
-    print("Данные успешно добавлены в базу данных.")
+    print("Данные из xyz успешно добавлены в базу данных.")
 except Exception as e:
     conn.rollback()
     print(f"Произошла ошибка: {e}")
