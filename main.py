@@ -133,7 +133,14 @@ class MainWindow(QMainWindow):
         self.ui.combo_box_ions.setEditable(True)
         self.ui.combo_box_ions.lineEdit().setPlaceholderText("Выберите количество ионов")
         self.ui.combo_box_ions.addItems([str(i) for i in range(1, 11)])
-        self.ui.combo_box_ions.setCurrentIndex(-1)
+
+        # Добавляем строку "Впишите свой вариант"
+        self.ui.combo_box_ions.addItem("Впишите свой вариант")
+
+        # Подключаем обработчик для выбора
+        self.ui.combo_box_ions.currentIndexChanged.connect(self.handle_custom_option)
+
+        self.ui.combo_box_ions.setCurrentIndex(-1)  # Оставляем пустым изначально
 
         self.ui.combo_box_ions.currentTextChanged.connect(self.populate_list)
         self.ui.ions_list.itemClicked.connect(self.open_input_dialog)
@@ -143,6 +150,15 @@ class MainWindow(QMainWindow):
         self.ui.button_save.hide()
 
         self.temp_ions_data = {}  # Временный словарь для всех данных
+
+    def handle_custom_option(self, index):
+        # Если выбран элемент "Впишите свой вариант"
+        if index == self.ui.combo_box_ions.count() - 1:
+            # Возвращаем пользователя к редактируемой строке
+            self.ui.combo_box_ions.setCurrentIndex(-1)
+            self.ui.combo_box_ions.lineEdit().clear()
+            self.ui.combo_box_ions.lineEdit().setFocus()
+
 
     def populate_list(self):
         self.ui.ions_list.clear()  # Очищаем список
