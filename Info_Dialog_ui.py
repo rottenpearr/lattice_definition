@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
     QPushButton, QSizePolicy, QTextEdit, QVBoxLayout,
     QWidget)
 
-class Ui_Dialog(object):
+class Ui_Dialog_2(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")

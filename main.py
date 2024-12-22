@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
-from Info_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна информации
+from Info_Dialog_ui import Ui_Dialog_2      # Интерфейс диалогового окна информации
 from db.config import db_config
 from db.ions_query import get_similar_xyz_from_db, check_coords
 from collections import Counter
@@ -274,7 +274,7 @@ class InputDialog(QDialog):
 class InfoDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.ui = Ui_Dialog()
+        self.ui = Ui_Dialog_2()
         self.ui.setupUi(self)
 
         self.ui.pushButton.clicked.connect(self.close_dialog)
