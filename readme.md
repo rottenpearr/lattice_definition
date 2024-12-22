@@ -110,7 +110,7 @@ for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.
 - [x] ~~Пикчу по центру~~
 - [x] ~~Валидация csv-файлов~~
 - [x] ~~поправить requirements~~
-- [ ] Финализировать readme.
+- [x] Финализировать readme.
 
 ### Что? Вопросы
 
