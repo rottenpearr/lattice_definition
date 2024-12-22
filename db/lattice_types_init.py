@@ -1,6 +1,8 @@
-import mysql.connector
-from config import db_config
 from pathlib import Path
+
+import mysql.connector
+
+from config import db_config
 
 sql_file_path = Path("lattice_types_init.sql")
 

@@ -1,6 +1,7 @@
+from datetime import datetime
+
 import docx
 from docx.shared import Inches
-from datetime import datetime
 
 
 def save_docx(text, img_path):

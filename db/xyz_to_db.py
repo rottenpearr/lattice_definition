@@ -1,5 +1,7 @@
-import mysql.connector
 import sys
+
+import mysql.connector
+
 from config import db_config
 from coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 

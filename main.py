@@ -1,24 +1,17 @@
+import csv
 import sys
 from pathlib import Path
 
-import mysql.connector
-from PySide6 import QtWidgets
-from PySide6.QtGui import QPixmap
-from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox, QWidget, QVBoxLayout, \
-    QFrame, QFileDialog
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox, QFileDialog
 
+from Info_Dialog_ui import Ui_Dialog_2  # Интерфейс диалогового окна информации
+from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
-from Info_Dialog_ui import Ui_Dialog_2      # Интерфейс диалогового окна информации
-from db.config import db_config
-from db.ions_query import get_similar_xyz_from_db, check_coords
-from collections import Counter
-import csv
-from generate_report import save_docx
 from db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from db.ions_query import get_similar_xyz_from_db, check_coords
+from generate_report import save_docx
 
 
 # Инициализация главного окна

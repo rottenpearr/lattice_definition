@@ -1,9 +1,8 @@
 import json
 import sys
+from pathlib import Path
 
 import mysql.connector
-from pathlib import Path
-from glob import glob
 
 from config import db_config
 
