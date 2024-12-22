@@ -12,6 +12,7 @@ from PySide6.QtCore import Qt
 
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from Ion_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна для ввода координат
+from Info_Dialog_ui import Ui_Dialog       # Интерфейс диалогового окна информации
 from db.config import db_config
 from db.ions_query import get_similar_xyz_from_db, check_coords
 from collections import Counter
@@ -55,6 +56,14 @@ class MainWindow(QMainWindow):
 
         self.image_name = ""
         self.ions_data = {}  # Словарь для всех данных
+
+        # Подключение кнопки ИНФО
+        self.ui.button_info.clicked.connect(self.show_info_dialog)
+
+    def show_info_dialog(self):
+        # Создаем и отображаем окно InfoDialog
+        dialog = InfoDialog(self)
+        dialog.exec()
 
     def handle_custom_option(self, index):
         # Если выбран элемент "Впишите свой вариант"
@@ -198,12 +207,11 @@ class MainWindow(QMainWindow):
             )
             png_label = self.ui.lattice_widget
             image_path = str(self.image_name)
-            pixmap = QPixmap(image_path)
-            pixmap = pixmap.scaled(
-                png_label.size(),
-                aspectMode=Qt.AspectRatioMode.KeepAspectRatio
-            )
-            png_label.setPixmap(pixmap)
+            self.pixmap = QPixmap(image_path)
+            pixmap_size = self.ui.widget_2.size()
+
+            scaled_pixmap = self.pixmap.scaled(pixmap_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            png_label.setPixmap(scaled_pixmap)
             # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
             # layout.addWidget(self.ui.lattice_widget, alignment=Qt.AlignmentFlag.AlignCenter)
             # self.ui.widget_2.setLayout(layout)
@@ -261,6 +269,18 @@ class InputDialog(QDialog):
         self.ui.lineEdit_X.setText(x)
         self.ui.lineEdit_Y.setText(y)
         self.ui.lineEdit_Z.setText(z)
+
+
+class InfoDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.ui.pushButton.clicked.connect(self.close_dialog)
+
+    def close_dialog(self):
+        self.accept()
 
 
 if __name__ == "__main__":
