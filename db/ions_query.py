@@ -12,9 +12,11 @@ def get_similar_xyz_from_db(coordinates):
             SELECT * FROM ions_library
             WHERE atom_site_normalized_x = %s AND atom_site_normalized_y = %s AND atom_site_normalized_z = %s
         """
-        for x, y, z in list(coordinates.values()):
+        for _, x, y, z in list(coordinates.values()):
             cursor.execute(query, (x, y, z))
-            results.append(cursor.fetchall())
+            res = cursor.fetchall()
+            for row in res:
+                results.append(row)
     except Exception as e:
         conn.rollback()
         print(f"Произошла ошибка: {e}")
@@ -25,7 +27,6 @@ def get_similar_xyz_from_db(coordinates):
 
 
 def check_coords(ions, ion_amount):
-    ions = ions[0]
     lattice_list = [item[1] for item in ions]
     substance_list = [item[2] for item in ions]
 

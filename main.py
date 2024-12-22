@@ -18,6 +18,7 @@ from db.ions_query import get_similar_xyz_from_db, check_coords
 from collections import Counter
 import csv
 from generate_report import save_docx
+from db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 
 
 # Инициализация главного окна
@@ -42,9 +43,6 @@ class MainWindow(QMainWindow):
         self.ui.combo_box_ions.currentTextChanged.connect(self.populate_list)
         self.ui.ions_list.itemClicked.connect(self.open_input_dialog)
         self.ui.button_start.clicked.connect(self.check_all_values)
-
-        self.permitted_symbols = [str(i) for i in range(10)]
-        self.permitted_symbols.append(".")
 
         self.ui.pushButton.clicked.connect(self.open_csv_file)
 
@@ -107,12 +105,13 @@ class MainWindow(QMainWindow):
                 self.ions_data = {}
                 id = 1
                 for row in csv_data:
-                    xyz = row[0] + row[1] + row[2]
-                    for elem in xyz:
-                        if not elem in self.permitted_symbols:
-                            QMessageBox.warning(self, "Ошибка", f"Недопустимый формат записи! Символ: {elem}")
-                            self.ions_data = {}
-                            return
+                    try:
+                        x, y, z = row[0], row[1], row[2]
+                        _, _, _ = float(x), float(y), float(z)
+                    except Exception:
+                        QMessageBox.warning(self, "Ошибка", f"Недопустимый формат записи!")
+                        self.ions_data = {}
+                        return
                     self.ions_data[id] = row
                     id += 1
                 self.ui.combo_box_ions.setEditText(str(count))
@@ -129,6 +128,11 @@ class MainWindow(QMainWindow):
         if dialog.exec() == QDialog.Accepted:
             x, y, z = dialog.get_values()
             if x and y and z:
+                try:
+                    _, _, _ = float(x), float(y), float(z)
+                except ValueError:
+                    QMessageBox.warning(self, "Ошибка", "Введенные данные некорректны!")
+                    return
                 summary = f"x: {x}, y: {y}, z: {z}"
                 item.setText(f"Ион {ion_number} - {summary}")
                 item.setData(Qt.UserRole, (x, y, z))  # Сохраняем данные в item
@@ -140,7 +144,7 @@ class MainWindow(QMainWindow):
         text = self.ui.combo_box_ions.currentText()
         new_next = ""
         for symbol in text:
-            if symbol in self.permitted_symbols:
+            if symbol.isdigit():
                 new_next += symbol
         try:
             if int(new_next) > 1000:
@@ -161,7 +165,16 @@ class MainWindow(QMainWindow):
                 all_filled = False
                 break  # Прерываем цикл при первом незаполненном ионе
 
-        coords = get_similar_xyz_from_db(self.ions_data)
+        data = [["ion", float(a), float(b), float(c)] for a, b, c in self.ions_data.values()]
+        data_dict = {}
+        for i in range(len(data)):
+            data_dict[i + 1] = data[i]
+        shifted_data = shift_coordinates(data_dict.values())
+        normalized_data = normalize_coordinates(shifted_data)
+        data_dict = {}
+        for i in range(len(normalized_data)):
+            data_dict[i + 1] = normalized_data[i]
+        coords = get_similar_xyz_from_db(data_dict)
         query_data = check_coords(coords, int(self.ui.combo_box_ions.currentText()))
 
         if not query_data:
@@ -236,8 +249,6 @@ class InputDialog(QDialog):
         self.ui = Ui_Dialog()  # Инициализация интерфейса окна ввода координат
         self.ui.setupUi(self)
 
-        self.permitted_symbols = [str(i) for i in range(10)]
-        self.permitted_symbols.append(".")
         self.ui.lineEdit_X.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_X))
         self.ui.lineEdit_Y.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_Y))
         self.ui.lineEdit_Z.textEdited.connect(lambda: self.check_coordinate(self.ui.lineEdit_Z))
@@ -249,15 +260,19 @@ class InputDialog(QDialog):
     def check_coordinate(self, item):
         text = item.text()
         new_next = ""
-        for symbol in text:
-            if symbol in self.permitted_symbols:
+        dot = 1
+        for i in range(len(text)):
+            symbol = text[i]
+            if not symbol.isdigit():
+                if symbol == "-":
+                    if i == 0:
+                        new_next += symbol
+                elif symbol == ".":
+                    if dot == 1:
+                        new_next += symbol
+                        dot -= 1
+            else:
                 new_next += symbol
-        if new_next == "":
-            new_next = ""
-        elif float(new_next) > 1.0:
-            new_next = "1.0"
-        elif float(new_next) < 0.0:
-            new_next = "0.0"
         item.setText(new_next)
 
     def get_values(self):
