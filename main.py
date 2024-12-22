@@ -181,18 +181,18 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Поиск не дал результатов", "Попробуйте ввести другие значения!")
             return
 
-        result_lattice_types = query_data[0][0]
-        result_substances = query_data[0][1]
+        result_lattice_types = sorted(query_data[0][0], key=lambda x: -x[3])
+        result_substances = sorted(query_data[0][1], key=lambda x: -x[2])
         result_possible_lattice = query_data[1][0]
         result_possible_lattice_probability = query_data[1][1]
         result_possible_substance = query_data[2][0]
         result_possible_substance_probability = query_data[2][1]
 
-        result_lattice_types = " ".join(list(str(item[1]) + " " + str(item[3]) + "%;" for item in result_lattice_types))
-        result_substances = " ".join(list(str(item[1]) + " " + str(item[2]) + "%;" for item in result_substances))
-        result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"({result_possible_lattice_probability}%)"
+        result_lattice_types = " ".join(list(str(item[1]) + " " + f"{item[3]:.2f}%;" for item in result_lattice_types))
+        result_substances = " ".join(list(str(item[1]) + " " + f"{item[2]:.2f}%;" for item in result_substances))
+        result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"{result_possible_lattice_probability:.2f}%;"
         result_possible_lattice_description = str(result_possible_lattice[3])
-        result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability}%)"
+        result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability:.2f}%)"
         result_possible_substance_description = (f"Длина ребра ячейки по оси a = {str(result_possible_substance[2])}; "
                                                  f"Длина ребра ячейки по оси b = {str(result_possible_substance[3])}; "
                                                  f"Длина ребра ячейки по оси c = {str(result_possible_substance[4])}; "
@@ -222,12 +222,8 @@ class MainWindow(QMainWindow):
             image_path = str(self.image_name)
             self.pixmap = QPixmap(image_path)
             pixmap_size = self.ui.widget_2.size()
-
             scaled_pixmap = self.pixmap.scaled(pixmap_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             png_label.setPixmap(scaled_pixmap)
-            # layout = QtWidgets.QVBoxLayout(self.ui.widget_2)
-            # layout.addWidget(self.ui.lattice_widget, alignment=Qt.AlignmentFlag.AlignCenter)
-            # self.ui.widget_2.setLayout(layout)
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 
@@ -239,7 +235,8 @@ class MainWindow(QMainWindow):
         self.ui.lattice_widget.clear()
 
     def save(self):
-        save_docx(self.ui.info_lattice.toPlainText(), self.image_name)
+        filename = save_docx(self.ui.info_lattice.toPlainText(), self.image_name)
+        QMessageBox.information(self, "Успех", f"Документ сохранен как {filename} в папку 'reports'.")
 
 
 # Инициализация окна для ввода координат

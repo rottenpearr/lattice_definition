@@ -163,3 +163,5 @@ cython_debug/
 
 # Project additional
 reports/*
+.idea/lattice_definition.iml
+.idea/misc.xml

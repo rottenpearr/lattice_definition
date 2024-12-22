@@ -18,4 +18,4 @@ def save_docx(text, img_path):
 
     doc.save(f"reports/Отчет {date}.docx")
 
-    print(f"Документ сохранен как 'Отчет {date}.docx' в папку 'reports'.")
+    return f"Отчет {date}.docx"
