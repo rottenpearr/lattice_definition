@@ -211,12 +211,12 @@ class MainWindow(QMainWindow):
             self.ui.widget_2.show()
             self.ui.button_save.show()
             self.ui.info_lattice.setText(
-                f"Подходящие типы кристаллической решетки: {result_lattice_types}\n"
-                f"Наиболее вероятный тип: {result_possible_lattice_name}\n"
-                f"Описание типа: {result_possible_lattice_description}\n"
-                f"Возможное вещество: {result_substances}\n"
-                f"Наиболее вероятное вещество: {result_possible_substance_name}\n"
-                f"Описание вещества: {result_possible_substance_description}"
+                f"<b>Подходящие типы кристаллической решетки:</b> {result_lattice_types}<br>"
+                f"<b>Наиболее вероятный тип:</b> {result_possible_lattice_name}<br>"
+                f"<b>Описание типа:</b> {result_possible_lattice_description}<br>"
+                f"<b>Возможное вещество:</b> {result_substances}<br>"
+                f"<b>Наиболее вероятное вещество:</b> {result_possible_substance_name}<br>"
+                f"<b>Описание вещества:</b> {result_possible_substance_description}"
             )
             png_label = self.ui.lattice_widget
             image_path = str(self.image_name)
