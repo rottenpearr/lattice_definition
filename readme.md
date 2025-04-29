@@ -88,6 +88,13 @@ cif_filter *.cif --json-output > *.json
 for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.json"; done
 ```
 
+3. ui to py
+
+```bash
+pyside6-uic ui/Info_Dialog.ui -o Info_Dialog_ui.py
+pyside6-rcc src/resources.qrc -o resources_rc.py
+```
+
 ## Задачи
 
 ### Текущие
@@ -136,6 +143,8 @@ for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.
 - [ ] Переименовать некоторые поля в базе данных на более корректные (к примеру согласовать числа для существительных lattice_type -> lattice_types)
 - [ ] Переименовать все элементы пользовательского интерфейса на более понятные.
 - [ ] Валидация того, что новая строка в базе данных ранее отсутствует (без учета поля id). Валидация единичности экземпляров.
+- [ ] ионы в ions_library не указан что за тип иона из таблицы ions, ex Na или Cl? неизвестно
+- [ ] расшифровка есть а аббревиатура вещеста нет в субстансес табличке
 
 ## Информация о VESTA:
 
