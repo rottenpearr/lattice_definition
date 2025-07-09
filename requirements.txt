@@ -1,3 +1,10 @@
 python-docx~=1.1.2
 mysql-connector-python~=9.1.0
 PySide6~=6.7.0
+pymatgen~=2024.8.9
+pandas~=2.3.1
+sklearn~=0.0
+scikit-learn~=1.6.1
+hdbscan~=0.8.40
+matplotlib~=3.9.4
+umap-learn~=0.5.9.post2
