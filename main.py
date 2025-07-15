@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.ui.button_restart.clicked.connect(self.restart)
         self.ui.button_save.clicked.connect(self.save)
 
-        self.ui.widget_2.hide()
+        # self.ui.widget_2.hide()
         self.ui.button_save.hide()
 
         self.image_name = ""
@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
 
         if all_filled:
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
-            self.ui.widget_2.show()
+            # self.ui.widget_2.show()
             self.ui.button_save.show()
             self.ui.info_lattice.setText(
                 f"<b>Подходящие типы кристаллической решетки:</b> {result_lattice_types}<br>"
@@ -214,9 +214,9 @@ class MainWindow(QMainWindow):
             png_label = self.ui.lattice_widget
             image_path = str(self.image_name)
             self.pixmap = QPixmap(image_path)
-            pixmap_size = self.ui.widget_2.size()
-            scaled_pixmap = self.pixmap.scaled(pixmap_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            png_label.setPixmap(scaled_pixmap)
+            # pixmap_size = self.ui.widget_2.size()
+            # scaled_pixmap = self.pixmap.scaled(pixmap_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # png_label.setPixmap(scaled_pixmap)
         else:
             QMessageBox.warning(self, "Ошибка", "Заполните координаты для всех ионов!")
 

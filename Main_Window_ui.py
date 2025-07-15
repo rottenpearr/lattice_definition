@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Main_Window.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.3
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -94,7 +94,7 @@ class Ui_MainWindow(object):
         font.setPointSize(14)
         MainWindow.setFont(font)
         icon = QIcon()
-        icon.addFile(u":/icons/logo.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon.addFile(u":/icons/logo.svg", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -147,7 +147,7 @@ class Ui_MainWindow(object):
         self.button_info.setObjectName(u"button_info")
         self.button_info.setFont(font)
         icon1 = QIcon()
-        icon1.addFile(u":/icons/help.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon1.addFile(u":/icons/help.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.button_info.setIcon(icon1)
         self.button_info.setIconSize(QSize(24, 24))
 
@@ -232,7 +232,7 @@ class Ui_MainWindow(object):
 "background-color: #69a84c;\n"
 "}")
         icon2 = QIcon()
-        icon2.addFile(u":/icons/download.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon2.addFile(u":/icons/download.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.pushButton.setIcon(icon2)
         self.pushButton.setIconSize(QSize(24, 24))
 
@@ -246,32 +246,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.verticalLayout_3 = QVBoxLayout()
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.widget_2 = QWidget(self.centralwidget)
-        self.widget_2.setObjectName(u"widget_2")
-        self.widget_2.setStyleSheet(u"QWidget {\n"
-"border: 2px solid #69a84c;\n"
-"border-radius: 15px;\n"
-"}")
-        self.horizontalLayout_5 = QHBoxLayout(self.widget_2)
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.lattice_widget = QLabel(self.widget_2)
-        self.lattice_widget.setObjectName(u"lattice_widget")
-        self.lattice_widget.setStyleSheet(u"QWidget {\n"
-"border: none;\n"
-"border-radius: none;\n"
-"}")
-        self.lattice_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.horizontalLayout_5.addWidget(self.lattice_widget)
-
-
-        self.verticalLayout_3.addWidget(self.widget_2)
-
-
-        self.verticalLayout_2.addLayout(self.verticalLayout_3)
-
         self.verticalLayout_4 = QVBoxLayout()
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.info_lattice = QTextEdit(self.centralwidget)
@@ -334,7 +308,7 @@ class Ui_MainWindow(object):
 "background-color: #69a84c;\n"
 "}")
         icon3 = QIcon()
-        icon3.addFile(u":/icons/check.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon3.addFile(u":/icons/check.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.button_start.setIcon(icon3)
         self.button_start.setIconSize(QSize(24, 24))
 
@@ -357,7 +331,7 @@ class Ui_MainWindow(object):
 "background-color: #69a84c;\n"
 "}")
         icon4 = QIcon()
-        icon4.addFile(u":/icons/refresh.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon4.addFile(u":/icons/refresh.svg", QSize(), QIcon.Normal, QIcon.Off)
         self.button_restart.setIcon(icon4)
         self.button_restart.setIconSize(QSize(24, 24))
 
@@ -368,8 +342,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)
 
-        self.verticalLayout_2.setStretch(0, 2)
-        self.verticalLayout_2.setStretch(1, 1)
+        self.verticalLayout_2.setStretch(0, 1)
 
         self.horizontalLayout.addLayout(self.verticalLayout_2)
 
@@ -387,7 +360,6 @@ class Ui_MainWindow(object):
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u0422\u0418\u041f \u0420\u0415\u0428\u0415\u0422\u041a\u0418", None))
         self.button_info.setText("")
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0410\u0413\u0420\u0423\u0417\u0418\u0422\u042c \u0418\u0417 \u0424\u0410\u0419\u041b\u0410", None))
-        self.lattice_widget.setText("")
         self.info_lattice.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"

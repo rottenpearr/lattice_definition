@@ -613,39 +613,7 @@ background-color: #69a84c;
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,1,0,0">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QWidget" name="widget_2" native="true">
-          <property name="styleSheet">
-           <string notr="true">QWidget {
-border: 2px solid #69a84c;
-border-radius: 15px;
-}</string>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <item>
-            <widget class="QLabel" name="lattice_widget">
-             <property name="styleSheet">
-              <string notr="true">QWidget {
-border: none;
-border-radius: none;
-}</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </item>
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
