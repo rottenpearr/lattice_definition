@@ -45,7 +45,7 @@ def check_coords(ions, ion_amount):
         for id in substance_list:
             cursor.execute(query, [id])
             rows_amount = len(cursor.fetchall())
-            if rows_amount >= ion_amount:  # Если меньше атомов - не подходит
+            if rows_amount == ion_amount:  # Проверяем, что кол-во ионов строго совпадает с введенным
                 new_lattice_list.append(lattice_list[i])
                 new_substance_list.append(substance_list[i])
             i += 1

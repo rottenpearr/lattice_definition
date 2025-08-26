@@ -167,6 +167,7 @@ class MainWindow(QMainWindow):
         data_dict = {}
         for i in range(len(normalized_data)):
             data_dict[i + 1] = normalized_data[i]
+        # TODO: здесь поиск добавить векторов функцию вызов
         coords = get_similar_xyz_from_db(data_dict)
         query_data = check_coords(coords, int(self.ui.combo_box_ions.currentText()))
 
