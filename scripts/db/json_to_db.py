@@ -6,7 +6,7 @@ import mysql.connector
 
 from config import db_config
 
-json_files_path = Path("../data/json")
+json_files_path = Path("../../data/json")
 
 def insert_data(cursor, data):
     global lattice_type_id, substance_id

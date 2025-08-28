@@ -2,8 +2,8 @@
 import numpy as np
 from pathlib import Path
 
-from db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
-from db.xyz_to_db import parse_xyz
+from scripts.db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.db.xyz_to_db import parse_xyz
 
 
 def get_vectors(atoms):

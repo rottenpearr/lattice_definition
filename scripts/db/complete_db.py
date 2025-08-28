@@ -15,7 +15,7 @@ def main():
     subprocess.run(["python", Path("lattice_types_init.py")])
 
     print("Запись данных из всех файлов в базу данных:")
-    files_path = Path("../data/json")
+    files_path = Path("../../data/json")
     files = glob(str(files_path / "*.json"))
     for file_path in files:
         filename = Path(file_path).stem
