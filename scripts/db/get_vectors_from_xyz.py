@@ -2,7 +2,7 @@
 import numpy as np
 from pathlib import Path
 
-from scripts.db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 from scripts.db.xyz_to_db import parse_xyz
 
 

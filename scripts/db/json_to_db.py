@@ -4,7 +4,7 @@ from pathlib import Path
 
 import mysql.connector
 
-from config import db_config
+from scripts.config import db_config
 
 json_files_path = Path("../../data/json")
 

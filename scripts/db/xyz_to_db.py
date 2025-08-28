@@ -2,8 +2,8 @@ import sys
 
 import mysql.connector
 
-from config import db_config
-from coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.config import db_config
+from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 
 
 def parse_xyz(xyz_file_path):

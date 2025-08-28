@@ -2,7 +2,7 @@ from collections import Counter
 
 import mysql.connector
 
-from .config import db_config
+from scripts.config import db_config
 
 
 def get_similar_xyz_from_db(coordinates):

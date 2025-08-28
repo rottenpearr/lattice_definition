@@ -4,12 +4,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from collections import Counter
 
 import mysql.connector
 
-from config import db_config
-from scripts.db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.config import db_config
+from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 from scripts.operations.lattice_microoperations import get_lattice_vectors2
 
 
@@ -53,7 +52,7 @@ def create_all_spectrum_plots():
         for id, vector in enumerate(vectors):
             plot_spectra(vector, substance_id=substance_id, vector_id=id)
 
-def plot_spectra(data, substance_id, vector_id, cmap="plasma", background="#1e1e1e", outdir="../../spectrum"):
+def plot_spectra(data, substance_id, vector_id, cmap="plasma", background="#1e1e1e", outdir="../../data/spectrum"):
     """
     Строит спектры (гистограммы) для набора расстояний между ионами.
 

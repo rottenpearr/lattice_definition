@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialo
 from Info_Dialog_ui import Ui_Dialog_2  # Интерфейс диалогового окна информации
 from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from scripts.db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
 from scripts.db.ions_query import get_similar_xyz_from_db, check_coords
 from generate_report import save_docx
 
