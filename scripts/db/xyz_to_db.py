@@ -35,22 +35,24 @@ def insert_data(cursor, data, normalized_data, lattice_type_id, substance_id):
              normalized_data[i][1], normalized_data[i][2], normalized_data[i][3])
         )
 
-conn = mysql.connector.connect(**db_config)
-cursor = conn.cursor()
 
-try:
-    xyz_file_path = sys.argv[1]
-    data = parse_xyz(xyz_file_path)
-    shifted_data = shift_coordinates(data)
-    normalized_data = normalize_coordinates(shifted_data)
-    lattice_type_id = sys.argv[2]
-    substance_id = sys.argv[3]
-    insert_data(cursor, data, normalized_data, lattice_type_id, substance_id)
-    conn.commit()
-    print("Данные из xyz успешно добавлены в базу данных.")
-except Exception as e:
-    conn.rollback()
-    print(f"Произошла ошибка: {e}")
-finally:
-    cursor.close()
-    conn.close()
+if __name__ == '__main__':
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        xyz_file_path = sys.argv[1]
+        data = parse_xyz(xyz_file_path)
+        shifted_data = shift_coordinates(data)
+        normalized_data = normalize_coordinates(shifted_data)
+        lattice_type_id = sys.argv[2]
+        substance_id = sys.argv[3]
+        insert_data(cursor, data, normalized_data, lattice_type_id, substance_id)
+        conn.commit()
+        print("Данные из xyz успешно добавлены в базу данных.")
+    except Exception as e:
+        conn.rollback()
+        print(f"Произошла ошибка: {e}")
+    finally:
+        cursor.close()
+        conn.close()
