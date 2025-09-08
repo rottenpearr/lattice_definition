@@ -26,4 +26,4 @@ def write_nacl_xyz_exact(N=7, a=5.6402, filename="NaCl.xyz", extended=True):
 
 
 if __name__ == "__main__":
-    write_nacl_xyz_exact(N=7, a=5.6402, filename="../data/NaCl/NaCl_7x7x7.xyz", extended=True)
+    write_nacl_xyz_exact(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7.xyz", extended=True)
