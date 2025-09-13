@@ -1,4 +1,5 @@
 import os
+from collections import Counter
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -49,10 +50,12 @@ def create_all_spectrum_plots():
         normalized_data = normalize_coordinates(shifted_data)
 
         vectors = get_lattice_vectors2(normalized_data)
-        for id, vector in enumerate(vectors):
-            plot_spectra(vector, substance_id=substance_id, vector_id=id)
+        for id, ion in enumerate(vectors.keys()):
+            ion_coords = [float(elem) for elem in ion.split(";")]
+            plot_spectra(data=dict(Counter(vectors[ion])), ion=ion_coords, substance_id=substance_id, vector_id=id,
+                         cmap="plasma", background="#20232a")
 
-def plot_spectra(data, substance_id, vector_id, cmap="plasma", background="#1e1e1e", outdir="../../data/spectrum"):
+def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="#1e1e1e", outdir="../../data/spectrum"):
     """
     Строит спектры (гистограммы) для набора расстояний между ионами.
 
@@ -68,24 +71,40 @@ def plot_spectra(data, substance_id, vector_id, cmap="plasma", background="#1e1e
     sns.set_style("whitegrid", {'axes.facecolor': background})
     plt.style.use("dark_background")
 
+    # строим гистограмму (по исходным данным)
+    #fig, ax = plt.subplots(figsize=(6, 4))
+
     # считаем частоты (интенсивности)
-    unique, counts = np.unique(data, return_counts=True)
+    unique, counts = list(data.keys()), list(data.values())
+    #unique, counts = np.unique(data, return_counts=True)
+    #print(unique, counts)
 
     # сортировка
-    #order = np.argsort(unique)
-    #unique, counts = unique[order], counts[order]
+    # order = np.argsort(unique)
+    # unique, counts = unique[order], counts[order]
 
     # нормализация для градиента
-    norm = plt.Normalize(vmin=counts.min(), vmax=counts.max())
+    norm = plt.Normalize(vmin=min(counts), vmax=max(counts))
     colors = matplotlib.colormaps.get_cmap(cmap)(norm(counts))
 
     # строим гистограмму-спектр
     fig, ax = plt.subplots(figsize=(6, 4))
-    plt.bar(unique, counts, color=colors, width=0.2, edgecolor="white", linewidth=0.6)
+    plt.bar(unique, counts, color=colors, width=0.02, edgecolor="white", linewidth=0.6)
+
+    # Подписи под столбцы
+    # bin_centers = 0.5 * (bins[:-1] + bins[1:])
+    # for center in bin_centers:
+    #     ax.text(
+    #         center,  # x (центр бина)
+    #         -0.02 * n.max(),  # y (немного ниже оси X)
+    #         f"{center:.3f}",  # текст с 3 знаками после запятой
+    #         ha="center", va="top",
+    #         fontsize=8, rotation=90  # вертикальные подписи
+    #     )
 
     plt.xlabel("Расстояние между ионами")
     plt.ylabel("Интенсивность (частота)")
-    plt.title(f"Спектр координат относительно вектора {vector_id + 1}")
+    plt.title(f"Спектр распределения длинн векторов\n между ионами относительно иона ({ion[0]},{ion[1]},{ion[2]})")  # набора векторов {vector_id + 1}
 
     # plt.tight_layout()
     # plt.show()
