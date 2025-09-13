@@ -67,18 +67,14 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     background : str
         Цвет фона графиков
     """
+    outdir += f"/spectrum_{str(substance_id)}"
     os.makedirs(outdir, exist_ok=True)
+
+    print(data)
 
     sns.set_style("whitegrid", {'axes.facecolor': background})
     plt.style.use("dark_background")
 
-    # строим гистограмму (по исходным данным)
-    #fig, ax = plt.subplots(figsize=(6, 4))
-
-    # считаем частоты (интенсивности)
-    unique, counts = list(data.keys()), list(data.values())
-    #unique, counts = np.unique(data, return_counts=True)
-    #print(unique, counts)
     distances = []
     for dist, count in data.items():
         distances.extend([dist] * count)
@@ -88,11 +84,11 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     x_min, x_max = min(distances) - 0.1, max(distances) + 0.1
     x_grid = np.linspace(x_min, x_max, 1000)
     kde_values = kde.evaluate(x_grid)
-    kde_values = kde_values * len(distances) * (x_grid[1] - x_grid[0]) * 50
+    scale_factor = 100 / max(data.values()) * 3
+    kde_values = kde_values * len(distances) * (x_grid[1] - x_grid[0]) * scale_factor
 
-    # сортировка
-    # order = np.argsort(unique)
-    # unique, counts = unique[order], counts[order]
+    # считаем частоты (интенсивности)
+    unique, counts = list(data.keys()), list(data.values())
 
     # нормализация для градиента
     norm = plt.Normalize(vmin=min(counts), vmax=max(counts))
@@ -103,27 +99,15 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     plt.bar(unique, counts, color=colors, width=0.02, edgecolor="white", linewidth=0.6)
     if kde_values is not None:
         plt.plot(x_grid, kde_values, color='cyan', linewidth=1)
-
-    # Подписи под столбцы
-    # bin_centers = 0.5 * (bins[:-1] + bins[1:])
-    # for center in bin_centers:
-    #     ax.text(
-    #         center,  # x (центр бина)
-    #         -0.02 * n.max(),  # y (немного ниже оси X)
-    #         f"{center:.3f}",  # текст с 3 знаками после запятой
-    #         ha="center", va="top",
-    #         fontsize=8, rotation=90  # вертикальные подписи
-    #     )
+        ax.fill_between(x_grid, kde_values, color="cyan", alpha=0.2)  # заливка под кривой
 
     plt.xlabel("Расстояние между ионами")
     plt.ylabel("Интенсивность (частота)")
-    plt.title(f"Спектр распределения длинн векторов\n между ионами относительно иона ({ion[0]},{ion[1]},{ion[2]})")  # набора векторов {vector_id + 1}
-
-    # plt.tight_layout()
-    # plt.show()
+    plt.title(f"Спектр распределения длин векторов\n между ионами относительно иона ({ion[0]},{ion[1]},{ion[2]})")  # набора векторов {vector_id + 1}
 
     plt.tight_layout()
     out_path = os.path.join(outdir, f"spectrum_{substance_id}-{vector_id + 1}.png")
+    # plt.show()
     plt.savefig(out_path, dpi=150)
     plt.close(fig)
 

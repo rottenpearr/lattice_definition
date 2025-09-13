@@ -1,3 +1,8 @@
+from decimal import Decimal
+
+import numpy as np
+
+
 def shift_coordinates(data):
     min_x = min(point[1] for point in data)
     min_y = min(point[2] for point in data)
@@ -18,6 +23,7 @@ def normalize_coordinates(shifted_data):
         raise ValueError("Максимальная координата равна 0. Нормализация невозможна.")
     normalized_data = [
         [point[0]] + [coord / max_coordinate for coord in point[1:]]
+        #[point[0]] + [Decimal(f"{Decimal(Decimal(coord) / Decimal(max_coordinate)):.16f}") for coord in point[1:]]
         for point in shifted_data
     ]
     return normalized_data

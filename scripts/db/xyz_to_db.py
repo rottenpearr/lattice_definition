@@ -17,7 +17,7 @@ def parse_xyz(xyz_file_path):
     for line in lines[2:2 + atom_count]:
         parts = line.split()
         atom_type = parts[0]  # Тип атома (например, Cl, Na)
-        x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+        x, y, z = float(parts[1]), float(parts[2]), float(parts[3])  # decimal
         data.append([atom_type, x, y, z])
 
     return data

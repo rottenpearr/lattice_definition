@@ -34,19 +34,15 @@ def parse_xyz_file(filename):
             a.append(['ion', x, y, z])
     return a
 
-# Парсим данные
-try:
-    a = parse_xyz_file('NaCl_3x3x3.xyz')
-    print(f"Парсинг завершен. Создано {len(a)} ионов")
-    print(f"Пример первых 5 ионов:")
-    for i in range(min(5, len(a))):
-        print(f"  {a[i]}")
-except FileNotFoundError:
-    print("Файл не найден.")
 
-# извлечение координат
 def extract_coordinates(structure):
+    """
+    Извлечение координат
+    :param structure:
+    :return:
+    """
     return np.array([ion[1:] for ion in structure], dtype=float)
+
 
 def calculate_ion_spectrum(central_ion_coords, all_coords, bins):
     # Вычисляем расстояния от центрального иона до всех остальных
@@ -56,6 +52,7 @@ def calculate_ion_spectrum(central_ion_coords, all_coords, bins):
     # Строим гистограмму
     hist, bin_edges = np.histogram(distances, bins=bins)
     return hist, bin_edges
+
 
 def create_ion_spectrum_plot(ideal_coords, ion_idx, bins, output_dir):
     # Создаем папку для результатов, если ее нет
@@ -86,6 +83,7 @@ def create_ion_spectrum_plot(ideal_coords, ion_idx, bins, output_dir):
     plt.close()
     return filename
 
+
 def create_all_ions_summary_plot(ideal_coords, bins, output_dir):
     """Создает сводный график со спектрами всех ионов"""
     plt.figure(figsize=(12, 8))
@@ -111,6 +109,7 @@ def create_all_ions_summary_plot(ideal_coords, bins, output_dir):
 
     return filename
 
+
 def save_coordinates_to_file(ideal_coords, output_dir):
     """Сохраняет координаты ионов в файл"""
     filename = os.path.join(output_dir, 'ideal_coordinates.txt')
@@ -121,67 +120,78 @@ def save_coordinates_to_file(ideal_coords, output_dir):
             f.write(f"Ион {i}: {coords[0]:.6f} {coords[1]:.6f} {coords[2]:.6f}\n")
     return filename
 
-# Основной код
-ideal_coords = extract_coordinates(a)
-n_ions = len(ideal_coords)
 
-print(f"Создан идеальный датасет с {n_ions} ионами")
+if __name__ == '__main__':
+    # Парсим данные
+    try:
+        a = parse_xyz_file('NaCl_3x3x3.xyz')
+        print(f"Парсинг завершен. Создано {len(a)} ионов")
+        print("Пример первых 5 ионов:")
+        for i in range(min(5, len(a))):
+            print(f"  {a[i]}")
+    except FileNotFoundError:
+        print("Файл не найден.")
+        exit(1)
 
-max_distance = np.sqrt(3)  # максимальное расстояние в кубе 1x1x1
-bins = np.linspace(0, max_distance, 25)
+    ideal_coords = extract_coordinates(a)
+    n_ions = len(ideal_coords)
+    print(f"Создан идеальный датасет с {n_ions} ионами")
 
-# Создаем папку для результатов
-output_dir = "ideal_ion_spectra"
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+    max_distance = np.sqrt(3)  # максимальное расстояние в кубе 1x1x1
+    bins = np.linspace(0, max_distance, 25)
 
-# Сохраняем координаты
-coords_file = save_coordinates_to_file(ideal_coords, output_dir)
-print(f"Координаты сохранены в файл: {coords_file}")
+    # Создаем папку для результатов
+    output_dir = "ideal_ion_spectra"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-# Создаем рисунки для каждого иона
-print(f"\nСоздание спектров для {n_ions} ионов...")
-ion_info = []
+    # Сохраняем координаты
+    coords_file = save_coordinates_to_file(ideal_coords, output_dir)
+    print(f"Координаты сохранены в файл: {coords_file}")
 
-for ion_idx in range(n_ions):
-    print(f"Обработка иона {ion_idx + 1}/{n_ions}")
-    # Создаем график спектра для иона
-    filename = create_ion_spectrum_plot(ideal_coords, ion_idx, bins, output_dir)
-    # Сохраняем информацию об ионе
-    spectrum, _ = calculate_ion_spectrum(ideal_coords[ion_idx], ideal_coords, bins)
-    total_neighbors = np.sum(spectrum)
+    # Создаем рисунки для каждого иона
+    print(f"\nСоздание спектров для {n_ions} ионов...")
+    ion_info = []
 
-    ion_info.append({
-        'ion_index': ion_idx,
-        'coordinates': ideal_coords[ion_idx],
-        'spectrum_plot': filename,
-        'total_neighbors': total_neighbors
-    })
+    for ion_idx in range(n_ions):
+        print(f"Обработка иона {ion_idx + 1}/{n_ions}")
+        # Создаем график спектра для иона
+        filename = create_ion_spectrum_plot(ideal_coords, ion_idx, bins, output_dir)
+        # Сохраняем информацию об ионе
+        spectrum, _ = calculate_ion_spectrum(ideal_coords[ion_idx], ideal_coords, bins)
+        total_neighbors = np.sum(spectrum)
 
-summary_plot = create_all_ions_summary_plot(ideal_coords, bins, output_dir)
-print(f"Создан сводный график: {summary_plot}")
+        ion_info.append({
+            'ion_index': ion_idx,
+            'coordinates': ideal_coords[ion_idx],
+            'spectrum_plot': filename,
+            'total_neighbors': total_neighbors
+        })
 
-summary_filename = os.path.join(output_dir, "summary.txt")
-with open(summary_filename, 'w') as f:
-    f.write("Сводная информация по анализам спектров ионов\n")
-    f.write("=" * 50 + "\n\n")
-    f.write(f"Всего ионов: {n_ions}\n")
-    f.write(f"Идеальная решетка (без шума)\n\n")
+    summary_plot = create_all_ions_summary_plot(ideal_coords, bins, output_dir)
+    print(f"Создан сводный график: {summary_plot}")
 
-    for info in ion_info:
-        f.write(f"Ион {info['ion_index']}: координаты {info['coordinates']}\n")
-        f.write(f"  Всего соседей: {info['total_neighbors']}\n")
-        f.write(f"  График спектра: {info['spectrum_plot']}\n")
-        f.write("-" * 40 + "\n")
+    summary_filename = os.path.join(output_dir, "summary.txt")
+    with open(summary_filename, 'w') as f:
+        f.write("Сводная информация по анализам спектров ионов\n")
+        f.write("=" * 50 + "\n\n")
+        f.write(f"Всего ионов: {n_ions}\n")
+        f.write(f"Идеальная решетка (без шума)\n\n")
 
-print(f"\nГотово! Создано {n_ions + 1} рисунков.")
-print(f"Для каждого иона создан индивидуальный график спектра")
-print(f"Создан сводный график всех спектров")
-print(f"Результаты сохранены в папке: {output_dir}")
-print(f"Сводная информация: {summary_filename}")
+        for info in ion_info:
+            f.write(f"Ион {info['ion_index']}: координаты {info['coordinates']}\n")
+            f.write(f"  Всего соседей: {info['total_neighbors']}\n")
+            f.write(f"  График спектра: {info['spectrum_plot']}\n")
+            f.write("-" * 40 + "\n")
 
-# Показываем пример первого иона
-print(f"\nПример для иона 0:")
-print(f"Координаты: {ideal_coords[0]}")
-print(f"Всего соседей: {ion_info[0]['total_neighbors']}")
-print(f"Файл: ion_0_spectrum.png")
+    print(f"\nГотово! Создано {n_ions + 1} рисунков.")
+    print(f"Для каждого иона создан индивидуальный график спектра")
+    print(f"Создан сводный график всех спектров")
+    print(f"Результаты сохранены в папке: {output_dir}")
+    print(f"Сводная информация: {summary_filename}")
+
+    # Показываем пример первого иона
+    print(f"\nПример для иона 0:")
+    print(f"Координаты: {ideal_coords[0]}")
+    print(f"Всего соседей: {ion_info[0]['total_neighbors']}")
+    print(f"Файл: ion_0_spectrum.png")
