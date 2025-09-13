@@ -70,8 +70,6 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     outdir += f"/spectrum_{str(substance_id)}"
     os.makedirs(outdir, exist_ok=True)
 
-    print(data)
-
     sns.set_style("whitegrid", {'axes.facecolor': background})
     plt.style.use("dark_background")
 
