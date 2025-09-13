@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from scipy.stats import gaussian_kde
 
 import mysql.connector
 
@@ -78,6 +79,16 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     unique, counts = list(data.keys()), list(data.values())
     #unique, counts = np.unique(data, return_counts=True)
     #print(unique, counts)
+    distances = []
+    for dist, count in data.items():
+        distances.extend([dist] * count)
+    distances = np.array(distances)
+
+    kde = gaussian_kde(distances, bw_method=0.1)
+    x_min, x_max = min(distances) - 0.1, max(distances) + 0.1
+    x_grid = np.linspace(x_min, x_max, 1000)
+    kde_values = kde.evaluate(x_grid)
+    kde_values = kde_values * len(distances) * (x_grid[1] - x_grid[0]) * 50
 
     # сортировка
     # order = np.argsort(unique)
@@ -90,6 +101,8 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     # строим гистограмму-спектр
     fig, ax = plt.subplots(figsize=(6, 4))
     plt.bar(unique, counts, color=colors, width=0.02, edgecolor="white", linewidth=0.6)
+    if kde_values is not None:
+        plt.plot(x_grid, kde_values, color='cyan', linewidth=1)
 
     # Подписи под столбцы
     # bin_centers = 0.5 * (bins[:-1] + bins[1:])
