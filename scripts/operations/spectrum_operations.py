@@ -110,3 +110,17 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     plt.close(fig)
 
     print(f"Изображение spectrum_{substance_id}-{vector_id + 1}.png сохранено!")
+
+def kde_array(data):
+    distances = []
+    for dist, count in data.items():
+        distances.extend([dist] * count)
+    distances = np.array(distances)
+
+    kde = gaussian_kde(distances, bw_method=0.1)
+    x_min, x_max = min(distances) - 0.1, max(distances) + 0.1
+    x_grid = np.linspace(x_min, x_max, 1000)
+    kde_values = kde.evaluate(x_grid)
+    scale_factor = 100 / max(data.values()) * 3
+    kde_values = kde_values * len(distances) * (x_grid[1] - x_grid[0]) * scale_factor
+    return np.array(list(kde_values))
