@@ -9,8 +9,8 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialo
 from Info_Dialog_ui import Ui_Dialog_2  # Интерфейс диалогового окна информации
 from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
 from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from db.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
-from db.ions_query import get_similar_xyz_from_db, check_coords
+from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
+from scripts.db.ions_query import get_similar_xyz_from_db, check_coords
 from generate_report import save_docx
 
 
@@ -167,6 +167,7 @@ class MainWindow(QMainWindow):
         data_dict = {}
         for i in range(len(normalized_data)):
             data_dict[i + 1] = normalized_data[i]
+        # TODO: здесь поиск добавить векторов функцию вызов
         coords = get_similar_xyz_from_db(data_dict)
         query_data = check_coords(coords, int(self.ui.combo_box_ions.currentText()))
 

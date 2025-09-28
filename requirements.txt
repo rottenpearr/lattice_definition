@@ -8,3 +8,5 @@ scikit-learn~=1.6.1
 hdbscan~=0.8.40
 matplotlib~=3.9.4
 umap-learn~=0.5.9.post2
+numpy~=2.0.2
+scipy~=1.13.1
