@@ -1,4 +1,4 @@
-from scripts.operations.lattice_microoperations import get_lattice_vectors2
+from scripts.operations.lattice_microoperations import get_lattice_vectors3
 from scripts.operations.spectrum_operations import kde_array
 from collections import Counter
 
@@ -6,11 +6,10 @@ a = [['Cl', 0.0, 0.0, 0.0], ['Na', 0.0, 0.0, 0.16666666666666666], ['Cl', 0.0, 0
 
 substance_id = 777
 
-res = get_lattice_vectors2(a)
+res = get_lattice_vectors3(a)
 
 kde_arrays = {}
 
 for ion_key, distances in res.items():
     kde_arr = kde_array(dict(Counter(distances)))
     kde_arrays[ion_key] = kde_arr
-    print(f"Ион {ion_key}: KDE shape = {kde_arr.shape}")
