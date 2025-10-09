@@ -1,5 +1,6 @@
 from collections import defaultdict
 from math import sqrt
+import numpy as np
 
 def get_lattice_vectors(normalized_data):
     """
@@ -45,6 +46,67 @@ def get_lattice_vectors2(normalized_data):
         if len(vector_set) != vector_dict_len:
             res[f"{x1};{y1};{z1}"] = vector_tuple  # чутка дублируем значения с vector_set
     return res
+
+
+def get_lattice_vectors3(lattice_data):
+    """
+    Вычисляет векторы для ВСЕХ ионов решетки (не группируя по уникальным позициям)
+
+    Args:
+        lattice_data: список ионов в формате [['Element', x, y, z], ...]
+
+    Returns:
+        dict: словарь где ключи - уникальные идентификаторы ионов,
+              значения - списки расстояний до всех других ионов
+    """
+
+    # Конвертируем данные в numpy массив для эффективности
+    elements = [ion[0] for ion in lattice_data]
+    coords = np.array([ion[1:4] for ion in lattice_data])
+
+    n_ions = len(lattice_data)
+    all_vectors = {}
+
+    print(f"Вычисление векторов для {n_ions} ионов...")
+
+    for i in range(n_ions):
+        # Создаем уникальный ключ для иона
+        element = elements[i]
+        x, y, z = coords[i]
+        ion_key = f"{element};{x:.8f};{y:.8f};{z:.8f}"
+
+        distances = []
+
+        # Вычисляем расстояния до всех других ионов
+        for j in range(n_ions):
+            if i != j:  # исключаем расстояние до самого себя
+                # Разность координат
+                dx = coords[j, 0] - x
+                dy = coords[j, 1] - y
+                dz = coords[j, 2] - z
+
+                # Учет периодических граничных условий (минимальное изображение)
+                dx = dx - np.round(dx)
+                dy = dy - np.round(dy)
+                dz = dz - np.round(dz)
+
+                # Вычисляем расстояние
+                distance = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+                distances.append(distance)
+
+        all_vectors[ion_key] = distances
+
+    print(f"Вычислено векторов для {len(all_vectors)} ионов")
+
+    # Проверим распределение по типам ионов
+    element_count = defaultdict(int)
+    for key in all_vectors.keys():
+        element = key.split(';')[0]
+        element_count[element] += 1
+
+    print(f"Распределение ионов: {dict(element_count)}")
+
+    return all_vectors
 
 
 
