@@ -2,7 +2,7 @@ import pandas as pd
 from operations.kde_4_all_ions import kde_arrays, substance_id
 from os.path import normpath, join, dirname
 
-path_to_db = normpath(join(dirname(__file__), '..', 'data', 'csv_kde', '7x7x7'))
+path_to_db = normpath(join(dirname(__file__), '..', 'data', 'csv_kde', '7x7x7_v2'))
 print(path_to_db)
 
 # Сохраняем KDE для каждого иона в отдельный файл

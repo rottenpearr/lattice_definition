@@ -198,3 +198,170 @@ pyside6-rcc src/resources.qrc -o resources_rc.py
 ![img_3.png](src/info_examples/img_3.png)
 
 И он делает с каждым элементом вот эти вот преобразования, и по факту получаем решеточку
+
+# Как можно организовать структуру
+
+```
+lattice_definition/
+│
+├── README.md
+├── requirements.txt
+├── setup.py                    # Для установки как пакет
+├── .gitignore
+│
+├── config/                     # Конфигурация приложения
+│   ├── __init__.py
+│   ├── settings.py            # Основные настройки (пути, параметры БД)
+│   └── constants.py           # Константы (типы решеток, пороги)
+│
+├── data/                      # Данные проекта (не в git)
+│   ├── raw/                   # Исходные данные
+│   │   ├── cif/              # Crystallographic Information Files
+│   │   ├── xyz/              # Координаты атомов
+│   │   └── json/             # Дополнительные данные о веществах
+│   │
+│   ├── processed/            # Обработанные данные
+│   │   ├── csv/              # Экспортированные координаты
+│   │   ├── csv_kde/          # KDE массивы для анализа
+│   │   └── spectrum/         # Спектры для сравнения
+│   │
+│   ├── database/             # База данных
+│   │   └── lattice.db        # SQLite БД
+│   │
+│   └── examples/             # Примеры для пользователей
+│       └── csv/
+│
+├── reports/                   # Сгенерированные отчеты (не в git)
+│   └── .gitkeep
+│
+├── resources/                 # Статические ресурсы
+│   ├── images/               # Изображения решеток
+│   │   ├── cubic.png
+│   │   ├── hexagonal.png
+│   │   └── ...
+│   │
+│   ├── icons/                # Иконки приложения
+│   │   ├── logo.svg
+│   │   ├── refresh.svg
+│   │   └── ...
+│   │
+│   └── ui/                   # Qt UI файлы
+│       ├── main_window.ui
+│       ├── ion_dialog.ui
+│       ├── info_dialog.ui
+│       ├── resources.qrc
+│       └── ui_palette.xml
+│
+├── src/                      # Исходный код приложения
+│   ├── __init__.py
+│   │
+│   ├── main.py              # Точка входа в приложение
+│   │
+│   ├── ui/                  # Презентационный слой (GUI)
+│   │   ├── __init__.py
+│   │   ├── main_window.py           # Главное окно
+│   │   ├── dialogs/
+│   │   │   ├── __init__.py
+│   │   │   ├── ion_dialog.py       # Диалог ввода координат
+│   │   │   └── info_dialog.py      # Диалог справки
+│   │   │
+│   │   ├── generated/              # Сгенерированные из .ui файлов
+│   │   │   ├── __init__.py
+│   │   │   ├── main_window_ui.py
+│   │   │   ├── ion_dialog_ui.py
+│   │   │   ├── info_dialog_ui.py
+│   │   │   └── resources_rc.py
+│   │   │
+│   │   └── widgets/                # Кастомные виджеты
+│   │       └── __init__.py
+│   │
+│   ├── core/                       # Бизнес-логика
+│   │   ├── __init__.py
+│   │   │
+│   │   ├── analysis/              # Анализ структур
+│   │   │   ├── __init__.py
+│   │   │   ├── lattice_analyzer.py      # Определение типа решетки
+│   │   │   ├── spectrum_analyzer.py     # Анализ спектров
+│   │   │   ├── clustering.py            # UMAP/HDBSCAN кластеризация
+│   │   │   └── similarity.py            # Метрики схожести
+│   │   │
+│   │   ├── preprocessing/         # Предобработка данных
+│   │   │   ├── __init__.py
+│   │   │   ├── coordinates.py           # Нормализация координат
+│   │   │   ├── vector_operations.py     # Векторные операции
+│   │   │   └── kde_calculator.py        # Расчет KDE
+│   │   │
+│   │   └── models/                # Модели данных
+│   │       ├── __init__.py
+│   │       ├── ion.py                   # Класс Ion
+│   │       ├── lattice.py               # Класс Lattice
+│   │       └── substance.py             # Класс Substance
+│   │
+│   ├── data/                      # Слой доступа к данным
+│   │   ├── __init__.py
+│   │   │
+│   │   ├── database/              # Работа с БД
+│   │   │   ├── __init__.py
+│   │   │   ├── connection.py            # Подключение к БД
+│   │   │   ├── models.py                # ORM модели (если используется)
+│   │   │   ├── queries.py               # SQL запросы
+│   │   │   ├── init_db.py               # Инициализация БД
+│   │   │   └── schema.sql               # Схема БД
+│   │   │
+│   │   ├── parsers/               # Парсеры файлов
+│   │   │   ├── __init__.py
+│   │   │   ├── cif_parser.py            # Парсинг CIF
+│   │   │   ├── xyz_parser.py            # Парсинг XYZ
+│   │   │   ├── json_parser.py           # Парсинг JSON
+│   │   │   └── csv_parser.py            # Парсинг CSV
+│   │   │
+│   │   └── loaders/               # Загрузчики данных
+│   │       ├── __init__.py
+│   │       ├── file_loader.py           # Загрузка из файлов
+│   │       └── db_loader.py             # Загрузка из БД
+│   │
+│   ├── utils/                     # Вспомогательные утилиты
+│   │   ├── __init__.py
+│   │   ├── file_utils.py                # Работа с файлами
+│   │   ├── math_utils.py                # Математические функции
+│   │   ├── validation.py                # Валидация данных
+│   │   └── logging_config.py            # Настройка логирования
+│   │
+│   └── exports/                   # Экспорт результатов
+│       ├── __init__.py
+│       ├── report_generator.py          # Генерация отчетов
+│       └── templates/                   # Шаблоны отчетов
+│           └── report_template.docx
+│
+├── tests/                         # Тесты
+│   ├── __init__.py
+│   ├── conftest.py               # Pytest fixtures
+│   │
+│   ├── unit/                     # Юнит-тесты
+│   │   ├── test_coordinates.py
+│   │   ├── test_clustering.py
+│   │   └── test_parsers.py
+│   │
+│   ├── integration/              # Интеграционные тесты
+│   │   ├── test_database.py
+│   │   └── test_analysis_pipeline.py
+│   │
+│   └── test_data/                # Тестовые данные
+│       ├── sample.cif
+│       └── sample.xyz
+│
+├── scripts/                       # Утилиты и скрипты
+│   ├── init_database.py          # Инициализация БД
+│   ├── import_data.py            # Импорт данных из CIF/XYZ
+│   ├── generate_kde.py           # Генерация KDE массивов
+│   ├── generate_spectra.py       # Генерация спектров
+│   └── research/                 # Исследовательские ноутбуки
+│       └── analysis.ipynb
+│
+└── docs/                         # Документация
+    ├── architecture.md           # Архитектура приложения
+    ├── database_schema.md        # Схема БД
+    ├── user_guide.md             # Руководство пользователя
+    └── api/                      # API документация
+        └── index.md
+```

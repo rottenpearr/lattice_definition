@@ -49,10 +49,14 @@ def xyz_to_normalized_coords(filepath):
 # Создадим графики по xyz файлам
 if __name__ == "__main__":
     crystal_count = 3
-    substances_id = [333, 777, 121212]
+    substances_id = [333, 555, 777]
     crystal_files = ["../../data/NaCl/NaCl_3x3x3.xyz",
-                     "../../data/NaCl/NaCl_7x7x7.xyz",
-                     "../../data/NaCl/NaCl_12x12x12.xyz"]
+                     "../../data/NaCl/NaCl_5x5x5.xyz",
+                     "../../data/NaCl/NaCl_7x7x7.xyz"]
+    # substances_id = [33302, 55502, 77702]
+    # crystal_files = ["../../data/UNUC/UC_3x3x3.xyz",
+    #                  "../../data/UNUC/UC_5x5x5.xyz",
+    #                  "../../data/UNUC/UC_7x7x7.xyz"]
     for i in range(crystal_count):
         coords = xyz_to_normalized_coords(crystal_files[i])
         current_cryst = get_lattice_vectors2(coords)
