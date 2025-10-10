@@ -1,10 +1,12 @@
 from scripts.operations.lattice_microoperations import get_lattice_vectors3
 from scripts.operations.spectrum_operations import kde_array
 from collections import Counter
+from os.path import normpath, join, dirname
 
 from scripts.operations.testing import xyz_to_normalized_coords
 
-a = xyz_to_normalized_coords("../data/NaCl/NaCl_7x7x7.xyz")
+path_to_xyz = normpath(join(dirname(__file__), '..', '..', 'data', 'xyz', 'U2N3.xyz'))
+a = xyz_to_normalized_coords(path_to_xyz)
 
 substance_id = 777
 
