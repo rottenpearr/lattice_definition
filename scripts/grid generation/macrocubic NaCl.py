@@ -58,5 +58,9 @@ def write_nacl_xyz_inaccurate(N=7, a=5.6402, filename="NaCl-innacurate.xyz", ext
 
 
 if __name__ == "__main__":
-    # write_nacl_xyz_exact(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7.xyz", extended=True)
+    write_nacl_xyz_exact(N=3, a=5.6402, filename="../../data/NaCl/NaCl_3x3x3.xyz", extended=True)
+    write_nacl_xyz_exact(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7.xyz", extended=True)
+    write_nacl_xyz_exact(N=12, a=5.6402, filename="../../data/NaCl/NaCl_12x12x12.xyz", extended=True)
+    write_nacl_xyz_inaccurate(N=3, a=5.6402, filename="../../data/NaCl/NaCl_3x3x3-inaccurate.xyz", extended=True)
     write_nacl_xyz_inaccurate(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7-inaccurate.xyz", extended=True)
+    write_nacl_xyz_inaccurate(N=12, a=5.6402, filename="../../data/NaCl/NaCl_12x12x12-inaccurate.xyz", extended=True)
