@@ -1,8 +1,10 @@
 import pandas as pd
 from operations.kde_4_all_ions import kde_arrays, substance_id
 from os.path import normpath, join, dirname
+from os import makedirs
 
 path_to_csv = normpath(join(dirname(__file__), '..', 'data', 'csv_kde', '7x7x7'))
+makedirs(path_to_csv, exist_ok=True)
 # print(path_to_csv)
 
 # Сохраняем KDE для каждого иона в отдельный файл
