@@ -5,7 +5,7 @@ from os.path import normpath, join, dirname
 
 from scripts.operations.testing import xyz_to_normalized_coords
 
-path_to_xyz = normpath(join(dirname(__file__), '..', '..', 'data', 'xyz', 'U2N3.xyz'))
+path_to_xyz = normpath(join(dirname(__file__), '..', '..', 'data', 'xyz', '1523015_UN2.xyz'))
 a = xyz_to_normalized_coords(path_to_xyz)
 
 substance_id = 777
