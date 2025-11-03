@@ -38,6 +38,45 @@ def xyz_to_normalized_coords(filepath):
     return normalized_data
 
 
+import random
+
+
+def xyz_to_normalized_coords_with_noise(filepath, noise_percent=4, seed=None):
+    """
+    Возвращает нормализованные координаты с добавленным шумом до указанного процента.
+
+    Args:
+        filepath: путь к XYZ файлу
+        noise_percent: максимальный процент шума (по умолчанию 4%)
+        seed: seed для random (опционально, для воспроизводимости)
+
+    Returns:
+        Список точек с нормализованными координатами и добавленным шумом
+    """
+    # Получаем нормализованные данные без шума
+    normalized_data = xyz_to_normalized_coords(filepath)
+    # Устанавливаем seed для воспроизводимости (если указан)
+    if seed is not None:
+        random.seed(seed)
+
+    # Добавляем шум к координатам
+    noisy_data = []
+    for point in normalized_data:
+        atom_type = point[0]
+        original_coords = point[1:]
+        noisy_coords = []
+        for coord in original_coords:
+            # Вычисляем максимальное отклонение в абсолютных единицах
+            max_deviation = abs(coord) * (noise_percent / 100.0)
+            # Генерируем случайное отклонение в диапазоне [-max_deviation, +max_deviation]
+            noise = random.uniform(-max_deviation, max_deviation)
+            # Добавляем шум к координате
+            noisy_coord = coord + noise
+            noisy_coords.append(noisy_coord)
+        noisy_data.append([atom_type] + noisy_coords)
+    return noisy_data
+
+
 # Создание графиков по набору векторов
 # # 3x3x3
 # #a = [['Cl', 0.0, 0.0, 0.0], ['Na', 0.0, 0.0, 0.5], ['Cl', 0.0, 0.0, 1.0], ['Na', 0.0, 0.5, 0.0], ['Cl', 0.0, 0.5, 0.5], ['Na', 0.0, 0.5, 1.0], ['Cl', 0.0, 1.0, 0.0], ['Na', 0.0, 1.0, 0.5], ['Cl', 0.0, 1.0, 1.0], ['Na', 0.5, 0.0, 0.0], ['Cl', 0.5, 0.0, 0.5], ['Na', 0.5, 0.0, 1.0], ['Cl', 0.5, 0.5, 0.0], ['Na', 0.5, 0.5, 0.5], ['Cl', 0.5, 0.5, 1.0], ['Na', 0.5, 1.0, 0.0], ['Cl', 0.5, 1.0, 0.5], ['Na', 0.5, 1.0, 1.0], ['Cl', 1.0, 0.0, 0.0], ['Na', 1.0, 0.0, 0.5], ['Cl', 1.0, 0.0, 1.0], ['Na', 1.0, 0.5, 0.0], ['Cl', 1.0, 0.5, 0.5], ['Na', 1.0, 0.5, 1.0], ['Cl', 1.0, 1.0, 0.0], ['Na', 1.0, 1.0, 0.5], ['Cl', 1.0, 1.0, 1.0]]
