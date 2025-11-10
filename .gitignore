@@ -167,3 +167,4 @@ reports/*
 .idea/lattice_definition.iml
 .idea/misc.xml
 /.idea/misc.xml
+**/~$*.xlsx
