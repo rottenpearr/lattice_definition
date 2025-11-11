@@ -3,7 +3,7 @@ from operations.kde_4_all_ions import kde_arrays, substance_id
 from os.path import normpath, join, dirname
 from os import makedirs
 
-path_to_csv = normpath(join(dirname(__file__), '..', 'data', 'csv_kde', 'U2N3', '20'))
+path_to_csv = normpath(join(dirname(__file__), '..', 'data', 'csv_kde', 'UC_mp-2489', '20'))
 makedirs(path_to_csv, exist_ok=True)
 # print(path_to_csv)
 
