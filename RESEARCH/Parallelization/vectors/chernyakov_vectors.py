@@ -9,46 +9,52 @@ import seaborn as sns
 from scipy.stats import gaussian_kde
 
 
-def process_single_ion(args):
+def process_ion_batch(args):
     """
-    Вычисляет расстояния от одного иона до всех остальных.
+    Вычисляет расстояния для пакета ионов до всех остальных.
     Функция для параллельного выполнения.
 
     Args:
-        args: кортеж (i, element, coords, all_coords, all_elements)
+        args: кортеж (ion_indices, elements, coords, all_coords, all_elements)
 
     Returns:
-        tuple: (ion_key, distances)
+        list: список пар (ion_key, distances) для каждого иона в пакете
     """
-    i, element, coord, all_coords, all_elements = args
-    x, y, z = coord
-    ion_key = f"{element};{x:.8f};{y:.8f};{z:.8f}"
+    ion_indices, elements_batch, coords_batch, all_coords, all_elements = args
+    results = []
 
-    distances = []
-    n_ions = len(all_coords)
+    for idx, element, coord in zip(ion_indices, elements_batch, coords_batch):
+        x, y, z = coord
+        ion_key = f"{element};{x:.8f};{y:.8f};{z:.8f}"
 
-    for j in range(n_ions):
-        if i != j:
-            # Разность координат
-            dx = all_coords[j, 0] - x
-            dy = all_coords[j, 1] - y
-            dz = all_coords[j, 2] - z
+        distances = []
+        n_ions = len(all_coords)
 
-            # Учет периодических граничных условий (минимальное изображение)
-            dx = dx - np.round(dx)
-            dy = dy - np.round(dy)
-            dz = dz - np.round(dz)
+        for j in range(n_ions):
+            if idx != j:
+                # Разность координат
+                dx = all_coords[j, 0] - x
+                dy = all_coords[j, 1] - y
+                dz = all_coords[j, 2] - z
 
-            # Вычисляем расстояние
-            distance = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
-            distances.append(distance)
+                # При необходимости можно учесть периодические граничные условия:
+                # dx = dx - np.round(dx)
+                # dy = dy - np.round(dy)
+                # dz = dz - np.round(dz)
 
-    return ion_key, distances
+                # Вычисляем расстояние
+                distance = np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+                distances.append(distance)
+
+        results.append((ion_key, distances))
+
+    return results
 
 
 def get_lattice_vectors_parallel(lattice_data, n_processes=None):
     """
     Параллелизованная версия вычисления векторов для ВСЕХ ионов решетки.
+    Ионы распределяются по процессам пакетами размером ~N/M.
 
     Args:
         lattice_data: список ионов в формате [['Element', x, y, z], ...]
@@ -64,18 +70,47 @@ def get_lattice_vectors_parallel(lattice_data, n_processes=None):
 
     n_ions = len(lattice_data)
 
-    # Подготовка аргументов для параллельной обработки
-    args_list = [
-        (i, elements[i], coords[i], coords, elements)
-        for i in range(n_ions)
-    ]
+    # Определяем количество процессов
+    if n_processes is None:
+        n_processes = cpu_count()
+
+    # Вычисляем размер пакета для каждого процесса
+    chunk_size = n_ions // n_processes
+    remainder = n_ions % n_processes
+
+    # Подготовка пакетов задач для параллельной обработки
+    args_list = []
+    start_idx = 0
+
+    for i in range(n_processes):
+        # Распределяем остаток по первым процессам
+        current_chunk_size = chunk_size + (1 if i < remainder else 0)
+        end_idx = start_idx + current_chunk_size
+
+        if start_idx < n_ions:
+            ion_indices = list(range(start_idx, end_idx))
+            elements_batch = [elements[j] for j in ion_indices]
+            coords_batch = coords[ion_indices]
+
+            args_list.append((
+                ion_indices,
+                elements_batch,
+                coords_batch,
+                coords,
+                elements
+            ))
+
+        start_idx = end_idx
 
     # Параллельное вычисление
     with Pool(processes=n_processes) as pool:
-        results = pool.map(process_single_ion, args_list)
+        batch_results = pool.map(process_ion_batch, args_list)
 
     # Собираем результаты в словарь
-    all_vectors = dict(results)
+    all_vectors = {}
+    for batch in batch_results:
+        for ion_key, distances in batch:
+            all_vectors[ion_key] = distances
 
     return all_vectors
 
