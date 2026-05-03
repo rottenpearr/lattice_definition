@@ -106,7 +106,7 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     plt.tight_layout()
     out_path = os.path.join(outdir, f"spectrum_{substance_id}-{vector_id + 1}.png")
     # plt.show()
-    plt.savefig(out_path, dpi=150)
+    plt.savefig(out_path, dpi=300)
     plt.close(fig)
 
     print(f"Изображение spectrum_{substance_id}-{vector_id + 1}.png сохранено!")
