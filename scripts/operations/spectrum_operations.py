@@ -121,6 +121,4 @@ def kde_array(data):
     x_min, x_max = min(distances) - 0.1, max(distances) + 0.1
     x_grid = np.linspace(x_min, x_max, 1000)
     kde_values = kde.evaluate(x_grid)
-    scale_factor = 100 / max(data.values()) * 3
-    kde_values = kde_values * len(distances) * (x_grid[1] - x_grid[0]) * scale_factor
     return np.array(list(kde_values))
