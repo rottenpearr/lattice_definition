@@ -169,3 +169,4 @@ reports/*
 /.idea/misc.xml
 **/~$*.xlsx
 **/~$*.docx
+/data/csv_kde/
