@@ -11,7 +11,7 @@ from cris.app.generated.Ion_Dialog_ui import Ui_Dialog  # Интерфейс д�
 from cris.app.generated.Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.queries import get_similar_xyz_from_db, check_coords
-from cris.report import save_docx
+from cris.tools.report import save_docx
 
 
 # Инициализация главного окна

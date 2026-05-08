@@ -14,7 +14,7 @@ Requires MySQL 8.0+ running on `localhost:3306`. Credentials are in `cris/db/con
 
 ```bash
 # Full initialization from scratch (runnable from any directory)
-python scripts/db/complete_db.py
+python cris/tools/complete_db.py
 ```
 
 This runs `cris/db/schema/db_init.py` → `cris/db/schema/lattice_types_init.py` → `cris/db/importers/json_to_db.py` + `cris/db/importers/xyz_to_db.py` for every file in `data/json/`.
@@ -51,9 +51,10 @@ cris/                          # Main installable package
 │       └── resources_rc.py
 ├── core/
 │   ├── coordinates.py         # Normalization: shift + scale to [0, 1]
-│   ├── vectors.py             # Pairwise distance vectors between ions
+│   ├── vectors.py             # Pairwise distance vectors + normalize_vectors()
 │   ├── spectrum.py            # Gaussian KDE spectra + plots
 │   ├── identification.py      # KDE similarity scoring entry point
+│   ├── clustering.py          # UMAP + HDBSCAN clustering of CIF structures
 │   ├── wasserstein_dist.py    # Wasserstein distance metric
 │   ├── spectres_wo_err.py     # Spectrum comparison without error handling
 │   └── spectres_wo_err_types.py
@@ -66,6 +67,17 @@ cris/                          # Main installable package
 │   └── importers/
 │       ├── json_to_db.py      # CIF metadata → substances + ions
 │       └── xyz_to_db.py       # XYZ coordinates → ions_library
+├── tools/                     # Utility and research runner scripts
+│   ├── testing.py             # XYZ loading with optional Gaussian noise
+│   ├── kde_4_all_ions.py      # KDE computation for all ions in a structure
+│   ├── kde_to_csv.py          # Save per-ion KDE arrays to CSV
+│   ├── generate_dataset.py    # Batch noisy KDE/CSV dataset generation
+│   ├── complete_db.py         # One-shot DB init runner
+│   ├── get_vectors_from_xyz.py
+│   ├── normalize_vectors.py
+│   ├── mp_api_test.py         # Materials Project API query (see known issues)
+│   └── grid_generation/
+│       └── macrocubic_NaCl.py
 └── report.py                  # DOCX report generation
 
 assets/
@@ -73,12 +85,12 @@ assets/
 ├── ui/                        # Qt Designer .ui source files
 └── resources.qrc              # QRC manifest for icons
 
-scripts/                       # Research/utility scripts (not part of main app)
-├── db/complete_db.py          # One-shot DB init runner
-├── generate_dataset.py        # Batch KDE/CSV dataset generation
-└── operations/
-    ├── testing.py             # XYZ loading with optional noise
-    └── kde_4_all_ions.py      # KDE computation for all ions in a structure
+ML/                            # Research notebooks and ML scripts
+├── clustering/
+│   ├── ase.py
+│   └── init_cluster_umap.py   # Runs cluster_structures + plot_umap from cris.core.clustering
+├── percentage_ident.py        # KDE identification experiment (hardcoded NaCl data)
+└── visualize_kde.py           # Quick KDE plot from CSV
 ```
 
 ### Core identification pipeline
@@ -118,3 +130,5 @@ Generated UI files in `cris/app/generated/` are compiled artifacts — edit the 
 - Float precision in normalized coordinates can cause missed matches
 - Ion count hard limit of 1000 in the UI
 - Math operations in `cris/core/vectors.py` use pure Python — should be rewritten with numpy
+- `cris/core/spectrum.py` imports `cris.db.config` — core module has an unwanted dependency on the db layer; should be refactored so DB config is injected or spectrum plotting is decoupled
+- `cris/tools/mp_api_test.py` contains a hardcoded Materials Project API key — must be moved to an environment variable or `.env` file before sharing/deploying

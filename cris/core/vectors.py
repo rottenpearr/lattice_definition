@@ -107,3 +107,9 @@ def get_lattice_vectors3(lattice_data):
     print(f"Распределение ионов: {dict(element_count)}")
 
     return all_vectors
+
+
+def normalize_vectors(vectors):
+    vec_length = np.linalg.norm(vectors, axis=1)
+    avg_length = np.mean(vec_length)
+    return vectors / avg_length
