@@ -170,3 +170,6 @@ reports/*
 **/~$*.xlsx
 **/~$*.docx
 /data/csv_kde/
+
+# Agents
+.claude
