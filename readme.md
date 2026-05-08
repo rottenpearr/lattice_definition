@@ -41,9 +41,7 @@ cris/                          # Основной пакет
 │   ├── vectors.py             # Попарные расстояния между ионами
 │   ├── spectrum.py            # KDE-спектры (Gaussian)
 │   ├── identification.py      # Точка входа в идентификацию
-│   ├── clustering.py          # Кластеризация структур (UMAP + HDBSCAN)
-│   ├── wasserstein_dist.py    # Метрика расстояния Вассерштейна
-│   └── spectres_wo_err.py     # Сравнение спектров
+│   └── clustering.py          # Кластеризация структур (UMAP + HDBSCAN)
 ├── db/
 │   ├── config.py              # Параметры подключения к MySQL
 │   ├── queries.py             # Поиск по БД
@@ -53,8 +51,9 @@ cris/                          # Основной пакет
 │   ├── complete_db.py         # Полная инициализация БД одной командой
 │   ├── generate_dataset.py    # Генерация датасета KDE-векторов с шумом
 │   ├── testing.py             # Загрузка XYZ с опциональным шумом
+│   ├── report.py              # Генерация DOCX-отчёта
 │   └── ...
-└── report.py                  # Генерация DOCX-отчёта
+└── ...
 
 assets/
 ├── ui/                        # Исходные .ui файлы (Qt Designer)
@@ -63,6 +62,7 @@ assets/
 
 ML/                            # Исследовательские скрипты и эксперименты
 ├── clustering/                # UMAP + HDBSCAN кластеризация
+├── spectre_diff/              # Сравнение спектров (Вассерштейн)
 └── ...
 
 data/

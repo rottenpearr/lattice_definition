@@ -54,10 +54,7 @@ cris/                          # Main installable package
 │   ├── vectors.py             # Pairwise distance vectors + normalize_vectors()
 │   ├── spectrum.py            # Gaussian KDE spectra + plots
 │   ├── identification.py      # KDE similarity scoring entry point
-│   ├── clustering.py          # UMAP + HDBSCAN clustering of CIF structures
-│   ├── wasserstein_dist.py    # Wasserstein distance metric
-│   ├── spectres_wo_err.py     # Spectrum comparison without error handling
-│   └── spectres_wo_err_types.py
+│   └── clustering.py          # UMAP + HDBSCAN clustering of CIF structures
 ├── db/
 │   ├── config.py              # DB connection config
 │   ├── queries.py             # Search logic (get_similar_xyz_from_db, check_coords)
@@ -89,6 +86,10 @@ ML/                            # Research notebooks and ML scripts
 ├── clustering/
 │   ├── ase.py
 │   └── init_cluster_umap.py   # Runs cluster_structures + plot_umap from cris.core.clustering
+├── spectre_diff/
+│   ├── spectres_wo_err.py     # Spectrum comparison without error handling
+│   ├── spectres_wo_err_types.py
+│   └── wasserstein_dist.py    # Wasserstein distance metric
 ├── percentage_ident.py        # KDE identification experiment (hardcoded NaCl data)
 └── visualize_kde.py           # Quick KDE plot from CSV
 ```
