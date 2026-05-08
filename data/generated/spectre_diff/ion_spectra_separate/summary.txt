@@ -1,0 +1,234 @@
+Сводная информация по анализам спектров ионов
+==================================================
+
+Всего ионов: 57
+Уровни шума: ['2%', '5%', '7%', '10%']
+
+Ион 0: координаты [0.25 0.25 0.25]
+Отдельные графики: ion_spectra_separate/ion_0_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_0_comparison.png
+----------------------------------------
+Ион 1: координаты [0.25 0.25 0.75]
+Отдельные графики: ion_spectra_separate/ion_1_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_1_comparison.png
+----------------------------------------
+Ион 2: координаты [0.25 0.75 0.25]
+Отдельные графики: ion_spectra_separate/ion_2_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_2_comparison.png
+----------------------------------------
+Ион 3: координаты [0.25 0.75 0.75]
+Отдельные графики: ion_spectra_separate/ion_3_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_3_comparison.png
+----------------------------------------
+Ион 4: координаты [0.75 0.25 0.25]
+Отдельные графики: ion_spectra_separate/ion_4_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_4_comparison.png
+----------------------------------------
+Ион 5: координаты [0.75 0.25 0.75]
+Отдельные графики: ion_spectra_separate/ion_5_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_5_comparison.png
+----------------------------------------
+Ион 6: координаты [0.75 0.75 0.25]
+Отдельные графики: ion_spectra_separate/ion_6_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_6_comparison.png
+----------------------------------------
+Ион 7: координаты [0.75 0.75 0.75]
+Отдельные графики: ion_spectra_separate/ion_7_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_7_comparison.png
+----------------------------------------
+Ион 8: координаты [0.25 0.5  0.5 ]
+Отдельные графики: ion_spectra_separate/ion_8_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_8_comparison.png
+----------------------------------------
+Ион 9: координаты [0.75 0.5  0.5 ]
+Отдельные графики: ion_spectra_separate/ion_9_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_9_comparison.png
+----------------------------------------
+Ион 10: координаты [0.5  0.25 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_10_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_10_comparison.png
+----------------------------------------
+Ион 11: координаты [0.5  0.75 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_11_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_11_comparison.png
+----------------------------------------
+Ион 12: координаты [0.5  0.5  0.25]
+Отдельные графики: ion_spectra_separate/ion_12_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_12_comparison.png
+----------------------------------------
+Ион 13: координаты [0.5  0.5  0.75]
+Отдельные графики: ion_spectra_separate/ion_13_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_13_comparison.png
+----------------------------------------
+Ион 14: координаты [0.5 0.5 0.5]
+Отдельные графики: ion_spectra_separate/ion_14_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_14_comparison.png
+----------------------------------------
+Ион 15: координаты [0.5  0.25 0.25]
+Отдельные графики: ion_spectra_separate/ion_15_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_15_comparison.png
+----------------------------------------
+Ион 16: координаты [0.5  0.25 0.75]
+Отдельные графики: ion_spectra_separate/ion_16_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_16_comparison.png
+----------------------------------------
+Ион 17: координаты [0.5  0.75 0.25]
+Отдельные графики: ion_spectra_separate/ion_17_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_17_comparison.png
+----------------------------------------
+Ион 18: координаты [0.5  0.75 0.75]
+Отдельные графики: ion_spectra_separate/ion_18_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_18_comparison.png
+----------------------------------------
+Ион 19: координаты [0.25 0.5  0.25]
+Отдельные графики: ion_spectra_separate/ion_19_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_19_comparison.png
+----------------------------------------
+Ион 20: координаты [0.25 0.5  0.75]
+Отдельные графики: ion_spectra_separate/ion_20_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_20_comparison.png
+----------------------------------------
+Ион 21: координаты [0.75 0.5  0.25]
+Отдельные графики: ion_spectra_separate/ion_21_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_21_comparison.png
+----------------------------------------
+Ион 22: координаты [0.75 0.5  0.75]
+Отдельные графики: ion_spectra_separate/ion_22_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_22_comparison.png
+----------------------------------------
+Ион 23: координаты [0.25 0.25 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_23_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_23_comparison.png
+----------------------------------------
+Ион 24: координаты [0.25 0.75 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_24_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_24_comparison.png
+----------------------------------------
+Ион 25: координаты [0.75 0.25 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_25_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_25_comparison.png
+----------------------------------------
+Ион 26: координаты [0.75 0.75 0.5 ]
+Отдельные графики: ion_spectra_separate/ion_26_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_26_comparison.png
+----------------------------------------
+Ион 27: координаты [0.   0.25 0.25]
+Отдельные графики: ion_spectra_separate/ion_27_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_27_comparison.png
+----------------------------------------
+Ион 28: координаты [0.25 0.   0.25]
+Отдельные графики: ion_spectra_separate/ion_28_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_28_comparison.png
+----------------------------------------
+Ион 29: координаты [0.25 0.25 0.  ]
+Отдельные графики: ion_spectra_separate/ion_29_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_29_comparison.png
+----------------------------------------
+Ион 30: координаты [0.   0.25 0.75]
+Отдельные графики: ion_spectra_separate/ion_30_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_30_comparison.png
+----------------------------------------
+Ион 31: координаты [0.25 0.   0.75]
+Отдельные графики: ion_spectra_separate/ion_31_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_31_comparison.png
+----------------------------------------
+Ион 32: координаты [0.25 0.25 1.  ]
+Отдельные графики: ion_spectra_separate/ion_32_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_32_comparison.png
+----------------------------------------
+Ион 33: координаты [0.   0.75 0.25]
+Отдельные графики: ion_spectra_separate/ion_33_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_33_comparison.png
+----------------------------------------
+Ион 34: координаты [0.25 0.75 0.  ]
+Отдельные графики: ion_spectra_separate/ion_34_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_34_comparison.png
+----------------------------------------
+Ион 35: координаты [0.25 1.   0.25]
+Отдельные графики: ion_spectra_separate/ion_35_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_35_comparison.png
+----------------------------------------
+Ион 36: координаты [0.   0.75 0.75]
+Отдельные графики: ion_spectra_separate/ion_36_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_36_comparison.png
+----------------------------------------
+Ион 37: координаты [0.25 0.75 1.  ]
+Отдельные графики: ion_spectra_separate/ion_37_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_37_comparison.png
+----------------------------------------
+Ион 38: координаты [0.25 1.   0.75]
+Отдельные графики: ion_spectra_separate/ion_38_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_38_comparison.png
+----------------------------------------
+Ион 39: координаты [0.75 0.   0.25]
+Отдельные графики: ion_spectra_separate/ion_39_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_39_comparison.png
+----------------------------------------
+Ион 40: координаты [0.75 0.25 0.  ]
+Отдельные графики: ion_spectra_separate/ion_40_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_40_comparison.png
+----------------------------------------
+Ион 41: координаты [1.   0.25 0.25]
+Отдельные графики: ion_spectra_separate/ion_41_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_41_comparison.png
+----------------------------------------
+Ион 42: координаты [0.75 0.   0.75]
+Отдельные графики: ion_spectra_separate/ion_42_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_42_comparison.png
+----------------------------------------
+Ион 43: координаты [0.75 0.25 1.  ]
+Отдельные графики: ion_spectra_separate/ion_43_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_43_comparison.png
+----------------------------------------
+Ион 44: координаты [1.   0.25 0.75]
+Отдельные графики: ion_spectra_separate/ion_44_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_44_comparison.png
+----------------------------------------
+Ион 45: координаты [0.75 0.75 0.  ]
+Отдельные графики: ion_spectra_separate/ion_45_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_45_comparison.png
+----------------------------------------
+Ион 46: координаты [0.75 1.   0.25]
+Отдельные графики: ion_spectra_separate/ion_46_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_46_comparison.png
+----------------------------------------
+Ион 47: координаты [1.   0.75 0.25]
+Отдельные графики: ion_spectra_separate/ion_47_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_47_comparison.png
+----------------------------------------
+Ион 48: координаты [0.75 0.75 1.  ]
+Отдельные графики: ion_spectra_separate/ion_48_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_48_comparison.png
+----------------------------------------
+Ион 49: координаты [0.75 1.   0.75]
+Отдельные графики: ion_spectra_separate/ion_49_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_49_comparison.png
+----------------------------------------
+Ион 50: координаты [1.   0.75 0.75]
+Отдельные графики: ion_spectra_separate/ion_50_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_50_comparison.png
+----------------------------------------
+Ион 51: координаты [0.  0.5 0.5]
+Отдельные графики: ion_spectra_separate/ion_51_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_51_comparison.png
+----------------------------------------
+Ион 52: координаты [1.  0.5 0.5]
+Отдельные графики: ion_spectra_separate/ion_52_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_52_comparison.png
+----------------------------------------
+Ион 53: координаты [0.5 0.  0.5]
+Отдельные графики: ion_spectra_separate/ion_53_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_53_comparison.png
+----------------------------------------
+Ион 54: координаты [0.5 1.  0.5]
+Отдельные графики: ion_spectra_separate/ion_54_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_54_comparison.png
+----------------------------------------
+Ион 55: координаты [0.5 0.5 0. ]
+Отдельные графики: ion_spectra_separate/ion_55_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_55_comparison.png
+----------------------------------------
+Ион 56: координаты [0.5 0.5 1. ]
+Отдельные графики: ion_spectra_separate/ion_56_spectra_separate.png
+График сравнения: ion_spectra_separate/ion_56_comparison.png
+----------------------------------------
