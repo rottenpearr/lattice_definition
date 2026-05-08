@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess
 from glob import glob
 
+ROOT = Path(__file__).parent.parent.parent
+
 
 def parse_txt(json_additional_data_path):
     with open(json_additional_data_path, "r") as file:
@@ -11,24 +13,26 @@ def parse_txt(json_additional_data_path):
 
 
 def main():
-    subprocess.run(["python", Path("db_init.py")])
-    subprocess.run(["python", Path("lattice_types_init.py")])
+    subprocess.run(["python", ROOT / "cris" / "db" / "schema" / "db_init.py"])
+    subprocess.run(["python", ROOT / "cris" / "db" / "schema" / "lattice_types_init.py"])
 
     print("Запись данных из всех файлов в базу данных:")
-    files_path = Path("../../data/json")
+    files_path = ROOT / "data" / "json"
     files = glob(str(files_path / "*.json"))
+    json_additional_data_path = ROOT / "cris" / "db" / "importers" / "json_additional_data.txt"
+
     for file_path in files:
         filename = Path(file_path).stem
         print(f"Запись файлов {filename}.json и {filename}.xyz")
-        json_file_path = Path(f"../data/json/{filename}.json")
-        json_additional_data_path = Path("json_additional_data.txt")
-        xyz_file_path = Path(f"../data/xyz/{filename}.xyz")
+        json_file_path = ROOT / "data" / "json" / f"{filename}.json"
+        xyz_file_path = ROOT / "data" / "xyz" / f"{filename}.xyz"
 
-        subprocess.run(["python", Path("json_to_db.py"), json_file_path])
+        subprocess.run(["python", ROOT / "cris" / "db" / "importers" / "json_to_db.py", json_file_path])
 
         lattice_type_id, substance_id = parse_txt(json_additional_data_path)
 
-        subprocess.run(["python", Path("xyz_to_db.py"), xyz_file_path, str(lattice_type_id), str(substance_id)])
+        subprocess.run(["python", ROOT / "cris" / "db" / "importers" / "xyz_to_db.py",
+                        xyz_file_path, str(lattice_type_id), str(substance_id)])
 
     print("База данных полностью инициализирована.")
 

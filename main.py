@@ -6,12 +6,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QDialog, QMessageBox, QFileDialog
 
-from Info_Dialog_ui import Ui_Dialog_2  # Интерфейс диалогового окна информации
-from Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
-from Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
-from scripts.coordinates_nondimensionalization import shift_coordinates, normalize_coordinates
-from scripts.db.ions_query import get_similar_xyz_from_db, check_coords
-from generate_report import save_docx
+from cris.app.generated.Info_Dialog_ui import Ui_Dialog_2  # Интерфейс диалогового окна информации
+from cris.app.generated.Ion_Dialog_ui import Ui_Dialog  # Интерфейс диалогового окна для ввода координат
+from cris.app.generated.Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
+from cris.core.coordinates import shift_coordinates, normalize_coordinates
+from cris.db.queries import get_similar_xyz_from_db, check_coords
+from cris.report import save_docx
 
 
 # Инициализация главного окна

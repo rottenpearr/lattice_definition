@@ -1,5 +1,5 @@
 import pandas as pd
-from operations.kde_4_all_ions import kde_arrays, substance_id
+from scripts.operations.kde_4_all_ions import kde_arrays, substance_id
 from os.path import normpath, join, dirname
 from os import makedirs
 

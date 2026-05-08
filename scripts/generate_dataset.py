@@ -3,8 +3,8 @@ import pandas as pd
 from collections import Counter
 
 from scripts.operations.testing import xyz_to_normalized_coords_with_noise
-from scripts.operations.lattice_microoperations import get_lattice_vectors3
-from scripts.operations.spectrum_operations import kde_array
+from cris.core.vectors import get_lattice_vectors3
+from cris.core.spectrum import kde_array
 
 
 def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4000, noise_percent=4):

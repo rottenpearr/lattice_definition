@@ -2,11 +2,11 @@ from collections import Counter
 import numpy as np
 from pathlib import Path
 
-from scripts.coordinates_nondimensionalization import normalize_coordinates, shift_coordinates
-from scripts.db.xyz_to_db import parse_xyz
-from scripts.operations.lattice_microoperations import get_lattice_vectors2
-from scripts.operations.spectrum_operations import create_all_spectrum_plots, plot_spectra
-from scripts.operations.spectrum_operations import kde_array
+from cris.core.coordinates import normalize_coordinates, shift_coordinates
+from cris.db.importers.xyz_to_db import parse_xyz
+from cris.core.vectors import get_lattice_vectors2
+from cris.core.spectrum import create_all_spectrum_plots, plot_spectra
+from cris.core.spectrum import kde_array
 
 # Нормализовать (шаблон)
 # data_dict = {}

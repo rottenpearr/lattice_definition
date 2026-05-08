@@ -1,5 +1,5 @@
-from scripts.operations.lattice_microoperations import get_lattice_vectors3
-from scripts.operations.spectrum_operations import kde_array
+from cris.core.vectors import get_lattice_vectors3
+from cris.core.spectrum import kde_array
 from collections import Counter
 from os.path import normpath, join, dirname
 
