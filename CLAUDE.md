@@ -17,7 +17,7 @@ Requires MySQL 8.0+ running on `localhost:3306`. Credentials are in `cris/db/con
 python cris/tools/complete_db.py
 ```
 
-This runs `cris/db/schema/db_init.py` → `cris/db/schema/lattice_types_init.py` → `cris/db/importers/json_to_db.py` + `cris/db/importers/xyz_to_db.py` for every file in `data/json/`.
+This runs `cris/db/schema/db_init.py` → `cris/db/schema/lattice_types_init.py` → `cris/db/importers/json_to_db.py` + `cris/db/importers/xyz_to_db.py` for every file in `data/db/json/`.
 
 To recreate from scratch in MySQL CLI:
 ```sql
@@ -79,6 +79,7 @@ cris/                          # Main installable package
 
 assets/
 ├── icons/                     # SVG icons
+├── images/                    # Lattice type images (PNG/SVG)
 ├── ui/                        # Qt Designer .ui source files
 └── resources.qrc              # QRC manifest for icons
 
@@ -92,6 +93,21 @@ ML/                            # Research notebooks and ML scripts
 │   └── wasserstein_dist.py    # Wasserstein distance metric
 ├── percentage_ident.py        # KDE identification experiment (hardcoded NaCl data)
 └── visualize_kde.py           # Quick KDE plot from CSV
+
+data/
+├── db/                        # DB source files — tracked in git
+│   ├── cif/                   # Raw CIF files
+│   ├── json/                  # JSON converted from CIF
+│   └── xyz/                   # XYZ atom positions from CIF
+├── structures/                # Reference XYZ structures — tracked in git
+│   ├── accurate/              # Ideal lattices (Materials Project + clean supercells)
+│   └── inaccurate/            # Structures with vacancies/noise
+├── examples/                  # CSV input examples for UI — tracked in git
+└── generated/                 # Generated data — .gitignore (local only)
+    ├── datasets/accurate/     # KDE datasets for accurate structures
+    ├── datasets/inaccurate/   # KDE datasets with defects
+    ├── spectra/               # Spectrum plots
+    └── spectre_diff/          # Spectrum comparison outputs
 ```
 
 ### Core identification pipeline
