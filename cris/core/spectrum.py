@@ -117,7 +117,7 @@ def kde_array(data):
     distances = np.array(distances)
 
     kde = gaussian_kde(distances, bw_method=0.1)
-    x_min, x_max = min(distances) - 0.1, max(distances) + 0.1
-    x_grid = np.linspace(x_min, x_max, 1000)
+    x_min, x_max = 0, 2
+    x_grid = np.linspace(x_min, x_max, 200)
     kde_values = kde.evaluate(x_grid)
     return np.array(list(kde_values))
