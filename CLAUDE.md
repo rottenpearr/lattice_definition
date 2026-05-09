@@ -99,13 +99,20 @@ data/
 │   ├── cif/                   # Raw CIF files
 │   ├── json/                  # JSON converted from CIF
 │   └── xyz/                   # XYZ atom positions from CIF
-├── structures/                # Reference XYZ structures — tracked in git
-│   ├── accurate/              # Ideal lattices (Materials Project + clean supercells)
-│   └── inaccurate/            # Structures with vacancies/noise
+├── structures/                # XYZ structures
+│   ├── micro/                 # Unit cells (4–80 atoms)
+│   │   ├── source/            # Downloaded from MP/CIF — tracked in git
+│   │   └── generated/        # With vacancies/noise — .gitignore
+│   └── macro/                 # Supercells NxNxN
+│       ├── source/            # Clean supercells — tracked in git
+│       └── generated/        # With vacancies/noise — .gitignore
 ├── examples/                  # CSV input examples for UI — tracked in git
 └── generated/                 # Generated data — .gitignore (local only)
-    ├── datasets/accurate/     # KDE datasets for accurate structures
-    ├── datasets/inaccurate/   # KDE datasets with defects
+    ├── datasets/
+    │   ├── micro/source/      # KDE datasets from clean unit cells
+    │   ├── micro/generated/   # KDE datasets from unit cells with vacancies
+    │   ├── macro/source/      # KDE datasets from clean supercells
+    │   └── macro/generated/   # KDE datasets from supercells with vacancies
     ├── spectra/               # Spectrum plots
     └── spectre_diff/          # Spectrum comparison outputs
 ```

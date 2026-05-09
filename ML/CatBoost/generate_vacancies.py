@@ -20,8 +20,8 @@ import random
 from pathlib import Path
 
 # Пути по умолчанию
-ACCURATE_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "accurate"
-INACCURATE_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "inaccurate"
+ACCURATE_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "micro" / "source"
+INACCURATE_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "micro" / "generated"
 
 # Уровни вакансий по умолчанию (доля удалённых атомов)
 DEFAULT_RATES = [0.05, 0.10, 0.15]
