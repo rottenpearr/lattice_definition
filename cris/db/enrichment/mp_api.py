@@ -7,6 +7,7 @@ import os
 import requests
 from dataclasses import dataclass
 from typing import Optional
+from cris.logger import logger
 
 MP_BASE = "https://api.materialsproject.org"
 
@@ -25,7 +26,7 @@ class MpEntry:
 def search(formula: str, max_results: int = 5) -> list[MpEntry]:
     api_key = os.getenv("MP_API_KEY", "")
     if not api_key:
-        print("[MP] MP_API_KEY не задан")
+        logger.warning("MP_API_KEY not set — skipping Materials Project search")
         return []
     try:
         resp = requests.get(
@@ -41,7 +42,7 @@ def search(formula: str, max_results: int = 5) -> list[MpEntry]:
         resp.raise_for_status()
         data = resp.json().get("data", [])
     except Exception as e:
-        print(f"[MP] {e}")
+        logger.error("Materials Project search failed for formula={}: {}", formula, e)
         return []
     entries = []
     for item in data:

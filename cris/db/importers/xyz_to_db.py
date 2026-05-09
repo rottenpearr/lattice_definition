@@ -12,6 +12,7 @@ import mysql.connector
 
 from cris.db.config import db_config
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
+from cris.logger import logger
 
 
 def parse_xyz(xyz_file_path: str) -> list[list]:
@@ -73,10 +74,10 @@ if __name__ == "__main__":
 
         upsert_sites(cursor, data, normalized, structure_id, lattice_type_id)
         conn.commit()
-        print(f"Координаты загружены: structure_id={structure_id}, {len(data)} ионов")
+        logger.info("Coordinates loaded: structure_id={}, {} sites", structure_id, len(data))
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        logger.error("xyz_to_db failed: {}", e)
     finally:
         cursor.close()
         conn.close()

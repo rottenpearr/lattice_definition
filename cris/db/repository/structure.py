@@ -4,32 +4,28 @@ from cris.db.connection import get_cursor
 from cris.db.models import ReferenceStructure
 
 
+_SELECT = """
+    SELECT id, name, formula, lattice_type_id,
+           cell_length_a, cell_length_b, cell_length_c, cell_volume,
+           cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
+           sg_number, sg_hall, sg_hm,
+           cif_path, xyz_path, image_path,
+           cod_id, mp_id, icsd_id, doi, source_url,
+           existence_status, existence_source
+    FROM reference_structure
+"""
+
+
 def get_by_id(structure_id: int) -> Optional[ReferenceStructure]:
     with get_cursor() as cur:
-        cur.execute("""
-            SELECT id, name, formula, lattice_type_id,
-                   cell_length_a, cell_length_b, cell_length_c, cell_volume,
-                   cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
-                   sg_number, sg_hall, sg_hm,
-                   cif_path, xyz_path, image_path,
-                   cod_id, mp_id, icsd_id, doi, source_url
-            FROM reference_structure WHERE id = %s
-        """, (structure_id,))
+        cur.execute(_SELECT + "WHERE id = %s", (structure_id,))
         row = cur.fetchone()
     return ReferenceStructure(*row) if row else None
 
 
 def get_by_lattice_type(lattice_type_id: int) -> list[ReferenceStructure]:
     with get_cursor() as cur:
-        cur.execute("""
-            SELECT id, name, formula, lattice_type_id,
-                   cell_length_a, cell_length_b, cell_length_c, cell_volume,
-                   cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
-                   sg_number, sg_hall, sg_hm,
-                   cif_path, xyz_path, image_path,
-                   cod_id, mp_id, icsd_id, doi, source_url
-            FROM reference_structure WHERE lattice_type_id = %s
-        """, (lattice_type_id,))
+        cur.execute(_SELECT + "WHERE lattice_type_id = %s", (lattice_type_id,))
         return [ReferenceStructure(*row) for row in cur.fetchall()]
 
 

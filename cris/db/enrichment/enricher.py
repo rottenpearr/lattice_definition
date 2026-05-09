@@ -9,6 +9,7 @@
 import json
 from datetime import datetime
 
+from cris.logger import logger
 from cris.db.connection import get_cursor
 from cris.db.repository.lattice import get_by_id as get_lattice, upsert_metadata
 from cris.db.repository.structure import update_external_ids
@@ -54,7 +55,7 @@ def enrich_lattice_type(lattice_type_id: int) -> bool:
     ))
     _log("AI_SEARCH", "lattice_type", lattice_type_id,
          f"enrich {lt.name_en}", str(data), data, 200, True)
-    print(f"[Enricher] '{lt.name_ru}' обновлена")
+    logger.info("Lattice metadata enriched via AI: '{}'", lt.name_ru)
     return True
 
 

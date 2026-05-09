@@ -183,3 +183,6 @@ catboost_info/
 
 # Agents
 .claude
+
+# Application logs
+logs/

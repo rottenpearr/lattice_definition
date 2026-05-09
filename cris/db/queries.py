@@ -5,6 +5,7 @@
 from collections import Counter
 import mysql.connector
 from cris.db.config import db_config
+from cris.logger import logger
 
 
 def get_similar_xyz_from_db(coordinates) -> list:
@@ -28,7 +29,7 @@ def get_similar_xyz_from_db(coordinates) -> list:
             results.extend(cursor.fetchall())
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        logger.error("get_similar_xyz_from_db failed: {}", e)
     finally:
         cursor.close()
         conn.close()
@@ -60,7 +61,7 @@ def check_coords(ions: list, ion_amount: int):
                 filtered_structures.append(struct_id)
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        logger.error("check_coords (filter by count) failed: {}", e)
     finally:
         cursor.close()
         conn.close()
@@ -113,7 +114,7 @@ def check_coords(ions: list, ion_amount: int):
                     structure_info = row
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        logger.error("check_coords (fetch info) failed: {}", e)
     finally:
         cursor.close()
         conn.close()

@@ -12,6 +12,7 @@ from pathlib import Path
 import mysql.connector
 
 from cris.db.config import db_config
+from cris.logger import logger
 
 
 def _float(s: str) -> float:
@@ -96,10 +97,10 @@ if __name__ == "__main__":
 
         out_file = Path(__file__).parent / "json_additional_data.txt"
         out_file.write_text(f"{lt_id}\n{struct_id}")
-        print(f"Структура добавлена: lattice_type_id={lt_id}, structure_id={struct_id}")
+        logger.info("Structure imported: lattice_type_id={}, structure_id={}", lt_id, struct_id)
     except Exception as e:
         conn.rollback()
-        print(f"Ошибка: {e}")
+        logger.error("json_to_db failed: {}", e)
     finally:
         cursor.close()
         conn.close()

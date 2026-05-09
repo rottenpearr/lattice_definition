@@ -5,6 +5,7 @@ AI-обогащение через Claude API (Anthropic).
 import json
 import os
 from typing import Optional
+from cris.logger import logger
 
 try:
     import anthropic
@@ -27,7 +28,7 @@ def _ask(prompt: str, max_tokens: int = 512) -> Optional[str]:
         )
         return msg.content[0].text.strip()
     except Exception as e:
-        print(f"[AI] {e}")
+        logger.error("Claude API request failed: {}", e)
         return None
 
 

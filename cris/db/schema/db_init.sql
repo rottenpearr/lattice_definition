@@ -72,6 +72,17 @@ CREATE TABLE IF NOT EXISTS reference_structure (
     doi            VARCHAR(255),
     source_url     VARCHAR(1024),
 
+    -- статус существования структуры
+    existence_status ENUM(
+        'experimental',   -- подтверждена экспериментально (синтезирована, измерена)
+        'theoretical',    -- предсказана вычислительно, не синтезирована
+        'hypothetical',   -- теоретически возможна, нет даже расчётов DFT
+        'disputed'        -- данные противоречивы или отозваны
+    ) NOT NULL DEFAULT 'experimental'
+    COMMENT 'подтверждено ли существование структуры',
+    existence_source VARCHAR(512)
+    COMMENT 'ссылка на работу, подтверждающую статус (DOI или URL)',
+
     added_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

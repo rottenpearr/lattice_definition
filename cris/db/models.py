@@ -54,6 +54,8 @@ class ReferenceStructure:
     icsd_id: Optional[int] = None
     doi: str = ""
     source_url: str = ""
+    existence_status: str = "experimental"  # experimental / theoretical / hypothetical / disputed
+    existence_source: str = ""
 
 
 @dataclass

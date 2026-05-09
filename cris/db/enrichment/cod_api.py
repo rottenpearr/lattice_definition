@@ -2,6 +2,7 @@
 import requests
 from dataclasses import dataclass
 from typing import Optional
+from cris.logger import logger
 
 COD_RESULT_URL = "https://www.crystallography.net/cod/result.php"
 COD_CIF_URL    = "https://www.crystallography.net/cod/{cod_id}.cif"
@@ -30,7 +31,7 @@ def search(formula: str, sg_number: Optional[int] = None,
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        print(f"[COD] {e}")
+        logger.error("COD search failed for formula={}: {}", formula, e)
         return []
     entries = []
     for item in data[:max_results]:
@@ -57,5 +58,5 @@ def download_cif(cod_id: int) -> Optional[str]:
         resp.raise_for_status()
         return resp.text
     except Exception as e:
-        print(f"[COD] CIF {cod_id}: {e}")
+        logger.error("COD CIF download failed cod_id={}: {}", cod_id, e)
         return None
