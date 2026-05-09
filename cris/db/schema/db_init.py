@@ -1,25 +1,22 @@
+"""Инициализирует схему БД из db_init.sql."""
 from pathlib import Path
-
 import mysql.connector
-
 from cris.db.config import db_config
 
-sql_file_path = Path(__file__).parent / "db_init.sql"
+sql_file = Path(__file__).parent / "db_init.sql"
 
-with open(sql_file_path, 'r', encoding="UTF-8") as file:
-    sql_queries = file.read()
-
-conn = mysql.connector.connect(**db_config)
+conn = mysql.connector.connect(**{k: v for k, v in db_config.items() if k != "database"})
 cursor = conn.cursor()
-
 try:
-    for query in sql_queries.split("\n\n"):
-        cursor.execute(query, multi=True)
+    for stmt in sql_file.read_text(encoding="utf-8").split(";"):
+        stmt = stmt.strip()
+        if stmt:
+            cursor.execute(stmt)
     conn.commit()
-    print("База данных и таблицы успешно созданы.")
+    print("Схема БД создана.")
 except mysql.connector.Error as err:
     conn.rollback()
-    print(f"Ошибка при выполнении SQL: {err}")
+    print(f"Ошибка: {err}")
 finally:
     cursor.close()
     conn.close()
