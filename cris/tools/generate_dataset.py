@@ -9,7 +9,7 @@ from cris.core.spectrum import kde_array
 
 def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4000, noise_percent=4):
     base_out_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), '..', 'data', 'csv_kde', substance_name)
+        os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'generated', 'dataset', substance_name)
     )
     for iteration in range(1, total_samples + 1):
         try:
@@ -36,13 +36,13 @@ def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4
 
 if __name__ == "__main__":
     FILE_PATH = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), '..', 'data', 'materials_xyz', 'U2N3_phase2.xyz')
+        os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'structures', 'accurate', 'UC.xyz')
     )
 
     generate_dataset(
         xyz_filepath=FILE_PATH,
         substance_id="train",
-        substance_name='U2N3_phase2_dataset',
-        total_samples=400,
-        noise_percent=4
+        substance_name='UC',
+        total_samples=100,
+        noise_percent=5
     )
