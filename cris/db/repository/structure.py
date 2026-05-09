@@ -11,7 +11,8 @@ _SELECT = """
            sg_number, sg_hall, sg_hm,
            cif_path, xyz_path, image_path,
            cod_id, mp_id, icsd_id, doi, source_url,
-           existence_status, existence_source
+           existence_status, existence_source,
+           structure_description
     FROM reference_structure
 """
 

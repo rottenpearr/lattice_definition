@@ -17,6 +17,7 @@ from cris.db.models import LatticeMetadata
 from cris.db.enrichment.cod_api import search as cod_search
 from cris.db.enrichment.mp_api import search as mp_search
 from cris.db.enrichment.ai_search import enrich_lattice_type as ai_enrich_lattice
+from cris.db.enrichment.robocrys_describer import describe_and_save
 
 
 def _log(source: str, target_type: str, target_id: int,
@@ -60,9 +61,14 @@ def enrich_lattice_type(lattice_type_id: int) -> bool:
 
 
 def enrich_structure(structure_id: int, formula: str,
-                     sg_number: int = 0) -> bool:
-    """Ищет вещество в COD и MP, обновляет внешние ID."""
+                     sg_number: int = 0,
+                     cif_path: str = "") -> bool:
+    """
+    Ищет вещество в COD и MP, обновляет внешние ID.
+    Если передан cif_path — генерирует описание через robocrystallographer.
+    """
     success = False
+    mp_id = ""
 
     cod_results = cod_search(formula, sg_number or None)
     if cod_results:
@@ -80,13 +86,17 @@ def enrich_structure(structure_id: int, formula: str,
     mp_results = mp_search(formula)
     if mp_results:
         best_mp = mp_results[0]
-        update_external_ids(structure_id, mp_id=best_mp.mp_id)
+        mp_id = best_mp.mp_id
+        update_external_ids(structure_id, mp_id=mp_id)
         _log("MATERIALS_PROJECT", "reference_structure", structure_id,
-             f"formula={formula}", f"mp_id={best_mp.mp_id}",
-             {"mp_id": best_mp.mp_id}, 200, True)
+             f"formula={formula}", f"mp_id={mp_id}",
+             {"mp_id": mp_id}, 200, True)
         success = True
     else:
         _log("MATERIALS_PROJECT", "reference_structure", structure_id,
              f"formula={formula}", "not found", {}, 200, False)
+
+    # генерируем структурное описание через robocrystallographer
+    describe_and_save(structure_id, cif_path=cif_path, mp_id=mp_id)
 
     return success

@@ -83,6 +83,10 @@ CREATE TABLE IF NOT EXISTS reference_structure (
     existence_source VARCHAR(512)
     COMMENT 'ссылка на работу, подтверждающую статус (DOI или URL)',
 
+    -- автоматически сгенерированное текстовое описание (robocrystallographer)
+    structure_description TEXT
+    COMMENT 'описание на английском, генерируется robocrys из CIF или MP',
+
     added_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

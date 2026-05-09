@@ -56,6 +56,7 @@ class ReferenceStructure:
     source_url: str = ""
     existence_status: str = "experimental"  # experimental / theoretical / hypothetical / disputed
     existence_source: str = ""
+    structure_description: str = ""  # сгенерировано robocrystallographer
 
 
 @dataclass
