@@ -22,11 +22,13 @@
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
-from cris.tools.generate_dataset import generate_dataset
-
 ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(ROOT))
+
+from cris.tools.generate_dataset import generate_dataset
 STRUCTURES_DIR = ROOT / "data" / "structures"
 DATASETS_DIR   = ROOT / "data" / "generated" / "datasets"
 
