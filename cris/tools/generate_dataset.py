@@ -7,10 +7,13 @@ from cris.core.vectors import get_lattice_vectors3
 from cris.core.spectrum import kde_array
 
 
-def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4000, noise_percent=4):
-    base_out_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), '..', 'data', 'csv_kde', substance_name)
-    )
+def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4000, noise_percent=4, out_dir=None):
+    if out_dir is not None:
+        base_out_dir = os.path.normpath(os.path.join(out_dir, substance_name))
+    else:
+        base_out_dir = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'generated', 'datasets', substance_name)
+        )
     for iteration in range(1, total_samples + 1):
         try:
             noisy_coords = xyz_to_normalized_coords_with_noise(

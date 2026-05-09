@@ -12,6 +12,20 @@
 
 ---
 
+## Переменные окружения
+
+Создайте файл `.env` в корне проекта:
+
+```
+MP_API_KEY=ваш_ключ_от_materials_project
+```
+
+Получить ключ: [next-gen.materialsproject.org/api](https://next-gen.materialsproject.org/api).
+
+Файл `.env` уже добавлен в `.gitignore` — ключ не попадёт в репозиторий.
+
+---
+
 ## Быстрый старт
 
 ```bash
