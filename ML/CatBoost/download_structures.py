@@ -1,14 +1,16 @@
 """
 Скачивает структуры урановых соединений из Materials Project API
-и сохраняет в data/structures/accurate/ в формате XYZ.
+и сохраняет в data/structures/micro/source/ в формате XYZ.
+
+API-ключ читается из .env файла (MP_API_KEY=...) или передаётся через --api-key.
 
 Использование:
-    python ML/CatBoost/download_structures.py --api-key YOUR_KEY
-    python ML/CatBoost/download_structures.py --api-key YOUR_KEY --limit 50
-    python ML/CatBoost/download_structures.py --api-key YOUR_KEY --formula UC
+    python ML/CatBoost/download_structures.py
+    python ML/CatBoost/download_structures.py --limit 50
+    python ML/CatBoost/download_structures.py --formula UC --limit 20
 
 Зависимости:
-    pip install mp-api
+    pip install mp-api python-dotenv
 """
 
 import argparse
@@ -21,11 +23,32 @@ from pymatgen.io.xyz import XYZ
 # Путь для сохранения структур
 OUT_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "micro" / "source"
 
-# Элементы для поиска — только соединения урана
+# Элементы для поиска
 SEARCH_ELEMENTS = ["U"]
 
-# Дополнительный фильтр по формуле (None = все урановые соединения)
-FORMULA_FILTER = None
+
+def load_api_key(cli_key: str = None) -> str:
+    """Читает API-ключ из аргумента CLI, затем из .env, затем из переменной окружения."""
+    if cli_key:
+        return cli_key
+
+    # Попытка прочитать .env вручную
+    env_path = Path(__file__).parent.parent.parent / ".env"
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("MP_API_KEY=") and not line.startswith("#"):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+
+    # Переменная окружения
+    key = os.environ.get("MP_API_KEY")
+    if key:
+        return key
+
+    raise ValueError(
+        "API-ключ не найден. Добавьте MP_API_KEY=<ключ> в файл .env "
+        "или передайте через --api-key."
+    )
 
 
 def structure_to_xyz(structure, filepath: Path, comment: str = ""):
@@ -47,20 +70,15 @@ def download_structures(api_key: str, limit: int = 50, formula: str = None):
     print(f"Подключение к Materials Project API...")
     with MPRester(api_key=api_key) as mpr:
 
-        # Параметры поиска
         search_kwargs = dict(
-            elements=SEARCH_ELEMENTS,
-            fields=["material_id", "formula_pretty", "structure", "symmetry", "energy_above_hull"],
-            num_chunks=1,
+            fields=["material_id", "formula_pretty", "structure", "symmetry"],
+            deprecated=False,
         )
 
-        # Фильтр по формуле если указан
         if formula:
             search_kwargs["formula"] = formula
-            del search_kwargs["elements"]
-
-        # Фильтр по стабильности: только стабильные или близкие к стабильным структуры
-        search_kwargs["energy_above_hull"] = (0, 0.1)  # eV/atom
+        else:
+            search_kwargs["elements"] = SEARCH_ELEMENTS
 
         print(f"Поиск структур (лимит: {limit})...")
         docs = mpr.materials.search(**search_kwargs)
@@ -76,12 +94,10 @@ def download_structures(api_key: str, limit: int = 50, formula: str = None):
         formula_pretty = doc.formula_pretty
         structure = doc.structure
 
-        # Имя файла: formula_mpid.xyz, например UC_mp-2489.xyz
         safe_formula = formula_pretty.replace(" ", "")
         filename = f"{safe_formula}_{mp_id}.xyz"
         filepath = OUT_DIR / filename
 
-        # Пропускаем если уже скачан
         if filepath.exists():
             print(f"  Уже есть: {filename}")
             skipped += 1
@@ -89,8 +105,7 @@ def download_structures(api_key: str, limit: int = 50, formula: str = None):
 
         try:
             spacegroup = doc.symmetry.symbol if doc.symmetry else "unknown"
-            e_hull = doc.energy_above_hull
-            comment = f"{formula_pretty} {mp_id} sg={spacegroup} e_hull={e_hull:.4f}"
+            comment = f"{formula_pretty} {mp_id} sg={spacegroup}"
             structure_to_xyz(structure, filepath, comment)
             print(f"  Сохранён: {filename}  ({len(structure.sites)} атомов, {spacegroup})")
             saved += 1
@@ -103,9 +118,10 @@ def download_structures(api_key: str, limit: int = 50, formula: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Скачать структуры из Materials Project")
-    parser.add_argument("--api-key", required=True, help="MP API ключ")
+    parser.add_argument("--api-key", default=None, help="MP API ключ (или MP_API_KEY в .env)")
     parser.add_argument("--limit", type=int, default=50, help="Максимум структур (по умолчанию 50)")
     parser.add_argument("--formula", type=str, default=None, help="Фильтр по формуле, например 'UC' или 'UN2'")
     args = parser.parse_args()
 
-    download_structures(api_key=args.api_key, limit=args.limit, formula=args.formula)
+    key = load_api_key(args.api_key)
+    download_structures(api_key=key, limit=args.limit, formula=args.formula)

@@ -12,3 +12,4 @@ scipy==1.17.1
 seaborn==0.13.2
 mp-api>=0.41.0
 catboost>=1.2
+python-dotenv>=1.0
