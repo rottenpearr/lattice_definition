@@ -173,6 +173,7 @@ reports/*
 # Data
 /data/generated/
 /data/csv_kde/
+/data/structures
 
 # Agents
 .claude
