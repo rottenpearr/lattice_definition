@@ -10,3 +10,5 @@ umap-learn==0.5.12
 numpy==2.4.4
 scipy==1.17.1
 seaborn==0.13.2
+mp-api>=0.41.0
+catboost>=1.2
