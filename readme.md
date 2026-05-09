@@ -13,89 +13,123 @@
 * reports - отчеты с результатами поиска.
 * info_examples - изображения к readme-файлам.
 
-### Скрипты
+- Python 3.9+
+- MySQL 8.0+ (localhost:3306)
+- Зависимости: `pip install -r requirements.txt`
 
-База данных:
+---
 
-* db_init.py - инициализация базы данных.
-* config.py - конфигурация подключения к базе данных.
-* lattice_types_init.py - заполнение всех базовых типов кристаллических решеток. Заполняет таблицу lattice_type.
-* json_to_db.py - добавляет информацию из json файла в базу данных. Заполняет таблицы substances и ions_library.
-* xyz_to_db.py - добавляет информацию из xyz файла в базу данных. Заполняет таблицу ions.
-* complete_db.py - запускает все необходимые скрипты для полной инициализации базы данных и добавления в нее информации.
-* coordinates_nondimensionalization.py - Нормализация координат к виду 0.0-1.0.
-
-Алгоритмы?
-* ions_query.py - функция поиска схожих xyz в БД и функция поиска решеток на микроуровне по координатам.
-
-Приложение:
-
-* main.py - запуск приложения с интерфейсом.
-* generate_report.py - генерация отчета с результатами поиска по координатам.
-
-Интерфейс:
-
-* Main_Window_ui.py - основное окно приложения.
-* Ion_Dialog_ui.py - окно ввода координат.
-* Info_Dialog_ui.py - окно с информацией.
-* resources_rc.py - ресурсы для интерфейса.
-
-## Требования
-
-* python 3.10+
-* requirements.txt
-* MySQL 8.0+ Server (localhost:3306)
-
-## Cheatsheet
-
-* Запуск БД
-
-1. MySQL 8.0 Command Line Client
-2. config.py - password
-3. `use crystal_lattice_db;`
-
-* Пересоздать базу данных
-
-1. Пересоздадим бд
+## Быстрый старт
 
 ```bash
+# 1. Установить зависимости
+pip install -r requirements.txt
+
+# 2. Создать базу данных
+# В MySQL CLI:
+#   create database crystal_lattice_db;
+
+# 3. Инициализировать базу данных
+python cris/tools/complete_db.py
+
+# 4. Запустить приложение
+python main.py
+```
+
+---
+
+## Структура проекта
+
+```
+cris/                          # Основной пакет
+├── app/generated/             # Скомпилированные UI-файлы (не редактировать)
+├── core/
+│   ├── coordinates.py         # Нормализация координат → [0, 1]
+│   ├── vectors.py             # Попарные расстояния между ионами
+│   ├── spectrum.py            # KDE-спектры (Gaussian)
+│   ├── identification.py      # Точка входа в идентификацию
+│   └── clustering.py          # Кластеризация структур (UMAP + HDBSCAN)
+├── db/
+│   ├── config.py              # Параметры подключения к MySQL
+│   ├── queries.py             # Поиск по БД
+│   ├── schema/                # SQL-схемы и скрипты инициализации
+│   └── importers/             # Импорт CIF/JSON/XYZ → БД
+├── tools/                     # Вспомогательные и исследовательские скрипты
+│   ├── complete_db.py         # Полная инициализация БД одной командой
+│   ├── generate_dataset.py    # Генерация датасета KDE-векторов с шумом
+│   ├── testing.py             # Загрузка XYZ с опциональным шумом
+│   ├── report.py              # Генерация DOCX-отчёта
+│   └── ...
+└── ...
+
+assets/
+├── ui/                        # Исходные .ui файлы (Qt Designer)
+├── icons/                     # SVG-иконки
+├── images/                    # Изображения типов решёток (PNG/SVG)
+└── resources.qrc
+
+ML/                            # Исследовательские скрипты и эксперименты
+├── clustering/                # UMAP + HDBSCAN кластеризация
+├── spectre_diff/              # Сравнение спектров (Вассерштейн)
+└── ...
+
+data/
+├── db/                        # Источники базы данных — в git
+│   ├── cif/                   # Исходные CIF-файлы
+│   ├── json/                  # Конвертированные JSON
+│   └── xyz/                   # XYZ-позиции из CIF
+├── structures/                # Эталонные XYZ-структуры — в git
+│   ├── accurate/              # Идеальные решётки (Materials Project + чистые супер-ячейки)
+│   └── inaccurate/            # Структуры с вакансиями и шумом
+├── examples/                  # CSV-примеры для UI — в git
+└── generated/                 # Сгенерированные данные — только локально (.gitignore)
+    ├── datasets/
+    │   ├── accurate/          # KDE-датасеты точных структур
+    │   └── inaccurate/        # KDE-датасеты с дефектами
+    ├── spectra/               # Графики спектров
+    └── spectre_diff/          # Данные сравнения спектров
+```
+
+---
+
+## База данных
+
+Подключение: `localhost:3306`, пользователь `root`, база `crystal_lattice_db`. Параметры в `cris/db/config.py`.
+
+| Таблица | Содержимое |
+|---|---|
+| `lattice_type` | Типы решёток (id, name_en, name_ru) |
+| `substances` | Вещества с параметрами ячейки (a, b, c, углы, объём, пространственная группа) |
+| `ions` | Атомные позиции из CIF (метка, символ, позиция Вайкоффа) |
+| `ions_library` | Нормализованные координаты x/y/z — основная таблица поиска |
+
+Пересоздать базу данных:
+
+```sql
 drop database crystal_lattice_db;
 create database crystal_lattice_db;
-use crystal_lattice_db;
 ```
 
-2. `complete_db.py`
+Затем: `python cris/tools/complete_db.py`
 
-* Посмотреть таблицы
+---
+
+## Пересборка UI
+
+После правок `.ui` файлов в `assets/ui/`:
 
 ```bash
-use crystal_lattice_db;
-show tables;
-select * from lattice_type;
-select * from substances;
-select * from ions_library;
-select * from ions;
+pyside6-uic assets/ui/Main_Window.ui -o cris/app/generated/Main_Window_ui.py
+pyside6-uic assets/ui/Ion_Dialog.ui -o cris/app/generated/Ion_Dialog_ui.py
+pyside6-uic assets/ui/Info_Dialog.ui -o cris/app/generated/Info_Dialog_ui.py
+pyside6-rcc assets/resources.qrc -o cris/app/generated/resources_rc.py
 ```
 
-* Установить язык
+После пересборки `Main_Window_ui.py` заменить `import resources_rc` на `from cris.app.generated import resources_rc`.
 
-```python
-cursor.execute("\\! chcp 1251")
-```
+---
 
-* Ручной перевод cif -> json в ubuntu
-
-```bash
-cif_filter *.cif --json-output > *.json
-```
-
-* Ручной перевод всех cif файлов в директории в json в ubuntu
-
-```bash
-for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.json"; done
-```
-
-3. ui to py
+## Конвертация CIF в JSON (Ubuntu)
 
 ```bash
 pyside6-uic ui/Info_Dialog.ui -o Info_Dialog_ui.py
@@ -161,205 +195,39 @@ pyside6-rcc src/resources.qrc -o resources_rc.py
 
 ## Информация о VESTA:
 
-#### 1) Поиск параметров элементарной ячейки
+# Все файлы в директории
+for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.json"; done
+```
 
-Программа считывает информацию для определения формы и размеров решетки
-- Длины сторон (_cell_length_a, _cell_length_b, _cell_length_c)
-- Углы между сторонами (_cell_angle_alpha, _cell_angle_beta, _cell_angle_gamma)
+---
 
-![img.png](src/info_examples/img.png)
+## Известные проблемы
 
-#### 2) Чтение пространственной группы
+- CIF-файлы с неопределённостью в значениях (например `0.123(20)`) не обрабатываются
+- Инициализация БД завершается ошибкой, если база не создана заранее
+- Точное сравнение float-координат чувствительно к точности — возможны пропуски совпадений
+- Математика в `cris/core/vectors.py` реализована на чистом Python, стоит переписать на numpy
+- `cris/core/spectrum.py` зависит от `cris.db.config` — нежелательная зависимость core-слоя от db-слоя
 
-Программа считывает данные о пространственной группе. 
-- Если есть строка _symmetry_space_group_name_H-M, то в виде например Fm-3m.
-- Если нет предыдущей, то считывает строку с _space_group_IT_number, она содержит число (например в ней содержится число 255, это = Fm-3m)
+---
 
-#### 3) Считывание координат атомов
+## Задачи и вопросы
 
-Программа считывает координаты атомов (или как пицца называет их ионами), они записываются как _atom_site_label (название атома), _atom_site_fract_x (координата x), _atom_site_fract_y (координата y), _atom_site_fract_z (координата z).
+### Открытые вопросы
 
-#### 4) Если задан параметр _atom_site_occupancy, он учитывается при визуализации, чтобы отобразить частичное заполнение узлов.
-
-#### 5) Чтение симметрических операций
-
-Симметрические операции (_symmetry_equiv_pos_as_xyz) определяют, как повторяются атомы в ячейке.
-
-![img_1.png](src/info_examples/img_1.png)
-
-По вот этим данным мы строим вот эти 2 самых основных иона в решетке, это называется атомным узлом и этот узел, как поняла, будет дублироваться по всей решетке.
-![img_2.png](src/info_examples/img_2.png)
-
-Вот тут по факту пространственная группа описывает только расположение атомов в веществе, а значит у пространственной группы будут одинаковые уравнения эквивалентности (которых дофига)
-![img_3.png](src/info_examples/img_3.png)
-
-И он делает с каждым элементом вот эти вот преобразования, и по факту получаем решеточку
+- Как обрабатывать неопределённости float в CIF (`0.123(20)`)?
+- Выводить все варианты при большом количестве совпадений или только топ-N?
+- Как выбирать предпочтительный элемент при одинаковых вероятностях?
+- Достаточно ли 6 знаков после запятой для нормализованных координат?
+- Корректно ли ограничение в 1000 атомов?
 
 ## Как можно организовать структуру
 
 Это пример:
 
-```
-lattice_definition/
-│
-├── README.md
-├── requirements.txt
-├── setup.py                    # Для установки как пакет
-├── .gitignore
-│
-├── config/                     # Конфигурация приложения
-│   ├── __init__.py
-│   ├── settings.py            # Основные настройки (пути, параметры БД)
-│   └── constants.py           # Константы (типы решеток, пороги)
-│
-├── data/                      # Данные проекта (не в git)
-│   ├── raw/                   # Исходные данные
-│   │   ├── cif/              # Crystallographic Information Files
-│   │   ├── xyz/              # Координаты атомов
-│   │   └── json/             # Дополнительные данные о веществах
-│   │
-│   ├── processed/            # Обработанные данные
-│   │   ├── csv/              # Экспортированные координаты
-│   │   ├── csv_kde/          # KDE массивы для анализа
-│   │   └── spectrum/         # Спектры для сравнения
-│   │
-│   ├── database/             # База данных
-│   │   └── lattice.db        # SQLite БД
-│   │
-│   └── examples/             # Примеры для пользователей
-│       └── csv/
-│
-├── reports/                   # Сгенерированные отчеты (не в git)
-│   └── .gitkeep
-│
-├── resources/                 # Статические ресурсы
-│   ├── images/               # Изображения решеток
-│   │   ├── cubic.png
-│   │   ├── hexagonal.png
-│   │   └── ...
-│   │
-│   ├── icons/                # Иконки приложения
-│   │   ├── logo.svg
-│   │   ├── refresh.svg
-│   │   └── ...
-│   │
-│   └── ui/                   # Qt UI файлы
-│       ├── main_window.ui
-│       ├── ion_dialog.ui
-│       ├── info_dialog.ui
-│       ├── resources.qrc
-│       └── ui_palette.xml
-│
-├── src/                      # Исходный код приложения
-│   ├── __init__.py
-│   │
-│   ├── main.py              # Точка входа в приложение
-│   │
-│   ├── ui/                  # Презентационный слой (GUI)
-│   │   ├── __init__.py
-│   │   ├── main_window.py           # Главное окно
-│   │   ├── dialogs/
-│   │   │   ├── __init__.py
-│   │   │   ├── ion_dialog.py       # Диалог ввода координат
-│   │   │   └── info_dialog.py      # Диалог справки
-│   │   │
-│   │   ├── generated/              # Сгенерированные из .ui файлов
-│   │   │   ├── __init__.py
-│   │   │   ├── main_window_ui.py
-│   │   │   ├── ion_dialog_ui.py
-│   │   │   ├── info_dialog_ui.py
-│   │   │   └── resources_rc.py
-│   │   │
-│   │   └── widgets/                # Кастомные виджеты
-│   │       └── __init__.py
-│   │
-│   ├── core/                       # Бизнес-логика
-│   │   ├── __init__.py
-│   │   │
-│   │   ├── analysis/              # Анализ структур
-│   │   │   ├── __init__.py
-│   │   │   ├── lattice_analyzer.py      # Определение типа решетки
-│   │   │   ├── spectrum_analyzer.py     # Анализ спектров
-│   │   │   ├── clustering.py            # UMAP/HDBSCAN кластеризация
-│   │   │   └── similarity.py            # Метрики схожести
-│   │   │
-│   │   ├── preprocessing/         # Предобработка данных
-│   │   │   ├── __init__.py
-│   │   │   ├── coordinates.py           # Нормализация координат
-│   │   │   ├── vector_operations.py     # Векторные операции
-│   │   │   └── kde_calculator.py        # Расчет KDE
-│   │   │
-│   │   └── models/                # Модели данных
-│   │       ├── __init__.py
-│   │       ├── ion.py                   # Класс Ion
-│   │       ├── lattice.py               # Класс Lattice
-│   │       └── substance.py             # Класс Substance
-│   │
-│   ├── data/                      # Слой доступа к данным
-│   │   ├── __init__.py
-│   │   │
-│   │   ├── database/              # Работа с БД
-│   │   │   ├── __init__.py
-│   │   │   ├── connection.py            # Подключение к БД
-│   │   │   ├── models.py                # ORM модели (если используется)
-│   │   │   ├── queries.py               # SQL запросы
-│   │   │   ├── init_db.py               # Инициализация БД
-│   │   │   └── schema.sql               # Схема БД
-│   │   │
-│   │   ├── parsers/               # Парсеры файлов
-│   │   │   ├── __init__.py
-│   │   │   ├── cif_parser.py            # Парсинг CIF
-│   │   │   ├── xyz_parser.py            # Парсинг XYZ
-│   │   │   ├── json_parser.py           # Парсинг JSON
-│   │   │   └── csv_parser.py            # Парсинг CSV
-│   │   │
-│   │   └── loaders/               # Загрузчики данных
-│   │       ├── __init__.py
-│   │       ├── file_loader.py           # Загрузка из файлов
-│   │       └── db_loader.py             # Загрузка из БД
-│   │
-│   ├── utils/                     # Вспомогательные утилиты
-│   │   ├── __init__.py
-│   │   ├── file_utils.py                # Работа с файлами
-│   │   ├── math_utils.py                # Математические функции
-│   │   ├── validation.py                # Валидация данных
-│   │   └── logging_config.py            # Настройка логирования
-│   │
-│   └── exports/                   # Экспорт результатов
-│       ├── __init__.py
-│       ├── report_generator.py          # Генерация отчетов
-│       └── templates/                   # Шаблоны отчетов
-│           └── report_template.docx
-│
-├── tests/                         # Тесты
-│   ├── __init__.py
-│   ├── conftest.py               # Pytest fixtures
-│   │
-│   ├── unit/                     # Юнит-тесты
-│   │   ├── test_coordinates.py
-│   │   ├── test_clustering.py
-│   │   └── test_parsers.py
-│   │
-│   ├── integration/              # Интеграционные тесты
-│   │   ├── test_database.py
-│   │   └── test_analysis_pipeline.py
-│   │
-│   └── test_data/                # Тестовые данные
-│       ├── sample.cif
-│       └── sample.xyz
-│
-├── scripts/                       # Утилиты и скрипты
-│   ├── init_database.py          # Инициализация БД
-│   ├── import_data.py            # Импорт данных из CIF/XYZ
-│   ├── generate_kde.py           # Генерация KDE массивов
-│   ├── generate_spectra.py       # Генерация спектров
-│   └── research/                 # Исследовательские ноутбуки
-│       └── analysis.ipynb
-│
-└── docs/                         # Документация
-    ├── architecture.md           # Архитектура приложения
-    ├── database_schema.md        # Схема БД
-    ├── user_guide.md             # Руководство пользователя
-    └── api/                      # API документация
-        └── index.md
-```
+- Связать элементы в БД с индексами COD
+- 3D-визуализация решёток
+- Автоматическая сортировка файлов по категориям
+- Валидация уникальности при добавлении в БД
+- Добавить аббревиатуру вещества в таблицу `substances`
+- Обновить UI
