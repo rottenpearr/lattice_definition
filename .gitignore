@@ -169,4 +169,10 @@ reports/*
 /.idea/misc.xml
 **/~$*.xlsx
 **/~$*.docx
+
+# Data
 /data/generated/
+/data/csv_kde/
+
+# Agents
+.claude
