@@ -1,27 +1,27 @@
 """
-Пул соединений и контекстные менеджеры для работы с БД.
+Пул соединений и контекстные менеджеры для работы с БД (PostgreSQL / psycopg2).
 Использование:
     with get_cursor() as cur:
         cur.execute(...)
         rows = cur.fetchall()
 """
 from contextlib import contextmanager
-from mysql.connector.pooling import MySQLConnectionPool
+from psycopg2 import pool as pg_pool
 from cris.db.config import db_config
 
-_pool: MySQLConnectionPool | None = None
+_pool: pg_pool.ThreadedConnectionPool | None = None
 
 
-def _get_pool() -> MySQLConnectionPool:
+def _get_pool() -> pg_pool.ThreadedConnectionPool:
     global _pool
     if _pool is None:
-        _pool = MySQLConnectionPool(pool_name="cris_pool", pool_size=5, **db_config)
+        _pool = pg_pool.ThreadedConnectionPool(minconn=1, maxconn=5, **db_config)
     return _pool
 
 
 @contextmanager
 def get_connection():
-    conn = _get_pool().get_connection()
+    conn = _get_pool().getconn()
     try:
         yield conn
         conn.commit()
@@ -29,7 +29,7 @@ def get_connection():
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _get_pool().putconn(conn)
 
 
 @contextmanager

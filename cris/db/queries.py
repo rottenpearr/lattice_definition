@@ -3,8 +3,7 @@
 Публичный интерфейс не изменился — main.py продолжает работать без правок.
 """
 from collections import Counter
-import mysql.connector
-from cris.db.config import db_config
+from cris.db.connection import get_cursor
 from cris.logger import logger
 
 
@@ -14,25 +13,20 @@ def get_similar_xyz_from_db(coordinates) -> list:
     coordinates: dict {n: [label, x, y, z]}
     Возвращает list строк: (site_id, lattice_type_id, structure_id, ...)
     """
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
+    query = """
+        SELECT ss.id, rs.lattice_type_id, ss.structure_id
+        FROM structure_site ss
+        JOIN reference_structure rs ON rs.id = ss.structure_id
+        WHERE ss.norm_x = %s AND ss.norm_y = %s AND ss.norm_z = %s
+    """
     results = []
     try:
-        query = """
-            SELECT ss.id, rs.lattice_type_id, ss.structure_id
-            FROM structure_site ss
-            JOIN reference_structure rs ON rs.id = ss.structure_id
-            WHERE ss.norm_x = %s AND ss.norm_y = %s AND ss.norm_z = %s
-        """
-        for _, x, y, z in list(coordinates.values()):
-            cursor.execute(query, (x, y, z))
-            results.extend(cursor.fetchall())
+        with get_cursor() as cur:
+            for _, x, y, z in list(coordinates.values()):
+                cur.execute(query, (x, y, z))
+                results.extend(cur.fetchall())
     except Exception as e:
-        conn.rollback()
         logger.error("get_similar_xyz_from_db failed: {}", e)
-    finally:
-        cursor.close()
-        conn.close()
     return results
 
 
@@ -45,26 +39,21 @@ def check_coords(ions: list, ion_amount: int):
     lattice_list   = [item[1] for item in ions]
     structure_list = [item[2] for item in ions]
 
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
     filtered_lattices   = []
     filtered_structures = []
     try:
-        for i, struct_id in enumerate(structure_list):
-            cursor.execute(
-                "SELECT COUNT(*) FROM structure_site WHERE structure_id = %s",
-                (struct_id,)
-            )
-            cnt = cursor.fetchone()[0]
-            if cnt == ion_amount:
-                filtered_lattices.append(lattice_list[i])
-                filtered_structures.append(struct_id)
+        with get_cursor() as cur:
+            for i, struct_id in enumerate(structure_list):
+                cur.execute(
+                    "SELECT COUNT(*) FROM structure_site WHERE structure_id = %s",
+                    (struct_id,)
+                )
+                cnt = cur.fetchone()[0]
+                if cnt == ion_amount:
+                    filtered_lattices.append(lattice_list[i])
+                    filtered_structures.append(struct_id)
     except Exception as e:
-        conn.rollback()
         logger.error("check_coords (filter by count) failed: {}", e)
-    finally:
-        cursor.close()
-        conn.close()
 
     if not filtered_lattices:
         return False
@@ -82,42 +71,37 @@ def check_coords(ions: list, ion_amount: int):
     top_st_id   = max(struct_probs,  key=struct_probs.get)
     top_st_prob = struct_probs[top_st_id]
 
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    lattice_info   = None
-    structure_info = None
     lattice_names  = []
     struct_names   = []
+    lattice_info   = None
+    structure_info = None
     try:
-        for lt_id in set(filtered_lattices):
-            cursor.execute(
-                "SELECT id, name_en, name_ru, description FROM lattice_type WHERE id = %s",
-                (lt_id,)
-            )
-            row = cursor.fetchone()
-            if row:
-                lattice_names.append([row[0], row[2], row[1], lattice_probs[lt_id]])
-                if lt_id == top_lt_id:
-                    lattice_info = row
+        with get_cursor() as cur:
+            for lt_id in set(filtered_lattices):
+                cur.execute(
+                    "SELECT id, name_en, name_ru, description FROM lattice_type WHERE id = %s",
+                    (lt_id,)
+                )
+                row = cur.fetchone()
+                if row:
+                    lattice_names.append([row[0], row[2], row[1], lattice_probs[lt_id]])
+                    if lt_id == top_lt_id:
+                        lattice_info = row
 
-        for st_id in set(filtered_structures):
-            cursor.execute("""
-                SELECT id, name, cell_length_a, cell_length_b, cell_length_c,
-                       cell_volume, cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
-                       sg_number, sg_hall, sg_hm, doi
-                FROM reference_structure WHERE id = %s
-            """, (st_id,))
-            row = cursor.fetchone()
-            if row:
-                struct_names.append([row[0], row[1], struct_probs[st_id]])
-                if st_id == top_st_id:
-                    structure_info = row
+            for st_id in set(filtered_structures):
+                cur.execute("""
+                    SELECT id, name, cell_length_a, cell_length_b, cell_length_c,
+                           cell_volume, cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
+                           sg_number, sg_hall, sg_hm, doi
+                    FROM reference_structure WHERE id = %s
+                """, (st_id,))
+                row = cur.fetchone()
+                if row:
+                    struct_names.append([row[0], row[1], struct_probs[st_id]])
+                    if st_id == top_st_id:
+                        structure_info = row
     except Exception as e:
-        conn.rollback()
         logger.error("check_coords (fetch info) failed: {}", e)
-    finally:
-        cursor.close()
-        conn.close()
 
     return [
         [lattice_names, struct_names],

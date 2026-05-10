@@ -1,194 +1,215 @@
--- Полная новая схема. Запускать на чистой БД.
-CREATE DATABASE IF NOT EXISTS crystal_lattice_db;
-USE crystal_lattice_db;
+-- PostgreSQL-схема crystal_lattice_db
+-- Запускать от имени пользователя с правами на БД crystal_lattice_db
+-- Создание БД выполняется отдельно (db_init.py)
+
+-- ─────────────────────────────────────────────────────────────
+-- ENUM-типы
+-- ─────────────────────────────────────────────────────────────
+DO $$ BEGIN
+    CREATE TYPE existence_status_t AS ENUM (
+        'experimental', 'theoretical', 'hypothetical', 'disputed'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE lookup_source_t AS ENUM (
+        'COD', 'MATERIALS_PROJECT', 'ICSD', 'CROSSREF', 'AI_SEARCH', 'MANUAL'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE lookup_target_t AS ENUM (
+        'lattice_type', 'reference_structure'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ─────────────────────────────────────────────────────────────
+-- Триггерная функция для updated_at
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ─────────────────────────────────────────────────────────────
 -- 1. Типы кристаллических решёток (справочник)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lattice_type (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    name_en     VARCHAR(100) NOT NULL,
-    name_ru     VARCHAR(100) NOT NULL,
-    crystal_system   VARCHAR(50)  COMMENT 'triclinic/monoclinic/orthorhombic/tetragonal/trigonal/hexagonal/cubic',
-    bravais_lattice  VARCHAR(10)  COMMENT 'P/I/F/C/R',
+    id               SERIAL PRIMARY KEY,
+    name_en          VARCHAR(100) NOT NULL UNIQUE,
+    name_ru          VARCHAR(100) NOT NULL,
+    crystal_system   VARCHAR(50),   -- triclinic/monoclinic/orthorhombic/tetragonal/trigonal/hexagonal/cubic
+    bravais_lattice  VARCHAR(10),   -- P/I/F/C/R
     point_group      VARCHAR(20),
-    sg_number_min    SMALLINT     COMMENT 'нижняя граница номеров пр. групп ITA',
-    sg_number_max    SMALLINT     COMMENT 'верхняя граница номеров пр. групп ITA',
+    sg_number_min    SMALLINT,      -- нижняя граница номеров пр. групп ITA
+    sg_number_max    SMALLINT,      -- верхняя граница номеров пр. групп ITA
     description      TEXT
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 2. Метаданные типа решётки
---    (история открытия, ссылки — обогащается через внешние API)
+-- 2. Метаданные типа решётки (обогащается через внешние API)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lattice_metadata (
-    lattice_type_id  INT PRIMARY KEY,
-    discoverer       VARCHAR(255) COMMENT 'имя(а) первооткрывателей',
-    discovery_year   SMALLINT,
-    discovery_context TEXT        COMMENT 'как и при каких условиях открыли',
-    wiki_url         VARCHAR(1024),
-    review_doi       VARCHAR(255) COMMENT 'DOI обзорной статьи',
-    notes            TEXT,
-    enriched_at      TIMESTAMP NULL,
-    enrichment_source VARCHAR(50) COMMENT 'AI / COD / MP / manual',
+    lattice_type_id   INT PRIMARY KEY,
+    discoverer        VARCHAR(255),
+    discovery_year    SMALLINT,
+    discovery_context TEXT,
+    wiki_url          VARCHAR(1024),
+    review_doi        VARCHAR(255),
+    notes             TEXT,
+    enriched_at       TIMESTAMP NULL,
+    enrichment_source VARCHAR(50),   -- AI / COD / MP / manual
     FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
 );
 
 -- ─────────────────────────────────────────────────────────────
 -- 3. Эталонные структуры (вещества)
---    Заменяет старую таблицу substances.
---    Хранит параметры ячейки + ссылки на файлы + внешние ID.
---    Тяжёлые данные (CIF/XYZ/KDE) остаются файлами.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS reference_structure (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(255) NOT NULL,
-    formula      VARCHAR(100),
-    lattice_type_id INT NOT NULL,
+    id               SERIAL PRIMARY KEY,
+    name             VARCHAR(255) NOT NULL,
+    formula          VARCHAR(100),
+    lattice_type_id  INT NOT NULL,
 
     -- параметры элементарной ячейки
-    cell_length_a  FLOAT,
-    cell_length_b  FLOAT,
-    cell_length_c  FLOAT,
-    cell_volume    FLOAT,
-    cell_angle_alpha FLOAT,
-    cell_angle_beta  FLOAT,
-    cell_angle_gamma FLOAT,
+    cell_length_a    REAL,
+    cell_length_b    REAL,
+    cell_length_c    REAL,
+    cell_volume      REAL,
+    cell_angle_alpha REAL,
+    cell_angle_beta  REAL,
+    cell_angle_gamma REAL,
 
     -- пространственная группа
-    sg_number      SMALLINT,
-    sg_hall        VARCHAR(100),
-    sg_hm          VARCHAR(100),
+    sg_number        SMALLINT,
+    sg_hall          VARCHAR(100),
+    sg_hm            VARCHAR(100),
 
     -- пути к файлам (относительно корня проекта)
-    cif_path       VARCHAR(512) COMMENT 'data/db/cif/...',
-    xyz_path       VARCHAR(512) COMMENT 'data/db/xyz/...',
-    image_path     VARCHAR(512) COMMENT 'assets/images/...',
+    cif_path         VARCHAR(512),  -- data/db/cif/...
+    xyz_path         VARCHAR(512),  -- data/db/xyz/...
+    image_path       VARCHAR(512),  -- assets/images/...
 
     -- внешние идентификаторы
-    cod_id         INT          COMMENT 'Crystallography Open Database',
-    mp_id          VARCHAR(50)  COMMENT 'Materials Project: mp-XXXXX',
-    icsd_id        INT          COMMENT 'ICSD',
-    doi            VARCHAR(255),
-    source_url     VARCHAR(1024),
+    cod_id           INT,           -- Crystallography Open Database
+    mp_id            VARCHAR(50),   -- Materials Project: mp-XXXXX
+    icsd_id          INT,           -- ICSD
+    doi              VARCHAR(255),
+    source_url       VARCHAR(1024),
 
-    -- статус существования структуры
-    existence_status ENUM(
-        'experimental',   -- подтверждена экспериментально (синтезирована, измерена)
-        'theoretical',    -- предсказана вычислительно, не синтезирована
-        'hypothetical',   -- теоретически возможна, нет даже расчётов DFT
-        'disputed'        -- данные противоречивы или отозваны
-    ) NOT NULL DEFAULT 'experimental'
-    COMMENT 'подтверждено ли существование структуры',
-    existence_source VARCHAR(512)
-    COMMENT 'ссылка на работу, подтверждающую статус (DOI или URL)',
+    -- статус существования
+    existence_status existence_status_t NOT NULL DEFAULT 'experimental',
+    existence_source VARCHAR(512),
 
-    -- автоматически сгенерированное текстовое описание (robocrystallographer)
-    structure_description TEXT
-    COMMENT 'описание на английском, генерируется robocrys из CIF или MP',
+    -- описание (robocrystallographer или MP)
+    structure_description TEXT,
 
-    added_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    added_at         TIMESTAMP DEFAULT NOW(),
+    updated_at       TIMESTAMP DEFAULT NOW(),
 
     FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
 );
 
+DROP TRIGGER IF EXISTS trg_rs_updated_at ON reference_structure;
+CREATE TRIGGER trg_rs_updated_at
+    BEFORE UPDATE ON reference_structure
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 -- ─────────────────────────────────────────────────────────────
 -- 4. Позиции ионов в эталонных структурах
---    Заменяет ions + ions_library — всё в одной таблице.
---    fract_* — дробные координаты из CIF
---    norm_*  — нормализованные [0,1] координаты для поиска
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS structure_site (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
+    id           SERIAL PRIMARY KEY,
     structure_id INT NOT NULL,
 
-    -- из CIF (ions)
-    atom_label   VARCHAR(50)  COMMENT 'e.g. Na1, Cl2',
-    atom_symbol  VARCHAR(10)  COMMENT 'e.g. Na, Cl, U',
-    oxidation    FLOAT,
+    atom_label   VARCHAR(50),   -- e.g. Na1, Cl2
+    atom_symbol  VARCHAR(10),   -- e.g. Na, Cl
+    oxidation    REAL,
     multiplicity SMALLINT,
     wyckoff      VARCHAR(10),
-    occupancy    FLOAT DEFAULT 1.0,
+    occupancy    REAL DEFAULT 1.0,
 
-    -- координаты
-    fract_x      DECIMAL(12, 8),
-    fract_y      DECIMAL(12, 8),
-    fract_z      DECIMAL(12, 8),
-    norm_x       DECIMAL(12, 8) COMMENT 'нормализованные [0,1]',
-    norm_y       DECIMAL(12, 8),
-    norm_z       DECIMAL(12, 8),
+    -- дробные координаты из CIF
+    fract_x      NUMERIC(12, 8),
+    fract_y      NUMERIC(12, 8),
+    fract_z      NUMERIC(12, 8),
 
-    FOREIGN KEY (structure_id) REFERENCES reference_structure(id) ON DELETE CASCADE,
-    INDEX idx_norm (norm_x, norm_y, norm_z),
-    INDEX idx_structure (structure_id)
+    -- нормализованные координаты [0,1]
+    norm_x       NUMERIC(12, 8),
+    norm_y       NUMERIC(12, 8),
+    norm_z       NUMERIC(12, 8),
+
+    FOREIGN KEY (structure_id) REFERENCES reference_structure(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_norm      ON structure_site (norm_x, norm_y, norm_z);
+CREATE INDEX IF NOT EXISTS idx_structure ON structure_site (structure_id);
 
 -- ─────────────────────────────────────────────────────────────
 -- 5. Сессия распознавания
---    Один запуск = одна сессия, независимо от числа методов.
---    input_hash — SHA-256 нормализованных координат.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_session (
-    id           CHAR(36) PRIMARY KEY    COMMENT 'UUID',
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ion_count    INT NOT NULL,
-    input_hash   CHAR(64) NOT NULL       COMMENT 'SHA-256 отсортированных нормализованных координат',
-    xyz_path     VARCHAR(512)            COMMENT 'путь к сохранённому входному файлу (опционально)',
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notes        TEXT,
-    INDEX idx_hash (input_hash)
+    input_hash   CHAR(64) NOT NULL,   -- SHA-256 нормализованных координат
+    xyz_path     VARCHAR(512),
+    created_at   TIMESTAMP DEFAULT NOW(),
+    notes        TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_session_hash ON recognition_session (input_hash);
 
 -- ─────────────────────────────────────────────────────────────
 -- 6. Результат распознавания
---    Одна строка = один метод + одна позиция в топе предсказаний.
---    Уникальность: (session_id, method, method_version, rank).
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_result (
-    id              INT AUTO_INCREMENT PRIMARY KEY,
-    session_id      CHAR(36) NOT NULL,
-    method          VARCHAR(50) NOT NULL   COMMENT 'GEOMETRIC / KDE_RF / KDE_DNN / ...',
+    id              SERIAL PRIMARY KEY,
+    session_id      UUID NOT NULL,
+    method          VARCHAR(50) NOT NULL,   -- GEOMETRIC / KDE_RF / KDE_DNN / ...
     method_version  VARCHAR(20) NOT NULL DEFAULT '1.0',
-    rank            TINYINT NOT NULL DEFAULT 1 COMMENT '1 = лучший результат',
+    rank            SMALLINT NOT NULL DEFAULT 1,   -- 1 = лучший результат
     predicted_lattice_type_id INT,
     predicted_structure_id    INT,
-    confidence      FLOAT                  COMMENT '0..1',
-    vector_path     VARCHAR(512)           COMMENT 'путь к CSV с 1D feature-вектором',
-    computed_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_result (session_id, method, method_version, rank),
+    confidence      REAL,
+    vector_path     VARCHAR(512),
+    computed_at     TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_result UNIQUE (session_id, method, method_version, rank),
     FOREIGN KEY (session_id) REFERENCES recognition_session(id) ON DELETE CASCADE,
     FOREIGN KEY (predicted_lattice_type_id) REFERENCES lattice_type(id) ON DELETE SET NULL,
     FOREIGN KEY (predicted_structure_id) REFERENCES reference_structure(id) ON DELETE SET NULL
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 7. Кэш feature-векторов
---    PK = (input_hash, params_hash) — один вход + одни параметры → один вектор.
---    Позволяет не пересчитывать KDE для уже виденных координат.
+-- 7. Кэш feature-векторов (KDE и др.)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS feature_vector_cache (
-    input_hash   CHAR(64) NOT NULL  COMMENT 'SHA-256 нормализованных координат',
-    params_hash  CHAR(64) NOT NULL  COMMENT 'SHA-256 параметров метода (bandwidth, grid_size и др.)',
+    input_hash   CHAR(64) NOT NULL,   -- SHA-256 нормализованных координат
+    params_hash  CHAR(64) NOT NULL,   -- SHA-256 параметров метода (bw, grid_size и др.)
     method_name  VARCHAR(50) NOT NULL,
     vector_path  VARCHAR(512) NOT NULL,
     ion_count    INT NOT NULL,
-    computed_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    computed_at  TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (input_hash, params_hash)
 );
 
 -- ─────────────────────────────────────────────────────────────
 -- 8. Лог запросов к внешним источникам
---    Полная история обращений к COD / MP / AI.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS external_lookup_log (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    source        ENUM('COD','MATERIALS_PROJECT','ICSD','CROSSREF','AI_SEARCH','MANUAL') NOT NULL,
-    target_type   ENUM('lattice_type','reference_structure') NOT NULL,
-    target_id     INT NOT NULL,
-    query_text    TEXT,
+    id             SERIAL PRIMARY KEY,
+    source         lookup_source_t NOT NULL,
+    target_type    lookup_target_t NOT NULL,
+    target_id      INT NOT NULL,
+    query_text     TEXT,
     result_summary TEXT,
-    enriched_fields JSON COMMENT '{"field": "new_value"} — что занесли в БД',
-    http_status   SMALLINT,
-    is_successful BOOLEAN DEFAULT FALSE,
-    queried_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    enriched_fields JSONB,   -- {"field": "new_value"}
+    http_status    SMALLINT,
+    is_successful  BOOLEAN DEFAULT FALSE,
+    queried_at     TIMESTAMP DEFAULT NOW()
 );

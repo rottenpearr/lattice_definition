@@ -1,23 +1,22 @@
+"""
+Заполняет таблицу lattice_type стандартными типами кристаллических решёток.
+
+Запуск:
+    python -m cris.db.schema.lattice_types_init
+"""
 from pathlib import Path
-
-import mysql.connector
-
+import psycopg2
 from cris.db.config import db_config
 
 sql_file_path = Path(__file__).parent / "lattice_types_init.sql"
 
-with open(sql_file_path, "r", encoding="UTF-8") as file:
-    sql_queries = file.read()
-
-conn = mysql.connector.connect(**db_config)
+conn = psycopg2.connect(**db_config)
 cursor = conn.cursor()
-
 try:
-    for query in sql_queries.split("\n\n"):
-        cursor.execute(query, multi=True)
+    cursor.execute(sql_file_path.read_text(encoding="UTF-8"))
     conn.commit()
     print("В базу данных занесены стандартные типы кристаллических решеток.")
-except mysql.connector.Error as err:
+except psycopg2.Error as err:
     conn.rollback()
     print(f"Ошибка при выполнении SQL: {err}")
 finally:

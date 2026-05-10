@@ -8,7 +8,7 @@
 """
 import sys
 
-import mysql.connector
+import psycopg2
 
 from cris.db.config import db_config
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
@@ -61,7 +61,7 @@ def upsert_sites(cursor, data: list, normalized: list,
 
 
 if __name__ == "__main__":
-    conn = mysql.connector.connect(**db_config)
+    conn = psycopg2.connect(**db_config)
     cursor = conn.cursor()
     try:
         xyz_path       = sys.argv[1]

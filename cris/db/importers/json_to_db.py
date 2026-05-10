@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-import mysql.connector
+import psycopg2
 
 from cris.db.config import db_config
 from cris.logger import logger
@@ -51,9 +51,10 @@ def insert_data(cursor, data: dict) -> tuple[int, int]:
              cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
              sg_number, sg_hall, sg_hm)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     """, (name, lattice_type_id, a, b, c, vol, alpha, beta, gamma,
           sg_num, sg_hall, sg_hm))
-    structure_id = cursor.lastrowid
+    structure_id = cursor.fetchone()[0]
 
     labels      = vals.get("_atom_site_label", [])
     symbols     = vals.get("_atom_site_type_symbol", [])
@@ -86,7 +87,7 @@ def insert_data(cursor, data: dict) -> tuple[int, int]:
 
 
 if __name__ == "__main__":
-    conn = mysql.connector.connect(**db_config)
+    conn = psycopg2.connect(**db_config)
     cursor = conn.cursor()
     try:
         json_file_path = sys.argv[1]

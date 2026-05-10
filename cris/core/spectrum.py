@@ -7,39 +7,31 @@ import seaborn as sns
 import numpy as np
 from scipy.stats import gaussian_kde
 
-import mysql.connector
-
-from cris.db.config import db_config
+from cris.db.connection import get_cursor
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.core.vectors import get_lattice_vectors2
 
 
 def create_all_spectrum_plots():
     """
-    По всей БД
-
-    :return:
+    Строит спектры для всех эталонных структур в БД.
     """
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
     lattice_list = []
     try:
-        query = """
-                SELECT substance_id, atom_site_fract_x, atom_site_fract_y, atom_site_fract_z FROM ions_library
-                WHERE substance_id = %s
-            """
-        cursor.execute("SELECT MAX(id) FROM substances")
-        lattice_count = cursor.fetchall()[0][0]
-        for id in range(lattice_count):
-            cursor.execute(query, [id + 1])
-            lattice = cursor.fetchall()
-            lattice_list.append(lattice)
+        with get_cursor() as cur:
+            cur.execute("SELECT MAX(id) FROM reference_structure")
+            lattice_count = cur.fetchone()[0] or 0
+            for struct_id in range(1, lattice_count + 1):
+                cur.execute(
+                    "SELECT structure_id, fract_x, fract_y, fract_z "
+                    "FROM structure_site WHERE structure_id = %s",
+                    (struct_id,)
+                )
+                lattice = cur.fetchall()
+                if lattice:
+                    lattice_list.append(lattice)
     except Exception as e:
-        conn.rollback()
         print(f"Произошла ошибка: {e}")
-    finally:
-        cursor.close()
-        conn.close()
 
     for lattice in lattice_list:
         substance_id = lattice[0][0]
