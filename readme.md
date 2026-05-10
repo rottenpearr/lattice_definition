@@ -67,10 +67,11 @@ cris/                          # Основной пакет
 │   ├── report.py              # Генерация DOCX-отчёта
 │   └── dataset_generation/    # Генерация обучающих датасетов
 │       ├── download_structures.py   # Скачать XYZ из Materials Project API
+│       ├── generate_structures.py   # Генерация синтетических структур (12 типов Браве)
 │       ├── generate_vacancies.py    # Создать варианты с вакансиями
 │       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
 │       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
-│       └── macrocubic_NaCl.py       # Генерация суперячеек NaCl/UN/UC
+│       └── macrocubic_NaCl.py       # Устаревший генератор NaCl/UN/UC (заменён generate_structures)
 └── ...
 
 assets/
@@ -134,13 +135,26 @@ python cris/tools/dataset_generation/generate_vacancies.py --rates 0.05 0.10 --v
 
 Результат сохраняется в `data/structures/micro/generated/`.
 
-### 3. Сгенерировать суперячейки (macro)
+### 3. Сгенерировать синтетические структуры (macro)
 
 ```bash
-python cris/tools/dataset_generation/macrocubic_NaCl.py
+# Список доступных структур (12 типов Браве)
+python cris/tools/dataset_generation/generate_structures.py --list
+
+# NaCl 5x5x5
+python cris/tools/dataset_generation/generate_structures.py --structure nacl --supercell 5
+
+# UN 3x3x3 с вакансиями 10%
+python cris/tools/dataset_generation/generate_structures.py --structure un --supercell 3 --vacancy 0.10
+
+# UO2, 20 сэмплов с шумом 2% и вакансиями 5%
+python cris/tools/dataset_generation/generate_structures.py --structure uo2 --supercell 3 --noise 2 --vacancy 0.05 --samples 20
+
+# FCC с кастомным атомом
+python cris/tools/dataset_generation/generate_structures.py --structure fcc --species Al Al Al Al --a 4.05 --supercell 4
 ```
 
-Создаёт XYZ-файлы NaCl/UN/UC разных размеров в `data/structures/macro/source/`.
+Результат сохраняется в `data/structures/macro/source/`.
 
 ### 4. Сгенерировать KDE-датасеты
 
