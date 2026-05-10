@@ -28,7 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from cris.tools.generate_dataset import generate_dataset
+from cris.tools.dataset_generation.generate_dataset import generate_dataset
 STRUCTURES_DIR = ROOT / "data" / "structures"
 DATASETS_DIR   = ROOT / "data" / "kde_arrays"
 
