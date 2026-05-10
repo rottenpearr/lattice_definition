@@ -68,7 +68,6 @@ cris/                          # Main installable package
 │   ├── testing.py             # XYZ loading with optional Gaussian noise
 │   ├── kde_4_all_ions.py      # KDE computation for all ions in a structure
 │   ├── kde_to_csv.py          # Save per-ion KDE arrays to CSV
-│   ├── generate_dataset.py    # Batch noisy KDE/CSV dataset generation
 │   ├── complete_db.py         # One-shot DB init runner
 │   ├── get_vectors_from_xyz.py
 │   ├── normalize_vectors.py
@@ -76,6 +75,7 @@ cris/                          # Main installable package
 │   └── dataset_generation/    # Scripts for building training datasets
 │       ├── download_structures.py  # Download XYZ from Materials Project API
 │       ├── generate_vacancies.py   # Create vacancy variants of structures
+│       ├── generate_dataset.py     # Single-structure KDE dataset generation
 │       ├── generate_all_datasets.py # Batch KDE dataset generation with resume
 │       └── macrocubic_NaCl.py      # Generate NaCl/UN/UC supercell XYZ files
 └── report.py                  # DOCX report generation

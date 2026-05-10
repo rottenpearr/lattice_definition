@@ -63,10 +63,14 @@ cris/                          # Основной пакет
 │   └── importers/             # Импорт CIF/JSON/XYZ → БД
 ├── tools/                     # Вспомогательные и исследовательские скрипты
 │   ├── complete_db.py         # Полная инициализация БД одной командой
-│   ├── generate_dataset.py    # Генерация датасета KDE-векторов с шумом
 │   ├── testing.py             # Загрузка XYZ с опциональным шумом
 │   ├── report.py              # Генерация DOCX-отчёта
-│   └── ...
+│   └── dataset_generation/    # Генерация обучающих датасетов
+│       ├── download_structures.py   # Скачать XYZ из Materials Project API
+│       ├── generate_vacancies.py    # Создать варианты с вакансиями
+│       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
+│       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
+│       └── macrocubic_NaCl.py       # Генерация суперячеек NaCl/UN/UC
 └── ...
 
 assets/
@@ -99,6 +103,62 @@ data/
     ├── macro/source/          # KDE от чистых суперячеек
     └── macro/generated/       # KDE от суперячеек с вакансиями
 ```
+
+---
+
+## Генерация датасета
+
+Все скрипты запускаются из корня проекта.
+
+### 1. Скачать структуры из Materials Project
+
+```bash
+# 50 урановых соединений (по умолчанию)
+python cris/tools/dataset_generation/download_structures.py
+
+# Конкретная формула, другой лимит
+python cris/tools/dataset_generation/download_structures.py --formula UN --limit 20
+```
+
+Структуры сохраняются в `data/structures/micro/source/`.
+
+### 2. Сгенерировать варианты с вакансиями
+
+```bash
+# Все структуры из micro/source/ (5%, 10%, 15%, по 3 варианта)
+python cris/tools/dataset_generation/generate_vacancies.py
+
+# Задать уровни вакансий и количество вариантов
+python cris/tools/dataset_generation/generate_vacancies.py --rates 0.05 0.10 --variants 5
+```
+
+Результат сохраняется в `data/structures/micro/generated/`.
+
+### 3. Сгенерировать суперячейки (macro)
+
+```bash
+python cris/tools/dataset_generation/macrocubic_NaCl.py
+```
+
+Создаёт XYZ-файлы NaCl/UN/UC разных размеров в `data/structures/macro/source/`.
+
+### 4. Сгенерировать KDE-датасеты
+
+```bash
+# Все структуры, 400 сэмплов, шум 4% (по умолчанию)
+python cris/tools/dataset_generation/generate_all_datasets.py
+
+# Только micro/source, 1000 сэмплов
+python cris/tools/dataset_generation/generate_all_datasets.py --source micro/source --samples 1000
+
+# Несколько уровней шума
+python cris/tools/dataset_generation/generate_all_datasets.py --noise 2 4 8
+
+# Пересчитать заново
+python cris/tools/dataset_generation/generate_all_datasets.py --force
+```
+
+KDE-массивы сохраняются в `data/kde_arrays/`. Поддерживается resume — уже сгенерированные итерации пропускаются.
 
 ---
 
