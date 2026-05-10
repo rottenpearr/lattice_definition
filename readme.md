@@ -99,10 +99,8 @@ data/
 │       └── generated/        # С вакансиями/шумом — .gitignore
 ├── examples/                  # CSV-примеры для UI — в git
 └── kde_arrays/                # KDE-массивы (.gitignore — только локально)
-    ├── micro/source/          # KDE от чистых юнит-ячеек
-    ├── micro/generated/       # KDE от юнит-ячеек с вакансиями
-    ├── macro/source/          # KDE от чистых суперячеек
-    └── macro/generated/       # KDE от суперячеек с вакансиями
+    ├── micro/                 # KDE от юнит-ячеек (source + generated)
+    └── macro/                 # KDE от суперячеек (source + generated)
 ```
 
 ---

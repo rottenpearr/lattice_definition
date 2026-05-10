@@ -34,10 +34,10 @@ DATASETS_DIR   = ROOT / "data" / "kde_arrays"
 
 # Все подпапки структур и соответствующие папки датасетов
 STRUCTURE_SOURCES = [
-    ("micro/source",     "micro/source"),
-    ("micro/generated",  "micro/generated"),
-    ("macro/source",     "macro/source"),
-    ("macro/generated",  "macro/generated"),
+    ("micro/source",     "micro"),
+    ("micro/generated",  "micro"),
+    ("macro/source",     "macro"),
+    ("macro/generated",  "macro"),
 ]
 
 

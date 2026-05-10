@@ -113,10 +113,8 @@ data/
 │       └── generated/        # With vacancies/noise — .gitignore
 ├── examples/                  # CSV input examples for UI — tracked in git
 └── kde_arrays/                # KDE vectors per structure — .gitignore (local only)
-    ├── micro/source/          # KDE from clean unit cells
-    ├── micro/generated/       # KDE from unit cells with vacancies
-    ├── macro/source/          # KDE from clean supercells
-    └── macro/generated/       # KDE from supercells with vacancies
+    ├── micro/                 # KDE from unit cells (source + generated)
+    └── macro/                 # KDE from supercells (source + generated)
 ```
 
 ### Core identification pipeline
