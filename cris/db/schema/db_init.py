@@ -1,25 +1,40 @@
+"""
+Создаёт БД (если нужно) и применяет схему из db_init.sql.
+
+Запуск:
+    python -m cris.db.schema.db_init
+"""
 from pathlib import Path
-
-import mysql.connector
-
+import psycopg2
 from cris.db.config import db_config
 
-sql_file_path = Path(__file__).parent / "db_init.sql"
+sql_file = Path(__file__).parent / "db_init.sql"
 
-with open(sql_file_path, 'r', encoding="UTF-8") as file:
-    sql_queries = file.read()
-
-conn = mysql.connector.connect(**db_config)
-cursor = conn.cursor()
-
+# Подключаемся без указания БД, чтобы создать её при необходимости
+_admin_cfg = {k: v for k, v in db_config.items() if k != "dbname"}
+conn = psycopg2.connect(**_admin_cfg, dbname="postgres")
+conn.autocommit = True
+cur = conn.cursor()
 try:
-    for query in sql_queries.split("\n\n"):
-        cursor.execute(query, multi=True)
-    conn.commit()
-    print("База данных и таблицы успешно созданы.")
-except mysql.connector.Error as err:
-    conn.rollback()
-    print(f"Ошибка при выполнении SQL: {err}")
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_config["dbname"],))
+    if not cur.fetchone():
+        cur.execute(f'CREATE DATABASE "{db_config["dbname"]}"')
+        print(f"База данных '{db_config['dbname']}' создана.")
+    else:
+        print(f"База данных '{db_config['dbname']}' уже существует.")
 finally:
-    cursor.close()
+    cur.close()
+    conn.close()
+
+# Применяем схему
+conn = psycopg2.connect(**db_config)
+conn.autocommit = True
+cur = conn.cursor()
+try:
+    cur.execute(sql_file.read_text(encoding="utf-8"))
+    print("Схема БД успешно применена.")
+except psycopg2.Error as err:
+    print(f"Ошибка при создании схемы: {err}")
+finally:
+    cur.close()
     conn.close()

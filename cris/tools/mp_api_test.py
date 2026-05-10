@@ -1,4 +1,6 @@
-from mp_api.client import MPRester
+"""Тестовый запрос к Materials Project API. Ключ задаётся через MP_API_KEY."""
+from cris.db.enrichment.mp_api import search
 
-with MPRester(api_key="EksD5qbZQUnFzqh5twm8kbUV9xcbu7YQ") as mpr:
-    data = mpr.materials.search(material_ids=["mp-2625"])
+results = search("U2C3")
+for entry in results:
+    print(entry)

@@ -17,22 +17,22 @@ def main():
     subprocess.run(["python", ROOT / "cris" / "db" / "schema" / "lattice_types_init.py"])
 
     print("Запись данных из всех файлов в базу данных:")
-    files_path = ROOT / "data" / "json"
+    files_path = ROOT / "data" / "db" / "json"
     files = glob(str(files_path / "*.json"))
     json_additional_data_path = ROOT / "cris" / "db" / "importers" / "json_additional_data.txt"
 
     for file_path in files:
         filename = Path(file_path).stem
         print(f"Запись файлов {filename}.json и {filename}.xyz")
-        json_file_path = ROOT / "data" / "json" / f"{filename}.json"
-        xyz_file_path = ROOT / "data" / "xyz" / f"{filename}.xyz"
+        json_file_path = ROOT / "data" / "db" / "json" / f"{filename}.json"
+        xyz_file_path  = ROOT / "data" / "db" / "xyz"  / f"{filename}.xyz"
 
         subprocess.run(["python", ROOT / "cris" / "db" / "importers" / "json_to_db.py", json_file_path])
 
         lattice_type_id, substance_id = parse_txt(json_additional_data_path)
 
         subprocess.run(["python", ROOT / "cris" / "db" / "importers" / "xyz_to_db.py",
-                        xyz_file_path, str(lattice_type_id), str(substance_id)])
+                        xyz_file_path, str(lattice_type_id).strip(), str(substance_id).strip()])
 
     print("База данных полностью инициализирована.")
 
