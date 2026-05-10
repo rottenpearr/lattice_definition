@@ -70,8 +70,7 @@ cris/                          # Основной пакет
 │       ├── crystal_generator.py     # Генератор структур: 14 типов Браве, мотив, шум, вакансии
 │       ├── generate_vacancies.py    # Создать варианты с вакансиями
 │       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
-│       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
-│       └── macrocubic_NaCl.py       # Устаревший генератор NaCl/UN/UC (заменён crystal_generator)
+│       └── generate_dataset.py      # Генерация KDE-датасета для одной структуры
 └── ...
 
 assets/
@@ -95,7 +94,7 @@ data/
 │   │   ├── source/            # Скачанные из MP/CIF — в git
 │   │   └── generated/        # С вакансиями/шумом — .gitignore
 │   └── macro/                 # Суперячейки NxNxN
-│       ├── source/            # Чистые суперячейки — в git
+│       ├── source/            # Чистые суперячейки — .gitignore (генерируются локально)
 │       └── generated/        # С вакансиями/шумом — .gitignore
 ├── examples/                  # CSV-примеры для UI — в git
 └── kde_arrays/                # KDE-массивы (.gitignore — только локально)
