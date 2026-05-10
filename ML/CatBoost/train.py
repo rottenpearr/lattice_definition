@@ -19,8 +19,9 @@ from sklearn.preprocessing import LabelEncoder
 
 ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from ML.catboost.data_loader import load_dataset
+from data_loader import load_dataset
 
 MODEL_OUT = Path(__file__).parent / "catboost_lattice.cbm"
 
