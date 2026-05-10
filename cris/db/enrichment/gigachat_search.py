@@ -24,7 +24,7 @@ except ImportError:
 
 _CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
 _SCOPE       = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
-_MODEL       = os.getenv("GIGACHAT_MODEL", "GigaChat")
+_MODEL       = os.getenv("GIGACHAT_MODEL", "GigaChat-2-Max")
 _AVAILABLE   = _GIGACHAT_AVAILABLE and bool(_CREDENTIALS)
 
 
