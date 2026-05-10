@@ -53,24 +53,23 @@ def _ask(prompt: str, max_tokens: int = 512) -> Optional[str]:
 
 def enrich_lattice_type(name_en: str, name_ru: str) -> dict:
     """
-    Запрашивает фактические данные об открытии типа решётки.
+    Запрашивает структурные и физические данные о типе решётки.
     Возвращает словарь для lattice_metadata.
     """
-    prompt = f"""Ты эксперт по кристаллографии. Дай фактические данные о типе кристаллической решётки
+    prompt = f"""Ты эксперт по кристаллографии. Дай точные структурные данные о типе кристаллической решётки
 {name_en} ({name_ru}) строго в формате JSON:
 {{
-  "discoverer": "Имя(а) первооткрывателя или 'Unknown'",
-  "discovery_year": целое число или null,
-  "discovery_context": "1-2 предложения об условиях открытия",
-  "wiki_url": "ссылка на Википедию или пустая строка",
-  "review_doi": "DOI обзорной статьи или пустая строка",
-  "notes": "1-2 интересных факта для студента"
+  "coordination_number": целое число (сколько ближайших соседей у атома),
+  "packing_efficiency": число от 0 до 1 (доля занятого объёма),
+  "typical_materials": "примеры веществ через запятую: Al, Cu, Fe...",
+  "applications": "1-2 предложения о практическом применении",
+  "wiki_url": "ссылка на англоязычную Википедию или пустая строка",
+  "notes": "1-2 интересных структурных факта"
 }}
 Отвечай ТОЛЬКО JSON-объектом без лишнего текста."""
-    raw = _ask(prompt, 500)
+    raw = _ask(prompt, 400)
     if not raw:
         return {}
-    # GigaChat иногда оборачивает JSON в ```json ... ``` — чистим
     raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     try:
         return {k: v for k, v in json.loads(raw).items() if v not in (None, "", 0)}
@@ -100,3 +99,57 @@ def describe_structure(formula: str, lattice_type: str,
               f"пространственная группа {space_group}{ref} в 2-3 предложениях. "
               f"Сосредоточься на практическом значении и ключевых свойствах. Будь краток.")
     return _ask(prompt, 250) or ""
+
+
+def describe_substance(
+    formula: str,
+    lattice_type: str = "",
+    properties: dict = None,
+    articles: list = None,
+) -> dict:
+    """
+    Генерирует структурированное описание вещества на основе собранных данных.
+    Используется substance_enricher после PubChem + CrossRef.
+
+    Возвращает словарь:
+        {description, applications, hazards}
+    """
+    props_text = ""
+    if properties:
+        lines = []
+        for k, v in properties.items():
+            if k != "pubchem_cid":
+                lines.append(f"  {k}: {v}")
+        if lines:
+            props_text = "Известные свойства из PubChem:\n" + "\n".join(lines)
+
+    articles_text = ""
+    if articles:
+        titles = [f"  - {a['title']} ({a.get('journal','')}, {a.get('year','')})"
+                  for a in articles[:3]]
+        articles_text = "Найденные научные публикации:\n" + "\n".join(titles)
+
+    lattice_ctx = f" с кристаллической решёткой типа {lattice_type}" if lattice_type else ""
+
+    prompt = f"""Ты эксперт по материаловедению и кристаллографии.
+Вещество: {formula}{lattice_ctx}.
+{props_text}
+{articles_text}
+
+На основе этих данных дай ответ строго в формате JSON:
+{{
+  "description": "2-3 предложения: что это за вещество, его кристаллическая структура и ключевые свойства",
+  "applications": "1-2 предложения: где применяется в науке и промышленности",
+  "hazards": "токсичность, радиоактивность, взрывоопасность или пустая строка если не опасно"
+}}
+Отвечай ТОЛЬКО JSON-объектом без лишнего текста."""
+
+    raw = _ask(prompt, 500)
+    if not raw:
+        return {}
+    raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        return {k: v for k, v in json.loads(raw).items() if v not in (None, "")}
+    except Exception as e:
+        logger.warning("GigaChat describe_substance: failed to parse JSON: {} | raw: {}", e, raw[:200])
+        return {}

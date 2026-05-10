@@ -74,11 +74,11 @@ def enrich_lattice_type(lattice_type_id: int) -> bool:
         return False
     upsert_metadata(LatticeMetadata(
         lattice_type_id=lattice_type_id,
-        discoverer=data.get("discoverer", ""),
-        discovery_year=data.get("discovery_year"),
-        discovery_context=data.get("discovery_context", ""),
+        coordination_number=data.get("coordination_number"),
+        packing_efficiency=data.get("packing_efficiency"),
+        typical_materials=data.get("typical_materials", ""),
+        applications=data.get("applications", ""),
         wiki_url=data.get("wiki_url", ""),
-        review_doi=data.get("review_doi", ""),
         notes=data.get("notes", ""),
         enriched_at=datetime.now(),
         enrichment_source="AI_SEARCH",

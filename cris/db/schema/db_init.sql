@@ -14,14 +14,15 @@ END $$;
 
 DO $$ BEGIN
     CREATE TYPE lookup_source_t AS ENUM (
-        'COD', 'MATERIALS_PROJECT', 'ICSD', 'CROSSREF', 'AI_SEARCH', 'MANUAL'
+        'COD', 'MATERIALS_PROJECT', 'ICSD', 'CROSSREF',
+        'PUBCHEM', 'SEMANTIC_SCHOLAR', 'OSTI', 'AI_SEARCH', 'MANUAL'
     );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
     CREATE TYPE lookup_target_t AS ENUM (
-        'lattice_type', 'reference_structure'
+        'lattice_type', 'reference_structure', 'substance'
     );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -53,18 +54,18 @@ CREATE TABLE IF NOT EXISTS lattice_type (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 2. Метаданные типа решётки (обогащается через внешние API)
+-- 2. Метаданные типа решётки (обогащается через GigaChat)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lattice_metadata (
-    lattice_type_id   INT PRIMARY KEY,
-    discoverer        VARCHAR(255),
-    discovery_year    SMALLINT,
-    discovery_context TEXT,
-    wiki_url          VARCHAR(1024),
-    review_doi        VARCHAR(255),
-    notes             TEXT,
-    enriched_at       TIMESTAMP NULL,
-    enrichment_source VARCHAR(50),   -- AI / COD / MP / manual
+    lattice_type_id      INT PRIMARY KEY,
+    coordination_number  SMALLINT,          -- координационное число (12 для FCC, 8 для BCC)
+    packing_efficiency   REAL,              -- плотность упаковки, 0..1 (0.74 для FCC)
+    typical_materials    TEXT,              -- "Al, Cu, Au, Ni, γ-Fe"
+    applications         TEXT,              -- области применения
+    wiki_url             VARCHAR(1024),
+    notes                TEXT,              -- интересные факты
+    enriched_at          TIMESTAMP NULL,
+    enrichment_source    VARCHAR(50),
     FOREIGN KEY (lattice_type_id) REFERENCES lattice_type(id) ON DELETE CASCADE
 );
 
@@ -122,7 +123,25 @@ CREATE TRIGGER trg_rs_updated_at
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ─────────────────────────────────────────────────────────────
--- 4. Позиции ионов в эталонных структурах
+-- 4. Описание вещества (обогащается после распознавания)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS substance_info (
+    id               SERIAL PRIMARY KEY,
+    structure_id     INT NOT NULL UNIQUE,   -- один к одному с reference_structure
+    description      TEXT,                  -- связный текст от GigaChat
+    applications     TEXT,                  -- применение в промышленности/науке
+    hazards          TEXT,                  -- токсичность, радиоактивность и пр.
+    properties       JSONB,                 -- {melting_point, density, color, ...}
+    scientific_sources JSONB,               -- [{doi, title, journal, year, url, snippet}]
+    enriched_at      TIMESTAMP DEFAULT NOW(),
+    enrichment_source VARCHAR(100),         -- "PUBCHEM+CROSSREF+AI"
+    FOREIGN KEY (structure_id) REFERENCES reference_structure(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_substance_structure ON substance_info (structure_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- 6. Позиции ионов в эталонных структурах
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS structure_site (
     id           SERIAL PRIMARY KEY,
@@ -152,7 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_norm      ON structure_site (norm_x, norm_y, norm
 CREATE INDEX IF NOT EXISTS idx_structure ON structure_site (structure_id);
 
 -- ─────────────────────────────────────────────────────────────
--- 5. Сессия распознавания
+-- 7. Сессия распознавания
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_session (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -166,7 +185,7 @@ CREATE TABLE IF NOT EXISTS recognition_session (
 CREATE INDEX IF NOT EXISTS idx_session_hash ON recognition_session (input_hash);
 
 -- ─────────────────────────────────────────────────────────────
--- 6. Результат распознавания
+-- 8. Результат распознавания
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_result (
     id              SERIAL PRIMARY KEY,
@@ -186,7 +205,7 @@ CREATE TABLE IF NOT EXISTS recognition_result (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 7. Кэш feature-векторов (KDE и др.)
+-- 9. Кэш feature-векторов (KDE и др.)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS feature_vector_cache (
     input_hash   CHAR(64) NOT NULL,   -- SHA-256 нормализованных координат
@@ -199,7 +218,7 @@ CREATE TABLE IF NOT EXISTS feature_vector_cache (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 8. Лог запросов к внешним источникам
+-- 10. Лог запросов к внешним источникам
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS external_lookup_log (
     id             SERIAL PRIMARY KEY,
