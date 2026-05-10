@@ -154,8 +154,15 @@ python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 
 # С шумом и вакансиями, 20 сэмплов, 4 процесса
 python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --noise 2 --vacancy 0.10 --samples 20 --workers 4
 
-# Интерактивное меню
-python cris/tools/dataset_generation/crystal_generator.py --interactive
+# Примеры разных типов решёток для разнообразного датасета
+python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p   --atom Zn --a 2.665 --c 4.947 --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p   --atom Ti --a 2.951 --c 4.684 --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice tetra_i --atom In --a 3.25  --c 4.95  --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice tetra_p --atom Sn --a 5.83  --c 3.18  --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice ortho_p --atom U  --a 2.85  --b 5.87 --c 4.96  --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice ortho_f --atom S  --a 10.47 --b 12.87 --c 24.49 --supercell 2
+python cris/tools/dataset_generation/crystal_generator.py --lattice trig_r  --atom Bi --a 4.75  --alpha 57.3 --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice mono_p  --atom Se --a 9.05  --b 9.07 --c 11.6 --beta 90.8 --supercell 2
 ```
 
 Результат сохраняется в `data/structures/macro/source/`.
