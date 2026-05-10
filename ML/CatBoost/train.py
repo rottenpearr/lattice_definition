@@ -39,10 +39,25 @@ def train(kde_dir: Path, iterations: int, depth: int, lr: float, test_size: floa
     print(f"Сэмплов: {len(X)}  (вектор: {X.shape[1]} признаков)")
 
     # Распределение по классам
-    print("\nРаспределение:")
+    min_samples = max(2, int(1 / test_size))  # минимум для стратификации
+    print(f"\nРаспределение (нужно минимум {min_samples} сэмплов на класс):")
+    small_classes = []
     for cls in classes:
-        n = np.sum(y == cls)
-        print(f"  {cls:15s}  {n}")
+        n = int(np.sum(y == cls))
+        flag = "  ⚠ мало" if n < min_samples else ""
+        print(f"  {cls:15s}  {n}{flag}")
+        if n < min_samples:
+            small_classes.append(cls)
+
+    if small_classes:
+        print(f"\n  Классы с малым числом сэмплов пропускаются: {small_classes}")
+        print("  → Запустите generate_all_datasets.py для генерации полного датасета\n")
+        mask = np.array([label not in small_classes for label in y])
+        X, y = X[mask], y[mask]
+
+    if len(set(y)) < 2:
+        print("Недостаточно классов для обучения. Сгенерируйте больше данных.")
+        sys.exit(1)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, stratify=y, random_state=42
