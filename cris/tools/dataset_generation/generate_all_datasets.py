@@ -25,12 +25,12 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent.parent
+ROOT = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from cris.tools.generate_dataset import generate_dataset
 STRUCTURES_DIR = ROOT / "data" / "structures"
-DATASETS_DIR   = ROOT / "data" / "generated" / "datasets"
+DATASETS_DIR   = ROOT / "data" / "kde_arrays"
 
 # Все подпапки структур и соответствующие папки датасетов
 STRUCTURE_SOURCES = [

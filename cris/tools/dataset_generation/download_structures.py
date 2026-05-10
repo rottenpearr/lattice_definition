@@ -21,7 +21,7 @@ from mp_api.client import MPRester
 from pymatgen.io.xyz import XYZ
 
 # Путь для сохранения структур
-OUT_DIR = Path(__file__).parent.parent.parent / "data" / "structures" / "micro" / "source"
+OUT_DIR = Path(__file__).parent.parent.parent.parent / "data" / "structures" / "micro" / "source"
 
 # Элементы для поиска
 SEARCH_ELEMENTS = ["U"]

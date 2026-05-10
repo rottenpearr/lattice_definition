@@ -132,24 +132,19 @@ def write_uc_xyz_exact(N=3, a=4.960, filename="UC.xyz", extended=True):
 
 
 if __name__ == "__main__":
-    write_nacl_xyz_exact(N=3, a=5.6402, filename="../../data/NaCl/NaCl_3x3x3.xyz", extended=True)
-    write_nacl_xyz_exact(N=5, a=5.6402, filename="../../data/NaCl/NaCl_5x5x5.xyz", extended=True)
-    write_nacl_xyz_exact(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7.xyz", extended=True)
-    write_nacl_xyz_inaccurate(N=3, a=5.6402, filename="../../data/NaCl/NaCl_3x3x3-inaccurate.xyz", extended=True)
-    write_nacl_xyz_inaccurate(N=5, a=5.6402, filename="../../data/NaCl/NaCl_5x5x5-inaccurate.xyz", extended=True)
-    write_nacl_xyz_inaccurate(N=7, a=5.6402, filename="../../data/NaCl/NaCl_7x7x7-inaccurate.xyz", extended=True)
+    from pathlib import Path
+    OUT = Path(__file__).parent.parent.parent.parent / "data" / "structures" / "macro" / "source"
+    OUT.mkdir(parents=True, exist_ok=True)
 
-    # Генерация различных размеров решеток UN
-    write_un_xyz_exact(N=3, filename="../../data/UNUC/UN_3x3x3.xyz", extended=False)
-    write_un_xyz_exact(N=5, filename="../../data/UNUC/UN_5x5x5.xyz", extended=False)
-    write_un_xyz_exact(N=7, filename="../../data/UNUC/UN_7x7x7.xyz", extended=False)
+    write_nacl_xyz_exact(N=3, a=5.6402, filename=str(OUT / "NaCl_3x3x3.xyz"), extended=True)
+    write_nacl_xyz_exact(N=5, a=5.6402, filename=str(OUT / "NaCl_5x5x5.xyz"), extended=True)
+    write_nacl_xyz_exact(N=7, a=5.6402, filename=str(OUT / "NaCl_7x7x7.xyz"), extended=True)
 
-    # Генерация различных размеров решеток UC
-    write_uc_xyz_exact(N=3, filename="../../data/UNUC/UC_3x3x3.xyz", extended=False)
-    write_uc_xyz_exact(N=5, filename="../../data/UNUC/UC_5x5x5.xyz", extended=False)
-    write_uc_xyz_exact(N=7, filename="../../data/UNUC/UC_7x7x7.xyz", extended=False)
+    write_un_xyz_exact(N=3, filename=str(OUT / "UN_3x3x3.xyz"), extended=False)
+    write_un_xyz_exact(N=5, filename=str(OUT / "UN_5x5x5.xyz"), extended=False)
+    write_un_xyz_exact(N=7, filename=str(OUT / "UN_7x7x7.xyz"), extended=False)
 
-    # С расширенным форматом
-    write_un_xyz_exact(N=7, filename="../../data/UNUC/UN_7x7x7_extended.xyz", extended=True)
-    write_uc_xyz_exact(N=7, filename="../../data/UNUC/UC_7x7x7_extended.xyz", extended=True)
+    write_uc_xyz_exact(N=3, filename=str(OUT / "UC_3x3x3.xyz"), extended=False)
+    write_uc_xyz_exact(N=5, filename=str(OUT / "UC_5x5x5.xyz"), extended=False)
+    write_uc_xyz_exact(N=7, filename=str(OUT / "UC_7x7x7.xyz"), extended=False)
 

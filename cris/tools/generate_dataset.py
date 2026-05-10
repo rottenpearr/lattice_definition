@@ -12,7 +12,7 @@ def generate_dataset(xyz_filepath, substance_id, substance_name, total_samples=4
         base_out_dir = os.path.normpath(os.path.join(out_dir, substance_name))
     else:
         base_out_dir = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'generated', 'datasets', substance_name)
+            os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'kde_arrays', substance_name)
         )
     for iteration in range(1, total_samples + 1):
         try:

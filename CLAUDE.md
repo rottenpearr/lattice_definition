@@ -73,8 +73,11 @@ cris/                          # Main installable package
 │   ├── get_vectors_from_xyz.py
 │   ├── normalize_vectors.py
 │   ├── mp_api_test.py         # Materials Project API query (see known issues)
-│   └── grid_generation/
-│       └── macrocubic_NaCl.py
+│   └── dataset_generation/    # Scripts for building training datasets
+│       ├── download_structures.py  # Download XYZ from Materials Project API
+│       ├── generate_vacancies.py   # Create vacancy variants of structures
+│       ├── generate_all_datasets.py # Batch KDE dataset generation with resume
+│       └── macrocubic_NaCl.py      # Generate NaCl/UN/UC supercell XYZ files
 └── report.py                  # DOCX report generation
 
 assets/
@@ -107,14 +110,11 @@ data/
 │       ├── source/            # Clean supercells — tracked in git
 │       └── generated/        # With vacancies/noise — .gitignore
 ├── examples/                  # CSV input examples for UI — tracked in git
-└── generated/                 # Generated data — .gitignore (local only)
-    ├── datasets/
-    │   ├── micro/source/      # KDE datasets from clean unit cells
-    │   ├── micro/generated/   # KDE datasets from unit cells with vacancies
-    │   ├── macro/source/      # KDE datasets from clean supercells
-    │   └── macro/generated/   # KDE datasets from supercells with vacancies
-    ├── spectra/               # Spectrum plots
-    └── spectre_diff/          # Spectrum comparison outputs
+└── kde_arrays/                # KDE vectors per structure — .gitignore (local only)
+    ├── micro/source/          # KDE from clean unit cells
+    ├── micro/generated/       # KDE from unit cells with vacancies
+    ├── macro/source/          # KDE from clean supercells
+    └── macro/generated/       # KDE from supercells with vacancies
 ```
 
 ### Core identification pipeline
