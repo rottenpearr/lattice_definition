@@ -67,11 +67,11 @@ cris/                          # Основной пакет
 │   ├── report.py              # Генерация DOCX-отчёта
 │   └── dataset_generation/    # Генерация обучающих датасетов
 │       ├── download_structures.py   # Скачать XYZ из Materials Project API
-│       ├── generate_structures.py   # Генерация синтетических структур (12 типов Браве)
+│       ├── crystal_generator.py     # Генератор структур: 14 типов Браве, мотив, шум, вакансии
 │       ├── generate_vacancies.py    # Создать варианты с вакансиями
 │       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
 │       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
-│       └── macrocubic_NaCl.py       # Устаревший генератор NaCl/UN/UC (заменён generate_structures)
+│       └── macrocubic_NaCl.py       # Устаревший генератор NaCl/UN/UC (заменён crystal_generator)
 └── ...
 
 assets/
@@ -138,20 +138,24 @@ python cris/tools/dataset_generation/generate_vacancies.py --rates 0.05 0.10 --v
 ### 3. Сгенерировать синтетические структуры (macro)
 
 ```bash
-# Список доступных структур (12 типов Браве)
-python cris/tools/dataset_generation/generate_structures.py --list
+# Список типов решёток и пресетов соединений
+python cris/tools/dataset_generation/crystal_generator.py --list
 
-# NaCl 5x5x5
-python cris/tools/dataset_generation/generate_structures.py --structure nacl --supercell 5
+# По готовому пресету (NaCl, UN, UC, UO2, Al, Fe, Cu, CsCl)
+python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5
 
-# UN 3x3x3 с вакансиями 10%
-python cris/tools/dataset_generation/generate_structures.py --structure un --supercell 3 --vacancy 0.10
+# Одноатомный: FCC алюминий 5x5x5
+python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --atom Al --a 4.046 --supercell 5
 
-# UO2, 20 сэмплов с шумом 2% и вакансиями 5%
-python cris/tools/dataset_generation/generate_structures.py --structure uo2 --supercell 3 --noise 2 --vacancy 0.05 --samples 20
+# Многоатомный: произвольный мотив (rock-salt)
+python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 5.64 --motif Na 0 0 0 Cl 0.5 0.5 0.5 --supercell 5
 
-# FCC с кастомным атомом
-python cris/tools/dataset_generation/generate_structures.py --structure fcc --species Al Al Al Al --a 4.05 --supercell 4
+# С шумом и вакансиями, 20 сэмплов, 4 процесса
+python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --noise 2 --vacancy 0.10 --samples 20 --workers 4
+
+# Интерактивное меню
+python cris/tools/dataset_generation/crystal_generator.py --interactive
 ```
 
 Результат сохраняется в `data/structures/macro/source/`.

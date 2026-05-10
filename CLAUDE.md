@@ -74,11 +74,12 @@ cris/                          # Main installable package
 │   ├── mp_api_test.py         # Materials Project API query (see known issues)
 │   └── dataset_generation/    # Scripts for building training datasets
 │       ├── download_structures.py   # Download XYZ from Materials Project API
-│       ├── generate_structures.py   # Synthetic XYZ generation (12 Bravais types, pymatgen)
+│       ├── crystal_generator.py     # Unified generator: all 14 Bravais types, arbitrary motif,
+│       │                            #   noise, vacancies, multiprocessing, interactive menu + CLI
 │       ├── generate_vacancies.py    # Create vacancy variants of real structures
 │       ├── generate_dataset.py      # Single-structure KDE dataset generation
 │       ├── generate_all_datasets.py # Batch KDE dataset generation with resume
-│       └── macrocubic_NaCl.py       # Legacy NaCl/UN/UC generator (superseded)
+│       └── macrocubic_NaCl.py       # Legacy NaCl/UN/UC generator (superseded by crystal_generator)
 └── report.py                  # DOCX report generation
 
 assets/
