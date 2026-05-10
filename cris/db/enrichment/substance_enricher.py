@@ -4,27 +4,29 @@
 Пайплайн:
     1. PubChem     → физико-химические свойства (плотность, т°пл, цвет...)
     2. CrossRef    → топ-5 научных статей по формуле + типу решётки
-    3. GigaChat    → связный текст-описание на основе собранных данных
-    4. substance_info → сохраняем всё в БД (upsert)
+    3. OSTI        → публикации DOE (особенно полезно для ядерных материалов)
+    4. GigaChat    → связный текст-описание на основе собранных данных
+    5. substance_info → сохраняем всё в БД (upsert)
 
 Пример использования:
     from cris.db.enrichment.substance_enricher import enrich_substance
-    enrich_substance(structure_id=1, formula="UO2", lattice_type="cubic")
+    enrich_substance(structure_id=1, formula="UO2", name="Uranium dioxide", lattice_type="cubic")
 """
-import json
 from datetime import datetime
 
 from cris.logger import logger
 from cris.db.models import SubstanceInfo
 from cris.db.repository.substance import get_by_structure, upsert
 from cris.db.enrichment.pubchem_api import get_properties
-from cris.db.enrichment.crossref_api import search_articles
+from cris.db.enrichment.crossref_api import search_articles as crossref_search
+from cris.db.enrichment.osti_api import search_articles as osti_search
 from cris.db.enrichment import gigachat_search
 
 
 def enrich_substance(
     structure_id: int,
     formula: str,
+    name: str = "",
     lattice_type: str = "",
     force: bool = False,
 ) -> bool:
@@ -34,16 +36,15 @@ def enrich_substance(
     Args:
         structure_id: ID в таблице reference_structure
         formula:      химическая формула ("UO2", "NaCl", "Fe")
+        name:         полное название вещества ("Uranium dioxide", "Sodium chloride")
         lattice_type: название типа решётки для контекста поиска
         force:        перезаписать, если данные уже есть
-
-    Returns:
-        True если обогащение прошло успешно
     """
     if not force and get_by_structure(structure_id) is not None:
         logger.debug("substance_info already exists for structure_id={}, skipping", structure_id)
         return True
 
+    display_name = name or formula
     sources_used = []
 
     # ── 1. PubChem: физические свойства ──────────────────────────────────
@@ -52,30 +53,44 @@ def enrich_substance(
     if pubchem_data:
         properties = pubchem_data
         sources_used.append("PUBCHEM")
-        logger.debug("PubChem: {} props for {}", len(pubchem_data), formula)
+        logger.debug("PubChem: {} props for '{}'", len(pubchem_data), formula)
 
     # ── 2. CrossRef: научные статьи ───────────────────────────────────────
     scientific_sources = []
-    query = f"{formula} crystal structure"
+
+    crossref_query = f"{display_name} crystal structure"
     if lattice_type:
-        query += f" {lattice_type}"
+        crossref_query += f" {lattice_type}"
 
-    articles = search_articles(query, max_results=5)
-    if articles:
-        scientific_sources = articles
+    crossref_articles = crossref_search(crossref_query, max_results=5)
+    if crossref_articles:
+        scientific_sources.extend(crossref_articles)
         sources_used.append("CROSSREF")
-        logger.debug("CrossRef: {} articles for '{}'", len(articles), query)
+        logger.debug("CrossRef: {} articles for '{}'", len(crossref_articles), crossref_query)
 
-    # ── 3. GigaChat: связный текст ────────────────────────────────────────
+    # ── 3. OSTI: публикации DOE ───────────────────────────────────────────
+    osti_query = f"{display_name} {formula} crystal structure"
+    osti_articles = osti_search(osti_query, max_results=5)
+    if osti_articles:
+        # дедупликация по doi
+        existing_dois = {a["doi"] for a in scientific_sources if a.get("doi")}
+        new_articles = [a for a in osti_articles if a.get("doi") not in existing_dois]
+        if new_articles:
+            scientific_sources.extend(new_articles)
+            sources_used.append("OSTI")
+            logger.debug("OSTI: {} new articles for '{}'", len(new_articles), osti_query)
+
+    # ── 4. GigaChat: связный текст ────────────────────────────────────────
     description = ""
     applications = ""
     hazards = ""
 
     ai_result = gigachat_search.describe_substance(
         formula=formula,
+        name=display_name,
         lattice_type=lattice_type,
         properties=properties,
-        articles=scientific_sources,
+        articles=scientific_sources[:6],  # не больше 6 статей в промпт
     )
     if ai_result:
         description  = ai_result.get("description", "")
@@ -84,10 +99,10 @@ def enrich_substance(
         sources_used.append("AI")
 
     if not description and not properties and not scientific_sources:
-        logger.warning("substance_enricher: no data found for '{}'", formula)
+        logger.warning("substance_enricher: no data found for '{}'", display_name)
         return False
 
-    # ── 4. Сохраняем ─────────────────────────────────────────────────────
+    # ── 5. Сохраняем ─────────────────────────────────────────────────────
     info = SubstanceInfo(
         id=None,
         structure_id=structure_id,
@@ -100,5 +115,5 @@ def enrich_substance(
         enrichment_source="+".join(sources_used),
     )
     upsert(info)
-    logger.info("Substance enriched: '{}' (sources: {})", formula, info.enrichment_source)
+    logger.info("Substance enriched: '{}' (sources: {})", display_name, info.enrichment_source)
     return True

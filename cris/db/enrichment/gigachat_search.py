@@ -103,6 +103,7 @@ def describe_structure(formula: str, lattice_type: str,
 
 def describe_substance(
     formula: str,
+    name: str = "",
     lattice_type: str = "",
     properties: dict = None,
     articles: list = None,
@@ -130,9 +131,10 @@ def describe_substance(
         articles_text = "Найденные научные публикации:\n" + "\n".join(titles)
 
     lattice_ctx = f" с кристаллической решёткой типа {lattice_type}" if lattice_type else ""
+    name_ctx = f" ({name})" if name and name != formula else ""
 
     prompt = f"""Ты эксперт по материаловедению и кристаллографии.
-Вещество: {formula}{lattice_ctx}.
+Вещество: {formula}{name_ctx}{lattice_ctx}.
 {props_text}
 {articles_text}
 
