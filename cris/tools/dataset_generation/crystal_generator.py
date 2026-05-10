@@ -1,5 +1,5 @@
 """
-Единый генератор кристаллических структур — все 14 типов решёток Браве.
+Генератор кристаллических структур — все 14 типов решёток Браве.
 
 Поддерживает:
   • Одноатомные структуры (один вид атомов на узлах решётки)
@@ -11,32 +11,104 @@
   • Параллельную генерацию нескольких сэмплов (multiprocessing)
   • Набор пресетов популярных соединений (--preset NaCl, UN, UC, ...)
 
-Два способа запуска:
-  Интерактивный:  python cris/tools/dataset_generation/crystal_generator.py
-  CLI:            python cris/tools/dataset_generation/crystal_generator.py \\
-                      --lattice cubic_f --a 4.05 --atom Al --supercell 5
+━━━ Справка ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Примеры CLI:
-  # Список типов решёток
+  # Список всех типов решёток и пресетов
   python cris/tools/dataset_generation/crystal_generator.py --list
+
+━━━ Пресеты (готовые соединения) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # UN 3x3x3 (нитрид урана, rock-salt)
+  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3
+
+  # NaCl 5x5x5
+  python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5
+
+  # UO2 4x4x4 (флюорит)
+  python cris/tools/dataset_generation/crystal_generator.py --preset UO2 --supercell 4
+
+  # UC с нестандартным параметром решётки
+  python cris/tools/dataset_generation/crystal_generator.py --preset UC --a 4.98 --supercell 3
+
+━━━ Одноатомные структуры (--atom) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # FCC алюминий 5x5x5
   python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --atom Al --a 4.046 --supercell 5
 
-  # NaCl 5x5x5 (два атома, rock-salt мотив)
-  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 5.64 --motif Na 0 0 0 Cl 0.5 0.5 0.5 --supercell 5
+  # BCC железо 4x4x4
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_i --atom Fe --a 2.866 --supercell 4
 
-  # По готовому пресету
-  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3
+  # SC (простая кубическая) 6x6x6
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_p --atom Po --a 3.35 --supercell 6
 
-  # UN 3x3x3, шум 2%, вакансии 10%, 20 сэмплов, 4 процесса
-  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --noise 2 --vacancy 0.10 --samples 20 --workers 4
+  # HCP цинк (гексагональная), c задаётся отдельно
+  python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p --atom Zn --a 2.665 --c 4.947 --supercell 4
 
-  # Гексагональная структура с кастомными параметрами
-  python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p --atom Zn --a 2.66 --c 4.95 --supercell 4
+  # Тетрагональная структура индия
+  python cris/tools/dataset_generation/crystal_generator.py --lattice tetra_i --atom In --a 3.25 --c 4.95 --supercell 4
 
-  # Сохранить в конкретную папку
-  python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5 --out data/structures/macro/source
+  # Ромбоэдрическая (тригональная R), задаётся α
+  python cris/tools/dataset_generation/crystal_generator.py --lattice trig_r --atom Bi --a 4.75 --alpha 57.3 --supercell 3
+
+  # Орторомбическая, все три параметра разные
+  python cris/tools/dataset_generation/crystal_generator.py --lattice ortho_p --atom U --a 2.85 --b 5.87 --c 4.96 --supercell 3
+
+  # Моноклинная, задаётся β
+  python cris/tools/dataset_generation/crystal_generator.py --lattice mono_p --atom Se --a 9.05 --b 9.07 --c 11.6 --beta 90.8 --supercell 2
+
+━━━ Многоатомные структуры (--motif) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Формат: --motif SYM fx fy fz  SYM fx fy fz  ...
+  Дробные координаты (0..1) в единицах ячейки.
+
+  # Rock-salt вручную (эквивалент --preset NaCl)
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 5.64 \\
+      --motif Na 0 0 0  Cl 0.5 0.5 0.5 --supercell 5
+
+  # CsCl-тип (простая кубическая + смещённый второй атом)
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_p --a 4.12 \\
+      --motif Cs 0 0 0  Cl 0.5 0.5 0.5 --supercell 5
+
+  # Перовскит CaTiO3 (5 атомов в мотиве)
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_p --a 3.91 \\
+      --motif Ca 0 0 0  Ti 0.5 0.5 0.5  O 0.5 0.5 0  O 0.5 0 0.5  O 0 0.5 0.5 --supercell 3
+
+  # Алмазная структура (FCC + смещение на 0.25 0.25 0.25)
+  python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 3.57 \\
+      --motif C 0 0 0  C 0.25 0.25 0.25 --supercell 3
+
+━━━ Шум и вакансии ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # UN с гауссовым шумом 2% от параметра a
+  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --noise 2
+
+  # NaCl с 10% вакансий
+  python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5 --vacancy 0.10
+
+  # UC шум + вакансии одновременно
+  python cris/tools/dataset_generation/crystal_generator.py --preset UC --supercell 3 --noise 3 --vacancy 0.05
+
+━━━ Пакетная генерация ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # 50 сэмплов UN (разные seeds, последовательно)
+  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --samples 50
+
+  # 200 сэмплов с шумом 2% и вакансиями 10%, 4 процесса параллельно
+  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 \\
+      --noise 2 --vacancy 0.10 --samples 200 --workers 4
+
+  # Фиксированный seed для воспроизводимости
+  python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5 \\
+      --noise 4 --samples 100 --seed 123
+
+━━━ Вывод ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # В конкретную папку с кастомным именем
+  python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 \\
+      --out data/structures/macro/source --name UN_3x3x3_clean
+
+  # Асимметричная суперячейка 3x5x3
+  python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 3 5 3
 """
 
 import argparse
@@ -103,7 +175,7 @@ SYNGONY_DEFAULTS = {
     "triclinic":    {},
 }
 
-# Сгруппированные типы для интерактивного меню
+# Сгруппированные типы для вывода --list
 SYNGONY_GROUPS = {
     "Кубическая":      ["cubic_p", "cubic_i", "cubic_f"],
     "Тетрагональная":  ["tetra_p", "tetra_i"],
@@ -358,204 +430,6 @@ def generate_samples(gen: CrystalGenerator, motif: list,
         print(f"  {Path(filepath).name}  ({n_atoms} атомов)")
 
 
-# ─── Интерактивное меню ───────────────────────────────────────────────────────
-
-def _input(prompt, default=None, cast=str):
-    suffix = f" [{default}]" if default is not None else ""
-    raw = input(f"{prompt}{suffix}: ").strip()
-    if raw == "" and default is not None:
-        return default
-    try:
-        return cast(raw)
-    except ValueError:
-        print(f"  Некорректный ввод, ожидался {cast.__name__}.")
-        return _input(prompt, default, cast)
-
-
-def _pick_lattice_type() -> str:
-    groups = list(SYNGONY_GROUPS.items())
-    print("\n  Сингония:")
-    for i, (name, _) in enumerate(groups, 1):
-        print(f"    {i}. {name}")
-    idx = _input("Номер сингонии", 1, int) - 1
-    syngony_name, types = groups[idx % len(groups)]
-
-    print(f"\n  Типы решёток ({syngony_name}):")
-    for i, lt in enumerate(types, 1):
-        print(f"    {i}. {lt:12}  {LATTICE_TYPES[lt]['desc']}")
-    tidx = _input("Номер типа", 1, int) - 1
-    return types[tidx % len(types)]
-
-
-def _ask_lattice_params(lattice_type: str) -> dict:
-    syngony = LATTICE_TYPES[lattice_type]["syngony"]
-    defs = SYNGONY_DEFAULTS[syngony]
-    print(f"\n  Параметры решётки ({syngony}):")
-
-    a = _input("  a (Å)", 4.0, float)
-    params = {"a": a}
-
-    if defs.get("b") != "a":
-        params["b"] = _input("  b (Å)", a, float)
-    if defs.get("c") != "a":
-        params["c"] = _input("  c (Å)", a, float)
-    if "alpha" not in defs:
-        params["alpha"] = _input("  α (°)", 90.0, float)
-    if "beta" not in defs:
-        params["beta"] = _input("  β (°)", 90.0, float)
-    if "gamma" not in defs:
-        params["gamma"] = _input("  γ (°)", 90.0, float)
-
-    return params
-
-
-def _ask_motif() -> list:
-    print("\n  Режим:")
-    print("    1. Одноатомный (один вид атомов)")
-    print("    2. Многоатомный (задать мотив вручную)")
-    mode = _input("Режим", 1, int)
-
-    if mode == 1:
-        atom = _input("  Атом", "X")
-        return [(atom, [0.0, 0.0, 0.0])]
-    else:
-        n = _input("  Количество атомов в мотиве", 2, int)
-        motif = []
-        for i in range(n):
-            sym = _input(f"  Атом {i+1} (символ)", "X")
-            fx  = _input(f"    fx", 0.0, float)
-            fy  = _input(f"    fy", 0.0, float)
-            fz  = _input(f"    fz", 0.0, float)
-            motif.append((sym, [fx, fy, fz]))
-        return motif
-
-
-def _ask_supercell() -> tuple:
-    print("\n  Суперячейка:")
-    print("    1. Кубическая NxNxN")
-    print("    2. Произвольная NX×NY×NZ")
-    mode = _input("Режим", 1, int)
-    if mode == 1:
-        n = _input("  N", 3, int)
-        return n, n, n
-    else:
-        nx = _input("  NX", 3, int)
-        ny = _input("  NY", 3, int)
-        nz = _input("  NZ", 3, int)
-        return nx, ny, nz
-
-
-def _ask_perturbations() -> tuple:
-    noise   = _input("\n  Шум, %% от a (0 = без шума)", 0.0, float)
-    vacancy = _input("  Вакансии, доля 0..1 (0 = без вакансий)", 0.0, float)
-    return noise, vacancy
-
-
-def _menu_single(out_dir: Path):
-    print("\n─── Генерация одного файла ───")
-    lattice_type = _pick_lattice_type()
-    lp = _ask_lattice_params(lattice_type)
-    motif = _ask_motif()
-    nx, ny, nz = _ask_supercell()
-    noise, vacancy = _ask_perturbations()
-    seed = _input("  Seed", 42, int)
-
-    sc_str = f"{'x'.join(map(str, [nx,ny,nz]))}"
-    atom_str = "_".join(s for s, _ in motif)
-    name = _input("\n  Имя файла (без .xyz)", f"{lattice_type}_{atom_str}_{sc_str}")
-
-    gen = CrystalGenerator(lattice_type, **lp)
-    generate_samples(gen, motif, nx, ny, nz, noise, vacancy,
-                     samples=1, out_dir=out_dir, name_base=name, seed=seed)
-
-
-def _menu_dataset(out_dir: Path):
-    print("\n─── Генерация датасета ───")
-    print("  Режим:")
-    print("    1. По пресету соединения")
-    print("    2. Задать вручную")
-    mode = _input("Режим", 1, int)
-
-    if mode == 1:
-        print("\n  Пресеты:")
-        keys = list(COMPOUND_PRESETS.keys())
-        for i, k in enumerate(keys, 1):
-            print(f"    {i}. {k:8}  {COMPOUND_PRESETS[k]['desc']}")
-        idx = _input("Номер", 1, int) - 1
-        key = keys[idx % len(keys)]
-        preset = COMPOUND_PRESETS[key]
-        lattice_type = preset["lattice"]
-        lp    = {"a": preset["a"]}
-        motif = preset["motif"]
-        name_base = key
-    else:
-        lattice_type = _pick_lattice_type()
-        lp    = _ask_lattice_params(lattice_type)
-        motif = _ask_motif()
-        atom_str  = "_".join(s for s, _ in motif)
-        name_base = f"{lattice_type}_{atom_str}"
-
-    print("\n  Параметры датасета:")
-    samples = _input("  Количество сэмплов", 100, int)
-    nx, ny, nz = _ask_supercell()
-    noise, vacancy = _ask_perturbations()
-    workers = _input("  Параллельных процессов", min(4, cpu_count()), int)
-    seed    = _input("  Seed", 42, int)
-
-    sc_str = "x".join(map(str, [nx, ny, nz]))
-    tags = [name_base, sc_str]
-    if noise > 0:
-        tags.append(f"noise{noise}pct")
-    if vacancy > 0:
-        tags.append(f"vac{int(vacancy*100)}pct")
-    name_base = "_".join(tags)
-
-    gen = CrystalGenerator(lattice_type, **lp)
-    print(f"\n  Генерация {samples} файлов в {out_dir}...\n")
-    generate_samples(gen, motif, nx, ny, nz, noise, vacancy,
-                     samples=samples, out_dir=out_dir,
-                     name_base=name_base, seed=seed, workers=workers)
-
-
-def _menu_bravais_dataset(out_dir: Path):
-    """Генерирует по одному файлу для каждого из 14 типов решёток."""
-    print("\n─── Датасет всех 14 типов Браве ───")
-    atom = _input("  Атом", "X")
-    n    = _input("  Размер суперячейки N (NxNxN)", 3, int)
-    noise, vacancy = _ask_perturbations()
-
-    for lt_key, lt_info in LATTICE_TYPES.items():
-        syngony = lt_info["syngony"]
-        defs    = SYNGONY_DEFAULTS[syngony]
-        a = _input(f"  a для {lt_key} (Å)", 4.0, float)
-
-        lp = {"a": a}
-        # Для тригональной нужен α
-        if syngony == "trigonal":
-            lp["alpha"] = _input("  α (°)", 60.0, float)
-        # Для моноклинной нужен β
-        if syngony == "monoclinic":
-            lp["beta"] = _input("  β (°)", 100.0, float)
-        # Для орторомбической нужны b, c
-        if syngony == "orthorhombic":
-            lp["b"] = _input("  b (Å)", a * 1.2, float)
-            lp["c"] = _input("  c (Å)", a * 1.5, float)
-        # Для тетрагональной и гексагональной нужен c
-        if syngony in ("tetragonal", "hexagonal"):
-            lp["c"] = _input("  c (Å)", a * 1.6, float)
-        # Для моноклинной нужны b, c
-        if syngony == "monoclinic":
-            lp["b"] = _input("  b (Å)", a * 1.2, float)
-            lp["c"] = _input("  c (Å)", a * 1.5, float)
-
-        motif = [(atom, [0.0, 0.0, 0.0])]
-        name  = f"{lt_key}_{atom}_{n}x{n}x{n}"
-        gen   = CrystalGenerator(lt_key, **lp)
-        print(f"\n  {lt_key}:", end=" ")
-        generate_samples(gen, motif, n, n, n, noise, vacancy,
-                         samples=1, out_dir=out_dir, name_base=name)
-
-
 def _show_info():
     print("\n  14 типов решёток Браве:\n")
     for group, types in SYNGONY_GROUPS.items():
@@ -573,32 +447,6 @@ def _show_info():
     print()
 
 
-def interactive_menu(out_dir: Path):
-    while True:
-        print("\n" + "=" * 50)
-        print("  CRIS — Генератор кристаллических структур")
-        print("=" * 50)
-        print("  1. Сгенерировать одну структуру")
-        print("  2. Сгенерировать датасет")
-        print("  3. Датасет всех 14 типов Браве")
-        print("  4. Информация о типах решёток")
-        print("  0. Выход")
-        choice = _input("\nВыбор", "1")
-
-        if choice == "1":
-            _menu_single(out_dir)
-        elif choice == "2":
-            _menu_dataset(out_dir)
-        elif choice == "3":
-            _menu_bravais_dataset(out_dir)
-        elif choice == "4":
-            _show_info()
-        elif choice == "0":
-            break
-        else:
-            print("  Неверный выбор.")
-
-
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -614,8 +462,7 @@ def main():
 """,
     )
 
-    parser.add_argument("--list",    action="store_true", help="Список типов решёток и пресетов")
-    parser.add_argument("--interactive", action="store_true", help="Запустить интерактивное меню")
+    parser.add_argument("--list", action="store_true", help="Список типов решёток и пресетов")
 
     # Структура
     parser.add_argument("--preset",  type=str, help=f"Пресет соединения: {', '.join(COMPOUND_PRESETS)}")
@@ -655,12 +502,11 @@ def main():
         _show_info()
         return
 
-    # ── --interactive ────────────────────────────────────────────────────
-    if args.interactive or (not args.preset and not args.lattice):
-        interactive_menu(out_dir)
+    if not args.preset and not args.lattice:
+        parser.print_help()
         return
 
-    # ── CLI-режим ────────────────────────────────────────────────────────
+    # ── Разбор аргументов ────────────────────────────────────────────────
 
     # Разбираем пресет или параметры вручную
     if args.preset:
