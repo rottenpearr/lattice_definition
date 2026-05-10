@@ -1,10 +1,6 @@
 # CRIS — Crystal Recognition & Identification System
 
-Программный комплекс для идентификации типа кристаллической решётки по координатам ионов. Пользователь вводит нормализованные координаты атомов вручную или загружает CSV-файл, система выполняет поиск по базе данных и возвращает наиболее вероятные совпадения по типу решётки и веществу.
-
-В основе алгоритма — нормализация координат в куб [0, 1] и точный поиск по предварительно рассчитанным значениям в таблице `ions_library`. Для исследовательских задач реализована генерация KDE-спектров на основе попарных расстояний между ионами, кластеризация структур (UMAP + HDBSCAN) и сравнение спектров через расстояние Вассерштейна.
-
-База данных содержит структуры из Crystallography Open Database (COD) и Materials Project, охватывая соединения урана и другие кристаллические системы.
+Программный комплекс для идентификации типа кристаллической решётки по координатам ионов.
 
 ---
 
@@ -13,6 +9,20 @@
 - Python 3.9+
 - MySQL 8.0+ (localhost:3306)
 - Зависимости: `pip install -r requirements.txt`
+
+---
+
+## Переменные окружения
+
+Создайте файл `.env` в корне проекта:
+
+```
+MP_API_KEY=ваш_ключ_от_materials_project
+```
+
+Получить ключ: [next-gen.materialsproject.org/api](https://next-gen.materialsproject.org/api).
+
+Файл `.env` уже добавлен в `.gitignore` — ключ не попадёт в репозиторий.
 
 ---
 
@@ -53,10 +63,15 @@ cris/                          # Основной пакет
 │   └── importers/             # Импорт CIF/JSON/XYZ → БД
 ├── tools/                     # Вспомогательные и исследовательские скрипты
 │   ├── complete_db.py         # Полная инициализация БД одной командой
-│   ├── generate_dataset.py    # Генерация датасета KDE-векторов с шумом
 │   ├── testing.py             # Загрузка XYZ с опциональным шумом
 │   ├── report.py              # Генерация DOCX-отчёта
-│   └── ...
+│   └── dataset_generation/    # Генерация обучающих датасетов
+│       ├── download_structures.py   # Скачать XYZ из Materials Project API
+│       ├── crystal_generator.py     # Генератор структур: 14 типов Браве, мотив, шум, вакансии
+│       ├── generate_vacancies.py    # Создать варианты с вакансиями
+│       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
+│       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
+│       └── macrocubic_NaCl.py       # Устаревший генератор NaCl/UN/UC (заменён crystal_generator)
 └── ...
 
 assets/
@@ -75,17 +90,98 @@ data/
 │   ├── cif/                   # Исходные CIF-файлы
 │   ├── json/                  # Конвертированные JSON
 │   └── xyz/                   # XYZ-позиции из CIF
-├── structures/                # Эталонные XYZ-структуры — в git
-│   ├── accurate/              # Идеальные решётки (Materials Project + чистые супер-ячейки)
-│   └── inaccurate/            # Структуры с вакансиями и шумом
+├── structures/                # XYZ-структуры
+│   ├── micro/                 # Юнит-ячейки (4–80 атомов)
+│   │   ├── source/            # Скачанные из MP/CIF — в git
+│   │   └── generated/        # С вакансиями/шумом — .gitignore
+│   └── macro/                 # Суперячейки NxNxN
+│       ├── source/            # Чистые суперячейки — в git
+│       └── generated/        # С вакансиями/шумом — .gitignore
 ├── examples/                  # CSV-примеры для UI — в git
-└── generated/                 # Сгенерированные данные — только локально (.gitignore)
-    ├── datasets/
-    │   ├── accurate/          # KDE-датасеты точных структур
-    │   └── inaccurate/        # KDE-датасеты с дефектами
-    ├── spectra/               # Графики спектров
-    └── spectre_diff/          # Данные сравнения спектров
+└── kde_arrays/                # KDE-массивы (.gitignore — только локально)
+    ├── micro/                 # KDE от юнит-ячеек (source + generated)
+    └── macro/                 # KDE от суперячеек (source + generated)
 ```
+
+---
+
+## Генерация датасета
+
+Все скрипты запускаются из корня проекта.
+
+### 1. Скачать структуры из Materials Project
+
+```bash
+# 50 урановых соединений (по умолчанию)
+python cris/tools/dataset_generation/download_structures.py
+
+# Конкретная формула, другой лимит
+python cris/tools/dataset_generation/download_structures.py --formula UN --limit 20
+```
+
+Структуры сохраняются в `data/structures/micro/source/`.
+
+### 2. Сгенерировать варианты с вакансиями
+
+```bash
+# Все структуры из micro/source/ (5%, 10%, 15%, по 3 варианта)
+python cris/tools/dataset_generation/generate_vacancies.py
+
+# Задать уровни вакансий и количество вариантов
+python cris/tools/dataset_generation/generate_vacancies.py --rates 0.05 0.10 --variants 5
+```
+
+Результат сохраняется в `data/structures/micro/generated/`.
+
+### 3. Сгенерировать синтетические структуры (macro)
+
+```bash
+# Список типов решёток и пресетов соединений
+python cris/tools/dataset_generation/crystal_generator.py --list
+
+# По готовому пресету (NaCl, UN, UC, UO2, Al, Fe, Cu, CsCl)
+python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --preset NaCl --supercell 5
+
+# Одноатомный: FCC алюминий 5x5x5
+python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --atom Al --a 4.046 --supercell 5
+
+# Многоатомный: произвольный мотив (rock-salt)
+python cris/tools/dataset_generation/crystal_generator.py --lattice cubic_f --a 5.64 --motif Na 0 0 0 Cl 0.5 0.5 0.5 --supercell 5
+
+# С шумом и вакансиями, 20 сэмплов, 4 процесса
+python cris/tools/dataset_generation/crystal_generator.py --preset UN --supercell 3 --noise 2 --vacancy 0.10 --samples 20 --workers 4
+
+# Примеры разных типов решёток для разнообразного датасета
+python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p   --atom Zn --a 2.665 --c 4.947 --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice hex_p   --atom Ti --a 2.951 --c 4.684 --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice tetra_i --atom In --a 3.25  --c 4.95  --supercell 4
+python cris/tools/dataset_generation/crystal_generator.py --lattice tetra_p --atom Sn --a 5.83  --c 3.18  --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice ortho_p --atom U  --a 2.85  --b 5.87 --c 4.96  --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice ortho_f --atom S  --a 10.47 --b 12.87 --c 24.49 --supercell 2
+python cris/tools/dataset_generation/crystal_generator.py --lattice trig_r  --atom Bi --a 4.75  --alpha 57.3 --supercell 3
+python cris/tools/dataset_generation/crystal_generator.py --lattice mono_p  --atom Se --a 9.05  --b 9.07 --c 11.6 --beta 90.8 --supercell 2
+```
+
+Результат сохраняется в `data/structures/macro/source/`.
+
+### 4. Сгенерировать KDE-датасеты
+
+```bash
+# Все структуры, 400 сэмплов, шум 4% (по умолчанию)
+python cris/tools/dataset_generation/generate_all_datasets.py
+
+# Только micro/source, 1000 сэмплов
+python cris/tools/dataset_generation/generate_all_datasets.py --source micro/source --samples 1000
+
+# Несколько уровней шума
+python cris/tools/dataset_generation/generate_all_datasets.py --noise 2 4 8
+
+# Пересчитать заново
+python cris/tools/dataset_generation/generate_all_datasets.py --force
+```
+
+KDE-массивы сохраняются в `data/kde_arrays/`. Поддерживается resume — уже сгенерированные итерации пропускаются.
 
 ---
 
@@ -160,6 +256,7 @@ for file in *.cif; do cif_filter "$file" --json-output | jq '.' > "${file%.cif}.
   - [ ] Отдельная таблица или поле для каждого метода
 - [ ] Сейчас много точек входа — навести порядок, разделить скрипты обучения и распознавания
 - [ ] Отдельный скрипт для обучения (Jupyter), отдельный для распознавания по PKL-файлам (для RF) либо отдельно блоками разделить просто
+- [ ] Переработка генерации датасета + CatBoost
 
 ### Вопросы
 

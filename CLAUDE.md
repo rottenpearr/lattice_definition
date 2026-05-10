@@ -68,13 +68,18 @@ cris/                          # Main installable package
 │   ├── testing.py             # XYZ loading with optional Gaussian noise
 │   ├── kde_4_all_ions.py      # KDE computation for all ions in a structure
 │   ├── kde_to_csv.py          # Save per-ion KDE arrays to CSV
-│   ├── generate_dataset.py    # Batch noisy KDE/CSV dataset generation
 │   ├── complete_db.py         # One-shot DB init runner
 │   ├── get_vectors_from_xyz.py
 │   ├── normalize_vectors.py
 │   ├── mp_api_test.py         # Materials Project API query (see known issues)
-│   └── grid_generation/
-│       └── macrocubic_NaCl.py
+│   └── dataset_generation/    # Scripts for building training datasets
+│       ├── download_structures.py   # Download XYZ from Materials Project API
+│       ├── crystal_generator.py     # Unified generator: all 14 Bravais types, arbitrary motif,
+│       │                            #   noise, vacancies, multiprocessing, interactive menu + CLI
+│       ├── generate_vacancies.py    # Create vacancy variants of real structures
+│       ├── generate_dataset.py      # Single-structure KDE dataset generation
+│       ├── generate_all_datasets.py # Batch KDE dataset generation with resume
+│       └── macrocubic_NaCl.py       # Legacy NaCl/UN/UC generator (superseded by crystal_generator)
 └── report.py                  # DOCX report generation
 
 assets/
@@ -99,15 +104,17 @@ data/
 │   ├── cif/                   # Raw CIF files
 │   ├── json/                  # JSON converted from CIF
 │   └── xyz/                   # XYZ atom positions from CIF
-├── structures/                # Reference XYZ structures — tracked in git
-│   ├── accurate/              # Ideal lattices (Materials Project + clean supercells)
-│   └── inaccurate/            # Structures with vacancies/noise
+├── structures/                # XYZ structures
+│   ├── micro/                 # Unit cells (4–80 atoms)
+│   │   ├── source/            # Downloaded from MP/CIF — tracked in git
+│   │   └── generated/        # With vacancies/noise — .gitignore
+│   └── macro/                 # Supercells NxNxN
+│       ├── source/            # Clean supercells — tracked in git
+│       └── generated/        # With vacancies/noise — .gitignore
 ├── examples/                  # CSV input examples for UI — tracked in git
-└── generated/                 # Generated data — .gitignore (local only)
-    ├── datasets/accurate/     # KDE datasets for accurate structures
-    ├── datasets/inaccurate/   # KDE datasets with defects
-    ├── spectra/               # Spectrum plots
-    └── spectre_diff/          # Spectrum comparison outputs
+└── kde_arrays/                # KDE vectors per structure — .gitignore (local only)
+    ├── micro/                 # KDE from unit cells (source + generated)
+    └── macro/                 # KDE from supercells (source + generated)
 ```
 
 ### Core identification pipeline
