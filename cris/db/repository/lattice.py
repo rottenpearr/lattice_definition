@@ -44,15 +44,15 @@ def upsert_metadata(meta: LatticeMetadata) -> None:
                 (lattice_type_id, discoverer, discovery_year, discovery_context,
                  wiki_url, review_doi, notes, enriched_at, enrichment_source)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                discoverer        = VALUES(discoverer),
-                discovery_year    = VALUES(discovery_year),
-                discovery_context = VALUES(discovery_context),
-                wiki_url          = VALUES(wiki_url),
-                review_doi        = VALUES(review_doi),
-                notes             = VALUES(notes),
-                enriched_at       = VALUES(enriched_at),
-                enrichment_source = VALUES(enrichment_source)
+            ON CONFLICT (lattice_type_id) DO UPDATE SET
+                discoverer        = EXCLUDED.discoverer,
+                discovery_year    = EXCLUDED.discovery_year,
+                discovery_context = EXCLUDED.discovery_context,
+                wiki_url          = EXCLUDED.wiki_url,
+                review_doi        = EXCLUDED.review_doi,
+                notes             = EXCLUDED.notes,
+                enriched_at       = EXCLUDED.enriched_at,
+                enrichment_source = EXCLUDED.enrichment_source
         """, (
             meta.lattice_type_id, meta.discoverer, meta.discovery_year,
             meta.discovery_context, meta.wiki_url, meta.review_doi,
