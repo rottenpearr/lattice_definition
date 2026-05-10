@@ -14,6 +14,7 @@ mp-api>=0.41.0
 catboost>=1.2
 requests~=2.32.3
 anthropic~=0.40.0
+gigachat>=0.1.28
 loguru~=0.7.3
 robocrys~=0.2.9
 python-dotenv~=1.1.0
