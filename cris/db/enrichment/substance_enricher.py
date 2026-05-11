@@ -2,11 +2,10 @@
 Оркестратор обогащения вещества после распознавания.
 
 Пайплайн:
-    1. PubChem     → физико-химические свойства (плотность, т°пл, цвет...)
-    2. CrossRef    → топ-5 научных статей по формуле + типу решётки
-    3. OSTI        → публикации DOE (особенно полезно для ядерных материалов)
-    4. GigaChat    → связный текст-описание на основе собранных данных
-    5. substance_info → сохраняем всё в БД (upsert)
+    1. CrossRef    → топ-5 научных статей по формуле + типу решётки
+    2. OSTI        → публикации DOE (особенно полезно для ядерных материалов)
+    3. GigaChat    → связный текст-описание на основе собранных данных
+    4. substance_info → сохраняем всё в БД (upsert)
 
 Пример использования:
     from cris.db.enrichment.substance_enricher import enrich_substance
@@ -17,7 +16,6 @@ from datetime import datetime
 from cris.logger import logger
 from cris.db.models import SubstanceInfo
 from cris.db.repository.substance import get_by_structure, upsert
-from cris.db.enrichment.pubchem_api import get_properties
 from cris.db.enrichment.crossref_api import search_articles as crossref_search
 from cris.db.enrichment.osti_api import search_articles as osti_search
 from cris.db.enrichment import gigachat_search
@@ -47,15 +45,7 @@ def enrich_substance(
     display_name = name or formula
     sources_used = []
 
-    # ── 1. PubChem: физические свойства ──────────────────────────────────
-    properties = {}
-    pubchem_data = get_properties(formula)
-    if pubchem_data:
-        properties = pubchem_data
-        sources_used.append("PUBCHEM")
-        logger.debug("PubChem: {} props for '{}'", len(pubchem_data), formula)
-
-    # ── 2. CrossRef: научные статьи ───────────────────────────────────────
+    # ── 1. CrossRef: научные статьи ───────────────────────────────────────
     scientific_sources = []
 
     crossref_query = f"{display_name} crystal structure"
@@ -89,7 +79,6 @@ def enrich_substance(
         formula=formula,
         name=display_name,
         lattice_type=lattice_type,
-        properties=properties,
         articles=scientific_sources[:6],  # не больше 6 статей в промпт
     )
     if ai_result:
@@ -98,7 +87,7 @@ def enrich_substance(
         hazards      = ai_result.get("hazards", "")
         sources_used.append("AI")
 
-    if not description and not properties and not scientific_sources:
+    if not description and not scientific_sources:
         logger.warning("substance_enricher: no data found for '{}'", display_name)
         return False
 
@@ -109,7 +98,7 @@ def enrich_substance(
         description=description,
         applications=applications,
         hazards=hazards,
-        properties=properties or None,
+        properties=None,
         scientific_sources=scientific_sources or None,
         enriched_at=datetime.now(),
         enrichment_source="+".join(sources_used),

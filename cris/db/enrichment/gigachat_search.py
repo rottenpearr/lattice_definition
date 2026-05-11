@@ -105,25 +105,15 @@ def describe_substance(
     formula: str,
     name: str = "",
     lattice_type: str = "",
-    properties: dict = None,
     articles: list = None,
 ) -> dict:
     """
     Генерирует структурированное описание вещества на основе собранных данных.
-    Используется substance_enricher после PubChem + CrossRef.
+    Используется substance_enricher после CrossRef + OSTI.
 
     Возвращает словарь:
         {description, applications, hazards}
     """
-    props_text = ""
-    if properties:
-        lines = []
-        for k, v in properties.items():
-            if k != "pubchem_cid":
-                lines.append(f"  {k}: {v}")
-        if lines:
-            props_text = "Известные свойства из PubChem:\n" + "\n".join(lines)
-
     articles_text = ""
     if articles:
         titles = [f"  - {a['title']} ({a.get('journal','')}, {a.get('year','')})"
