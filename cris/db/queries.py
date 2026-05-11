@@ -29,6 +29,7 @@ def get_similar_xyz_from_db(coordinates) -> list:
     try:
         with get_cursor() as cur:
             for _, x, y, z in list(coordinates.values()):
+                x, y, z = float(x), float(y), float(z)  # guard against Decimal from DB
                 cur.execute(query, (
                     x - _COORD_TOLERANCE, x + _COORD_TOLERANCE,
                     y - _COORD_TOLERANCE, y + _COORD_TOLERANCE,
