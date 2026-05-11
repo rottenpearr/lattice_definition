@@ -14,11 +14,43 @@
 from datetime import datetime
 
 from cris.logger import logger
+from cris.db.connection import get_cursor
 from cris.db.models import SubstanceInfo
 from cris.db.repository.substance import get_by_structure, upsert
 from cris.db.enrichment.crossref_api import search_articles as crossref_search
 from cris.db.enrichment.osti_api import search_articles as osti_search
 from cris.db.enrichment import gigachat_search
+
+
+def _load_crystal_properties(structure_id: int) -> dict:
+    """Загружает кристаллографические параметры из reference_structure."""
+    with get_cursor() as cur:
+        cur.execute("""
+            SELECT cell_length_a, cell_length_b, cell_length_c, cell_volume,
+                   cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
+                   sg_number, sg_hall, sg_hm, cod_id
+            FROM reference_structure WHERE id = %s
+        """, (structure_id,))
+        row = cur.fetchone()
+    if not row:
+        return {}
+    _int_fields  = {"sg_number", "cod_id"}
+    _float_fields = {"cell_length_a", "cell_length_b", "cell_length_c", "cell_volume",
+                     "cell_angle_alpha", "cell_angle_beta", "cell_angle_gamma"}
+    keys = ["cell_length_a", "cell_length_b", "cell_length_c", "cell_volume",
+            "cell_angle_alpha", "cell_angle_beta", "cell_angle_gamma",
+            "sg_number", "sg_hall", "sg_hm", "cod_id"]
+    result = {}
+    for k, v in zip(keys, row):
+        if v is None:
+            continue
+        if k in _int_fields:
+            result[k] = int(v)
+        elif k in _float_fields:
+            result[k] = round(float(v), 6)
+        else:
+            result[k] = v
+    return result
 
 
 def enrich_substance(
@@ -44,6 +76,12 @@ def enrich_substance(
 
     display_name = name or formula
     sources_used = []
+
+    # ── 0. Кристаллографические параметры из reference_structure ─────────
+    properties = _load_crystal_properties(structure_id)
+    if properties:
+        sources_used.append("COD_PARAMS")
+        logger.debug("Crystal properties loaded: {} fields for id={}", len(properties), structure_id)
 
     # ── 1. CrossRef: научные статьи ───────────────────────────────────────
     scientific_sources = []
@@ -87,7 +125,7 @@ def enrich_substance(
         hazards      = ai_result.get("hazards", "")
         sources_used.append("AI")
 
-    if not description and not scientific_sources:
+    if not description and not scientific_sources and not properties:
         logger.warning("substance_enricher: no data found for '{}'", display_name)
         return False
 
@@ -98,7 +136,7 @@ def enrich_substance(
         description=description,
         applications=applications,
         hazards=hazards,
-        properties=None,
+        properties=properties or None,
         scientific_sources=scientific_sources or None,
         enriched_at=datetime.now(),
         enrichment_source="+".join(sources_used),
