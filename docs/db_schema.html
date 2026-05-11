@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>crystal_lattice_db — схема БД</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f1117;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 32px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+  }
+
+  /* ── ЛЕГЕНДА ─────────────────────────────────────── */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+  }
+
+  /* ── CANVAS ──────────────────────────────────────── */
+  .canvas {
+    position: relative;
+    width: 1200px;
+    margin: 0 auto;
+    height: 860px;
+  }
+
+  svg.lines {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ── ТАБЛИЦА ─────────────────────────────────────── */
+  .table {
+    position: absolute;
+    width: 240px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .table-header {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-header .icon { font-size: 15px; }
+  .table-header .tname { flex: 1; }
+  .table-header .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.25);
+    opacity: 0.8;
+  }
+
+  .table-body {
+    background: #1a1d27;
+  }
+
+  .col {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    font-size: 11.5px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .col:hover { background: rgba(255,255,255,0.04); }
+  .col:last-child { border-bottom: none; }
+
+  .col-icon {
+    width: 14px;
+    text-align: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .col-name {
+    flex: 1;
+    color: #cbd5e1;
+  }
+  .col-name.pk { color: #fbbf24; font-weight: 600; }
+  .col-name.fk { color: #818cf8; }
+  .col-name.important { color: #e2e8f0; font-weight: 500; }
+
+  .col-type {
+    font-size: 10px;
+    color: #475569;
+    font-family: 'Consolas', monospace;
+    flex-shrink: 0;
+  }
+
+  .col-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 2px 0;
+  }
+
+  /* ── ЦВЕТА ТАБЛИЦ ────────────────────────────────── */
+  /* справочник */
+  .t-ref .table-header    { background: #1e3a5f; }
+  .t-ref .table-header    { border-bottom: 2px solid #3b82f6; }
+  /* структуры */
+  .t-struct .table-header { background: #14532d; border-bottom: 2px solid #22c55e; }
+  /* распознавание */
+  .t-recog .table-header  { background: #3b1f5e; border-bottom: 2px solid #a855f7; }
+  /* кэш */
+  .t-cache .table-header  { background: #1c3a3a; border-bottom: 2px solid #14b8a6; }
+  /* лог */
+  .t-log .table-header    { background: #3b2a14; border-bottom: 2px solid #f59e0b; }
+
+  /* ── СВЯЗИ ───────────────────────────────────────── */
+  .rel-line {
+    stroke-width: 1.5;
+    fill: none;
+    opacity: 0.55;
+  }
+  .rel-fk    { stroke: #818cf8; stroke-dasharray: none; }
+  .rel-set   { stroke: #f59e0b; stroke-dasharray: 5,3; }
+
+  .rel-label {
+    font-size: 10px;
+    fill: #64748b;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  marker path { stroke: none; }
+
+  /* ── СЕКЦИИ (группировка) ────────────────────────── */
+  .section-label {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #334155;
+  }
+</style>
+</head>
+<body>
+
+<h1>crystal_lattice_db</h1>
+<div class="subtitle">PostgreSQL · 8 таблиц · feature/database-redesign</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Справочник решёток</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Эталонные структуры</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Распознавание</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#14b8a6"></div> Кэш векторов</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Лог запросов</div>
+</div>
+
+<div class="canvas" id="canvas">
+
+<!-- ── SVG СВЯЗИ ──────────────────────────────────────────────────── -->
+<svg class="lines" id="svg">
+  <defs>
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#818cf8"/>
+    </marker>
+    <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#a855f7"/>
+    </marker>
+    <marker id="arr-teal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#14b8a6"/>
+    </marker>
+  </defs>
+</svg>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     КОЛОНКА 1 — СПРАВОЧНИК РЕШЁТОК
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- lattice_type -->
+<div class="table t-ref" id="t-lattice_type" style="left:20px; top:40px;">
+  <div class="table-header">
+    <span class="icon">🔷</span>
+    <span class="tname">lattice_type</span>
+    <span class="badge">справочник</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">SERIAL PK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">name_en</span><span class="col-type">VARCHAR UNIQUE</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">name_ru</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">crystal_system</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">bravais_lattice</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">point_group</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">sg_number_min</span><span class="col-type">SMALLINT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">sg_number_max</span><span class="col-type">SMALLINT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">description</span><span class="col-type">TEXT</span></div>
+  </div>
+</div>
+
+<!-- lattice_metadata -->
+<div class="table t-ref" id="t-lattice_metadata" style="left:20px; top:340px;">
+  <div class="table-header">
+    <span class="icon">📖</span>
+    <span class="tname">lattice_metadata</span>
+    <span class="badge">обогащение</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk fk">lattice_type_id</span><span class="col-type">INT PK·FK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">discoverer</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">discovery_year</span><span class="col-type">SMALLINT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">discovery_context</span><span class="col-type">TEXT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">wiki_url</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">review_doi</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">notes</span><span class="col-type">TEXT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">enriched_at</span><span class="col-type">TIMESTAMP</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">enrichment_source</span><span class="col-type">VARCHAR</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     КОЛОНКА 2 — СТРУКТУРЫ
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- reference_structure -->
+<div class="table t-struct" id="t-reference_structure" style="left:320px; top:40px;">
+  <div class="table-header">
+    <span class="icon">🧱</span>
+    <span class="tname">reference_structure</span>
+    <span class="badge">эталон</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">SERIAL PK</span></div>
+    <div class="col"><span class="col-icon">🔗</span><span class="col-name fk">lattice_type_id</span><span class="col-type">INT FK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">name</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">formula</span><span class="col-type">VARCHAR</span></div>
+    <div class="col-divider"></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">cell_length_a/b/c</span><span class="col-type">REAL</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">cell_angle_α/β/γ</span><span class="col-type">REAL</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">cell_volume</span><span class="col-type">REAL</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">sg_number / sg_hall / sg_hm</span><span class="col-type">VAR</span></div>
+    <div class="col-divider"></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">cif_path</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">xyz_path</span><span class="col-type">VARCHAR</span></div>
+    <div class="col-divider"></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">cod_id</span><span class="col-type">INT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">mp_id</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">doi</span><span class="col-type">VARCHAR</span></div>
+    <div class="col-divider"></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">existence_status</span><span class="col-type">ENUM</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">structure_description</span><span class="col-type">TEXT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">added_at / updated_at</span><span class="col-type">TS</span></div>
+  </div>
+</div>
+
+<!-- structure_site -->
+<div class="table t-struct" id="t-structure_site" style="left:320px; top:580px;">
+  <div class="table-header">
+    <span class="icon">⚛️</span>
+    <span class="tname">structure_site</span>
+    <span class="badge">ионы</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">SERIAL PK</span></div>
+    <div class="col"><span class="col-icon">🔗</span><span class="col-name fk">structure_id</span><span class="col-type">INT FK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">atom_label</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">atom_symbol</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">oxidation / wyckoff</span><span class="col-type">REAL/VAR</span></div>
+    <div class="col-divider"></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">fract_x/y/z</span><span class="col-type">NUMERIC</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">norm_x/y/z</span><span class="col-type">NUMERIC</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     КОЛОНКА 3 — РАСПОЗНАВАНИЕ
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- recognition_session -->
+<div class="table t-recog" id="t-recognition_session" style="left:640px; top:40px;">
+  <div class="table-header">
+    <span class="icon">🔍</span>
+    <span class="tname">recognition_session</span>
+    <span class="badge">сессия</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">UUID PK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">input_hash</span><span class="col-type">CHAR(64)</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">ion_count</span><span class="col-type">INT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">xyz_path</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">notes</span><span class="col-type">TEXT</span></div>
+  </div>
+</div>
+
+<!-- recognition_result -->
+<div class="table t-recog" id="t-recognition_result" style="left:640px; top:300px;">
+  <div class="table-header">
+    <span class="icon">🎯</span>
+    <span class="tname">recognition_result</span>
+    <span class="badge">результат</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">SERIAL PK</span></div>
+    <div class="col"><span class="col-icon">🔗</span><span class="col-name fk">session_id</span><span class="col-type">UUID FK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">method</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">method_version</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">rank</span><span class="col-type">SMALLINT</span></div>
+    <div class="col"><span class="col-icon">🔗</span><span class="col-name fk">predicted_lattice_type_id</span><span class="col-type">INT FK</span></div>
+    <div class="col"><span class="col-icon">🔗</span><span class="col-name fk">predicted_structure_id</span><span class="col-type">INT FK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">confidence</span><span class="col-type">REAL</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">vector_path</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">computed_at</span><span class="col-type">TIMESTAMP</span></div>
+  </div>
+</div>
+
+<!-- feature_vector_cache -->
+<div class="table t-cache" id="t-feature_vector_cache" style="left:640px; top:620px;">
+  <div class="table-header">
+    <span class="icon">⚡</span>
+    <span class="tname">feature_vector_cache</span>
+    <span class="badge">кэш</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">input_hash</span><span class="col-type">CHAR(64) PK</span></div>
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">params_hash</span><span class="col-type">CHAR(64) PK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">method_name</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">vector_path</span><span class="col-type">VARCHAR</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">ion_count</span><span class="col-type">INT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">computed_at</span><span class="col-type">TIMESTAMP</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     КОЛОНКА 4 — ЛОГ
+═══════════════════════════════════════════════════════════════ -->
+
+<!-- external_lookup_log -->
+<div class="table t-log" id="t-external_lookup_log" style="left:950px; top:40px;">
+  <div class="table-header">
+    <span class="icon">📋</span>
+    <span class="tname">external_lookup_log</span>
+    <span class="badge">лог API</span>
+  </div>
+  <div class="table-body">
+    <div class="col"><span class="col-icon">🔑</span><span class="col-name pk">id</span><span class="col-type">SERIAL PK</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">source</span><span class="col-type">ENUM</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">target_type</span><span class="col-type">ENUM</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">target_id</span><span class="col-type">INT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">query_text</span><span class="col-type">TEXT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">result_summary</span><span class="col-type">TEXT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name important">enriched_fields</span><span class="col-type">JSONB</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">http_status</span><span class="col-type">SMALLINT</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">is_successful</span><span class="col-type">BOOLEAN</span></div>
+    <div class="col"><span class="col-icon"> </span><span class="col-name">queried_at</span><span class="col-type">TIMESTAMP</span></div>
+  </div>
+</div>
+
+<!-- ENUM legend -->
+<div style="position:absolute; left:950px; top:350px; width:220px; background:#1a1d27; border-radius:8px; padding:14px; border:1px solid rgba(255,255,255,0.06);">
+  <div style="font-size:11px; font-weight:700; color:#f59e0b; letter-spacing:1px; margin-bottom:10px;">ENUM ТИПЫ</div>
+  <div style="font-size:11px; color:#64748b; margin-bottom:6px; font-weight:600;">existence_status_t</div>
+  <div style="font-size:10.5px; color:#94a3b8; padding-left:8px; line-height:1.8;">experimental<br>theoretical<br>hypothetical<br>disputed</div>
+  <div style="font-size:11px; color:#64748b; margin:8px 0 6px; font-weight:600;">lookup_source_t</div>
+  <div style="font-size:10.5px; color:#94a3b8; padding-left:8px; line-height:1.8;">COD · MATERIALS_PROJECT<br>ICSD · CROSSREF<br>AI_SEARCH · MANUAL</div>
+  <div style="font-size:11px; color:#64748b; margin:8px 0 6px; font-weight:600;">lookup_target_t</div>
+  <div style="font-size:10.5px; color:#94a3b8; padding-left:8px; line-height:1.8;">lattice_type<br>reference_structure</div>
+</div>
+
+<!-- INDEXES legend -->
+<div style="position:absolute; left:950px; top:600px; width:220px; background:#1a1d27; border-radius:8px; padding:14px; border:1px solid rgba(255,255,255,0.06);">
+  <div style="font-size:11px; font-weight:700; color:#14b8a6; letter-spacing:1px; margin-bottom:10px;">ИНДЕКСЫ</div>
+  <div style="font-size:10.5px; color:#94a3b8; line-height:2.0; font-family:Consolas,monospace;">
+    idx_norm<br>
+    <span style="color:#475569; padding-left:8px">structure_site(norm_x,y,z)</span><br>
+    idx_structure<br>
+    <span style="color:#475569; padding-left:8px">structure_site(structure_id)</span><br>
+    idx_session_hash<br>
+    <span style="color:#475569; padding-left:8px">recognition_session(input_hash)</span>
+  </div>
+</div>
+
+</div><!-- /canvas -->
+
+<script>
+// Рисуем стрелки между таблицами после рендера
+window.addEventListener('load', () => {
+  const svg = document.getElementById('svg');
+  const canvas = document.getElementById('canvas');
+  const cr = canvas.getBoundingClientRect();
+
+  function getBox(id) {
+    const el = document.getElementById(id);
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left - cr.left,
+      y: r.top  - cr.top,
+      w: r.width,
+      h: r.height,
+      cx: r.left - cr.left + r.width / 2,
+      cy: r.top  - cr.top  + r.height / 2,
+      right:  r.left - cr.left + r.width,
+      bottom: r.top  - cr.top  + r.height,
+    };
+  }
+
+  function arrow(x1, y1, x2, y2, color, marker, dashed) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const mx = x1 + dx * 0.5, my = y1 + dy * 0.5;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+
+    // Кривая Безье
+    let d;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    } else {
+      d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    }
+
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '1.8');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.6');
+    path.setAttribute('marker-end', `url(#${marker})`);
+    if (dashed) path.setAttribute('stroke-dasharray', '5,3');
+    svg.appendChild(path);
+  }
+
+  // lattice_type → lattice_metadata (вниз по левой стороне)
+  const lt  = getBox('t-lattice_type');
+  const lm  = getBox('t-lattice_metadata');
+  arrow(lt.cx, lt.bottom, lm.cx, lm.y, '#3b82f6', 'arr-blue', false);
+
+  // lattice_type → reference_structure (вправо)
+  const rs  = getBox('t-reference_structure');
+  arrow(lt.right, lt.cy - 20, rs.x, rs.y + 55, '#3b82f6', 'arr-blue', false);
+
+  // reference_structure → structure_site (вниз)
+  const ss  = getBox('t-structure_site');
+  arrow(rs.cx, rs.bottom, ss.cx, ss.y, '#22c55e', 'arr-green', false);
+
+  // recognition_session → recognition_result (вниз)
+  const ses = getBox('t-recognition_session');
+  const rr  = getBox('t-recognition_result');
+  arrow(ses.cx, ses.bottom, rr.cx, rr.y, '#a855f7', 'arr-purple', false);
+
+  // recognition_result → lattice_type (дугой влево)
+  arrow(rr.x, rr.cy - 30, lt.right + 5, lt.cy + 60, '#818cf8', 'arr-blue', true);
+
+  // recognition_result → reference_structure
+  arrow(rr.x, rr.cy + 10, rs.right, rs.cy + 80, '#22c55e', 'arr-green', true);
+
+  // lattice_type → external_lookup_log (вправо наверх)
+  const log = getBox('t-external_lookup_log');
+  arrow(lt.right, lt.cy - 60, log.x, log.y + 40, '#f59e0b', 'arr-amber', true);
+
+  // reference_structure → external_lookup_log (вправо)
+  arrow(rs.right + 5, rs.cy - 40, log.x, log.cy - 60, '#f59e0b', 'arr-amber', true);
+});
+</script>
+
+</body>
+</html>

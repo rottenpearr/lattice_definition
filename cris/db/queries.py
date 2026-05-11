@@ -7,23 +7,33 @@ from cris.db.connection import get_cursor
 from cris.logger import logger
 
 
+_COORD_TOLERANCE = 1e-4  # допуск при сравнении нормализованных координат
+
+
 def get_similar_xyz_from_db(coordinates) -> list:
     """
     Ищет совпадения по нормализованным координатам в structure_site.
     coordinates: dict {n: [label, x, y, z]}
-    Возвращает list строк: (site_id, lattice_type_id, structure_id, ...)
+    Использует допуск ±_COORD_TOLERANCE вместо точного сравнения float.
+    Возвращает list строк: (site_id, lattice_type_id, structure_id)
     """
     query = """
         SELECT ss.id, rs.lattice_type_id, ss.structure_id
         FROM structure_site ss
         JOIN reference_structure rs ON rs.id = ss.structure_id
-        WHERE ss.norm_x = %s AND ss.norm_y = %s AND ss.norm_z = %s
+        WHERE ss.norm_x BETWEEN %s AND %s
+          AND ss.norm_y BETWEEN %s AND %s
+          AND ss.norm_z BETWEEN %s AND %s
     """
     results = []
     try:
         with get_cursor() as cur:
             for _, x, y, z in list(coordinates.values()):
-                cur.execute(query, (x, y, z))
+                cur.execute(query, (
+                    x - _COORD_TOLERANCE, x + _COORD_TOLERANCE,
+                    y - _COORD_TOLERANCE, y + _COORD_TOLERANCE,
+                    z - _COORD_TOLERANCE, z + _COORD_TOLERANCE,
+                ))
                 results.extend(cur.fetchall())
     except Exception as e:
         logger.error("get_similar_xyz_from_db failed: {}", e)
@@ -92,7 +102,7 @@ def check_coords(ions: list, ion_amount: int):
                 cur.execute("""
                     SELECT id, name, cell_length_a, cell_length_b, cell_length_c,
                            cell_volume, cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
-                           sg_number, sg_hall, sg_hm, doi
+                           sg_number, sg_hall, sg_hm, doi, formula
                     FROM reference_structure WHERE id = %s
                 """, (st_id,))
                 row = cur.fetchone()

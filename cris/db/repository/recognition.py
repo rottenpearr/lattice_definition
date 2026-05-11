@@ -89,12 +89,12 @@ def save_result(session_id: str, method: str, method_version: str,
                  predicted_lattice_type_id, predicted_structure_id,
                  confidence, vector_path)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                predicted_lattice_type_id = VALUES(predicted_lattice_type_id),
-                predicted_structure_id    = VALUES(predicted_structure_id),
-                confidence                = VALUES(confidence),
-                vector_path               = VALUES(vector_path),
-                computed_at               = CURRENT_TIMESTAMP
+            ON CONFLICT (session_id, method, method_version, rank) DO UPDATE SET
+                predicted_lattice_type_id = EXCLUDED.predicted_lattice_type_id,
+                predicted_structure_id    = EXCLUDED.predicted_structure_id,
+                confidence                = EXCLUDED.confidence,
+                vector_path               = EXCLUDED.vector_path,
+                computed_at               = NOW()
         """, (session_id, method, method_version, rank,
                lattice_type_id, structure_id, confidence, vector_path or None))
 
@@ -120,7 +120,7 @@ def save_vector_cache(input_hash: str, params: dict, method_name: str,
             INSERT INTO feature_vector_cache
                 (input_hash, params_hash, method_name, vector_path, ion_count)
             VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                vector_path = VALUES(vector_path),
-                computed_at = CURRENT_TIMESTAMP
+            ON CONFLICT (input_hash, params_hash) DO UPDATE SET
+                vector_path = EXCLUDED.vector_path,
+                computed_at = NOW()
         """, (input_hash, params_hash, method_name, vector_path, ion_count))
