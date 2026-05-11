@@ -1,5 +1,6 @@
 import os
 from collections import Counter
+from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -11,49 +12,77 @@ from cris.db.connection import get_cursor
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.core.vectors import get_lattice_vectors2
 
+_ROOT = Path(__file__).parent.parent.parent  # корень проекта
+
+
+def _parse_xyz(xyz_path: Path) -> list[list]:
+    """Парсит XYZ-файл → [[symbol, x, y, z], ...]."""
+    lines = xyz_path.read_text(encoding="utf-8").splitlines()
+    atom_count = int(lines[0].strip())
+    result = []
+    for line in lines[2:2 + atom_count]:
+        parts = line.split()
+        if len(parts) >= 4:
+            result.append([parts[0], float(parts[1]), float(parts[2]), float(parts[3])])
+    return result
+
 
 def create_all_spectrum_plots():
     """
     Строит спектры для всех эталонных структур в БД.
+    Координаты читаются из XYZ-файлов (reference_structure.xyz_path).
     """
-    lattice_list = []
     try:
         with get_cursor() as cur:
-            cur.execute("SELECT MAX(id) FROM reference_structure")
-            lattice_count = cur.fetchone()[0] or 0
-            for struct_id in range(1, lattice_count + 1):
-                cur.execute(
-                    "SELECT structure_id, fract_x, fract_y, fract_z "
-                    "FROM structure_site WHERE structure_id = %s",
-                    (struct_id,)
-                )
-                lattice = cur.fetchall()
-                if lattice:
-                    lattice_list.append(lattice)
+            cur.execute("""
+                SELECT id, xyz_path FROM reference_structure
+                WHERE xyz_path IS NOT NULL AND xyz_path != ''
+                ORDER BY id
+            """)
+            rows = cur.fetchall()
     except Exception as e:
-        print(f"Произошла ошибка: {e}")
+        print(f"Произошла ошибка при чтении БД: {e}")
+        return
 
-    for lattice in lattice_list:
-        substance_id = lattice[0][0]
+    for struct_id, xyz_rel_path in rows:
+        xyz_path = _ROOT / xyz_rel_path
+        if not xyz_path.exists():
+            print(f"XYZ не найден для structure_id={struct_id}: {xyz_path}")
+            continue
 
+        try:
+            data = _parse_xyz(xyz_path)
+        except Exception as e:
+            print(f"Ошибка парсинга {xyz_path}: {e}")
+            continue
+
+        shifted    = shift_coordinates(data)
+        normalized = normalize_coordinates(shifted)
+
+        # Преобразуем в формат, ожидаемый get_lattice_vectors2: {n: (id, x, y, z)}
         data_dict = {}
-        for i in range(len(lattice)):
-            data_dict[i + 1] = lattice[i]
-        shifted_data = shift_coordinates(data_dict.values())
-        normalized_data = normalize_coordinates(shifted_data)
+        for i, row in enumerate(normalized):
+            data_dict[i + 1] = (struct_id, row[1], row[2], row[3])
 
-        vectors = get_lattice_vectors2(normalized_data)
-        for id, ion in enumerate(vectors.keys()):
+        vectors = get_lattice_vectors2(normalized)
+        for vec_id, ion in enumerate(vectors.keys()):
             ion_coords = [float(elem) for elem in ion.split(";")]
-            plot_spectra(data=dict(Counter(vectors[ion])), ion=ion_coords, substance_id=substance_id, vector_id=id,
-                         cmap="plasma", background="#20232a")
+            plot_spectra(
+                data=dict(Counter(vectors[ion])),
+                ion=ion_coords,
+                substance_id=struct_id,
+                vector_id=vec_id,
+                cmap="plasma",
+                background="#20232a",
+            )
+
 
 def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="#1e1e1e", outdir="../../data/spectrum"):
     """
     Строит спектры (гистограммы) для набора расстояний между ионами.
 
-    data : list[tuple]
-        Набор кортежей с расстояниями
+    data : dict
+        Словарь {расстояние: частота}
     cmap : str
         Цветовая схема для градиента
     background : str
@@ -89,7 +118,7 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     plt.bar(unique, counts, color=colors, width=0.02, edgecolor="white", linewidth=0.6)
     if kde_values is not None:
         plt.plot(x_grid, kde_values, color='cyan', linewidth=1)
-        ax.fill_between(x_grid, kde_values, color="cyan", alpha=0.2)  # заливка под кривой
+        ax.fill_between(x_grid, kde_values, color="cyan", alpha=0.2)
 
     plt.xlabel("Расстояние между ионами")
     plt.ylabel("Интенсивность (частота)")
@@ -101,6 +130,7 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     plt.close(fig)
 
     print(f"Изображение spectrum_{substance_id}-{vector_id + 1}.png сохранено!")
+
 
 def kde_array(data):
     distances = []

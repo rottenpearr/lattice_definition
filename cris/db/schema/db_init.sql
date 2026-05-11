@@ -141,37 +141,7 @@ CREATE TABLE IF NOT EXISTS substance_info (
 CREATE INDEX IF NOT EXISTS idx_substance_structure ON substance_info (structure_id);
 
 -- ─────────────────────────────────────────────────────────────
--- 6. Позиции ионов в эталонных структурах
--- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS structure_site (
-    id           SERIAL PRIMARY KEY,
-    structure_id INT NOT NULL,
-
-    atom_label   VARCHAR(50),   -- e.g. Na1, Cl2
-    atom_symbol  VARCHAR(10),   -- e.g. Na, Cl
-    oxidation    REAL,
-    multiplicity SMALLINT,
-    wyckoff      VARCHAR(10),
-    occupancy    REAL DEFAULT 1.0,
-
-    -- дробные координаты из CIF
-    fract_x      NUMERIC(12, 8),
-    fract_y      NUMERIC(12, 8),
-    fract_z      NUMERIC(12, 8),
-
-    -- нормализованные координаты [0,1]
-    norm_x       NUMERIC(12, 8),
-    norm_y       NUMERIC(12, 8),
-    norm_z       NUMERIC(12, 8),
-
-    FOREIGN KEY (structure_id) REFERENCES reference_structure(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_norm      ON structure_site (norm_x, norm_y, norm_z);
-CREATE INDEX IF NOT EXISTS idx_structure ON structure_site (structure_id);
-
--- ─────────────────────────────────────────────────────────────
--- 7. Сессия распознавания
+-- 6. Сессия распознавания
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_session (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
