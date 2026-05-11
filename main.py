@@ -14,6 +14,7 @@ from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.queries import get_similar_xyz_from_db, check_coords
 from cris.db.repository.recognition import get_or_create_session, save_result
 from cris.db.enrichment.substance_enricher import enrich_substance
+from cris.core.ml_predict import predict_catboost, resolve_lattice_ids
 from cris.logger import logger
 from cris.tools.report import save_docx
 
@@ -206,6 +207,29 @@ class MainWindow(QMainWindow):
             logger.info("Session saved: id={} lt_id={} st_id={}", session.id[:8], top_lt_id, top_st_id)
         except Exception as e:
             logger.warning("Could not save recognition session: {}", e)
+
+        # ── CatBoost: записываем ML-предсказания в recognition_result ────────
+        try:
+            cb_preds = predict_catboost(normalized_data)
+            if cb_preds:
+                resolve_lattice_ids(cb_preds)
+                for rank, pred in enumerate(cb_preds, start=1):
+                    save_result(
+                        session_id=session.id,
+                        method="CATBOOST",
+                        method_version="1.0",
+                        rank=rank,
+                        lattice_type_id=pred["lattice_type_id"],
+                        structure_id=None,   # CatBoost предсказывает тип, не конкретную структуру
+                        confidence=pred["confidence"],
+                    )
+                logger.info(
+                    "CatBoost saved: top={} ({:.0f}%)",
+                    cb_preds[0]["class"],
+                    cb_preds[0]["confidence"] * 100,
+                )
+        except Exception as e:
+            logger.warning("CatBoost prediction failed: {}", e)
 
         # ── Запускаем обогащение вещества в фоне (не блокируем UI) ───────────
         if result_possible_substance is not None:
