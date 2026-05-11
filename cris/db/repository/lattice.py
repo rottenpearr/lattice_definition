@@ -41,20 +41,21 @@ def upsert_metadata(meta: LatticeMetadata) -> None:
     with get_cursor() as cur:
         cur.execute("""
             INSERT INTO lattice_metadata
-                (lattice_type_id, discoverer, discovery_year, discovery_context,
-                 wiki_url, review_doi, notes, enriched_at, enrichment_source)
+                (lattice_type_id, coordination_number, packing_efficiency,
+                 typical_materials, applications, wiki_url, notes,
+                 enriched_at, enrichment_source)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                discoverer        = VALUES(discoverer),
-                discovery_year    = VALUES(discovery_year),
-                discovery_context = VALUES(discovery_context),
-                wiki_url          = VALUES(wiki_url),
-                review_doi        = VALUES(review_doi),
-                notes             = VALUES(notes),
-                enriched_at       = VALUES(enriched_at),
-                enrichment_source = VALUES(enrichment_source)
+            ON CONFLICT (lattice_type_id) DO UPDATE SET
+                coordination_number = EXCLUDED.coordination_number,
+                packing_efficiency  = EXCLUDED.packing_efficiency,
+                typical_materials   = EXCLUDED.typical_materials,
+                applications        = EXCLUDED.applications,
+                wiki_url            = EXCLUDED.wiki_url,
+                notes               = EXCLUDED.notes,
+                enriched_at         = EXCLUDED.enriched_at,
+                enrichment_source   = EXCLUDED.enrichment_source
         """, (
-            meta.lattice_type_id, meta.discoverer, meta.discovery_year,
-            meta.discovery_context, meta.wiki_url, meta.review_doi,
+            meta.lattice_type_id, meta.coordination_number, meta.packing_efficiency,
+            meta.typical_materials, meta.applications, meta.wiki_url,
             meta.notes, meta.enriched_at or datetime.now(), meta.enrichment_source,
         ))

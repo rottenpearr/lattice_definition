@@ -44,16 +44,27 @@ def insert_data(cursor, data: dict) -> tuple[int, int]:
     row = cursor.fetchone()
     lattice_type_id = row[0] if row else None
 
+    formula = vals.get("_chemical_formula_sum", [""])[0] or vals.get("_chemical_formula_structural", [""])[0]
+    cod_id_raw = vals.get("_cod_database_code", [None])[0]
+    cod_id = int(cod_id_raw) if cod_id_raw else None
+
+    # Проверяем — вдруг уже импортировали (по cod_id или по имени+формуле)
+    if cod_id:
+        cursor.execute("SELECT id FROM reference_structure WHERE cod_id = %s LIMIT 1", (cod_id,))
+        row = cursor.fetchone()
+        if row:
+            return lattice_type_id, row[0]
+
     cursor.execute("""
         INSERT INTO reference_structure
-            (name, lattice_type_id,
+            (name, formula, lattice_type_id,
              cell_length_a, cell_length_b, cell_length_c, cell_volume,
              cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
-             sg_number, sg_hall, sg_hm)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             sg_number, sg_hall, sg_hm, cod_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
-    """, (name, lattice_type_id, a, b, c, vol, alpha, beta, gamma,
-          sg_num, sg_hall, sg_hm))
+    """, (name, formula, lattice_type_id, a, b, c, vol, alpha, beta, gamma,
+          sg_num, sg_hall, sg_hm, cod_id))
     structure_id = cursor.fetchone()[0]
 
     labels      = vals.get("_atom_site_label", [])

@@ -20,12 +20,25 @@ class LatticeType:
 @dataclass
 class LatticeMetadata:
     lattice_type_id: int
-    discoverer: str = ""
-    discovery_year: Optional[int] = None
-    discovery_context: str = ""
+    coordination_number: Optional[int] = None   # 12 для FCC, 8 для BCC
+    packing_efficiency: Optional[float] = None  # 0.74 для FCC, 0.68 для BCC
+    typical_materials: str = ""                 # "Al, Cu, Au, Ni"
+    applications: str = ""                      # области применения
     wiki_url: str = ""
-    review_doi: str = ""
     notes: str = ""
+    enriched_at: Optional[datetime] = None
+    enrichment_source: str = ""
+
+
+@dataclass
+class SubstanceInfo:
+    id: Optional[int]
+    structure_id: int
+    description: str = ""          # связный текст от GigaChat
+    applications: str = ""         # применение
+    hazards: str = ""              # токсичность, радиоактивность
+    properties: Optional[dict] = None      # {melting_point, density, color, ...}
+    scientific_sources: Optional[list] = None  # [{doi, title, journal, year, url, snippet}]
     enriched_at: Optional[datetime] = None
     enrichment_source: str = ""
 

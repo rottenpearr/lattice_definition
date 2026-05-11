@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Схема БД — crystal_lattice_db</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    padding: 32px;
+    line-height: 1.5;
+  }
+
+  h1 { font-size: 1.6rem; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
+  .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 40px; }
+
+  .legend {
+    display: flex; gap: 20px; margin-bottom: 36px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #94a3b8; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  .groups { display: flex; flex-direction: column; gap: 40px; }
+  .group-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: #475569; margin-bottom: 12px;
+  }
+  .tables-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+
+  .table {
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 280px;
+    max-width: 380px;
+    flex: 1;
+    box-shadow: 0 4px 24px rgba(0,0,0,.5);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .table-header {
+    padding: 11px 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    letter-spacing: .01em;
+  }
+  .table-header .badge {
+    font-size: 0.7rem; font-weight: 600;
+    background: rgba(0,0,0,.25); border-radius: 20px;
+    padding: 2px 9px; letter-spacing: .02em;
+  }
+  .col-list { background: #1a1d27; }
+  .col {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    gap: 8px;
+    padding: 7px 16px;
+    border-top: 1px solid rgba(255,255,255,.04);
+    align-items: start;
+    font-size: 0.82rem;
+  }
+  .col:hover { background: rgba(255,255,255,.03); }
+  .col-icon { font-size: 0.75rem; padding-top: 1px; }
+  .col-name { color: #e2e8f0; font-weight: 500; }
+  .col-name.pk { color: #fbbf24; }
+  .col-name.fk { color: #60a5fa; }
+  .col-name.uk { color: #a78bfa; }
+  .col-meta { color: #475569; font-size: 0.75rem; text-align: right; white-space: nowrap; }
+  .col-desc { grid-column: 2 / -1; color: #64748b; font-size: 0.76rem; padding-top: 1px; }
+
+  .th-teal   { background: linear-gradient(135deg,#0f766e,#0d9488); color: #ccfbf1; }
+  .th-blue   { background: linear-gradient(135deg,#1d4ed8,#2563eb); color: #dbeafe; }
+  .th-violet { background: linear-gradient(135deg,#6d28d9,#7c3aed); color: #ede9fe; }
+  .th-amber  { background: linear-gradient(135deg,#b45309,#d97706); color: #fef3c7; }
+  .th-slate  { background: linear-gradient(135deg,#334155,#475569); color: #f1f5f9; }
+
+  .relations {
+    margin-top: 40px; background: #1a1d27;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,.06); overflow: hidden;
+  }
+  .relations-header {
+    background: linear-gradient(135deg,#1e293b,#334155);
+    padding: 12px 20px; font-weight: 700; font-size: 0.95rem; color: #f1f5f9;
+  }
+  .rel-table { width: 100%; border-collapse: collapse; }
+  .rel-table th {
+    text-align: left; padding: 8px 16px;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #475569;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .rel-table td {
+    padding: 9px 16px; font-size: 0.82rem;
+    border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top;
+  }
+  .rel-table tr:hover td { background: rgba(255,255,255,.02); }
+  .rel-from { color: #60a5fa; font-weight: 600; }
+  .rel-to   { color: #fbbf24; font-weight: 600; }
+  .rel-type { color: #94a3b8; }
+  .rel-desc { color: #64748b; font-size: 0.78rem; }
+  .on-del-cascade { color: #f87171; font-size: 0.75rem; }
+  .on-del-null    { color: #94a3b8; font-size: 0.75rem; }
+
+  .flows {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .flow-card {
+    background: #1a1d27; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.06); padding: 18px 20px;
+  }
+  .flow-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; margin-bottom: 12px; }
+  .flow-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 0.82rem; color: #94a3b8; margin-bottom: 8px;
+  }
+  .flow-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+    background: #1e293b; color: #60a5fa; border: 1px solid #334155;
+  }
+  .flow-text strong { color: #e2e8f0; }
+
+  .notes {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .note {
+    background: #1a1d27; border-radius: 8px;
+    border-left: 3px solid #334155; padding: 14px 16px; font-size: 0.82rem;
+  }
+  .note.warn { border-color: #f59e0b; }
+  .note.ok   { border-color: #10b981; }
+  .note.info { border-color: #3b82f6; }
+  .note-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
+  .note.warn .note-title { color: #fbbf24; }
+  .note.ok   .note-title { color: #34d399; }
+  .note.info .note-title { color: #60a5fa; }
+  .note p { color: #64748b; line-height: 1.55; }
+  .note code {
+    background: #0f1117; padding: 1px 5px; border-radius: 3px;
+    color: #a78bfa; font-family: monospace; font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>Схема базы данных — crystal_lattice_db</h1>
+<p class="subtitle">PostgreSQL &middot; 9 таблиц &middot; ветка feature/database-redesign &middot; обновлено 2026-05-11</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#fbbf24"></div> PK &mdash; первичный ключ</div>
+  <div class="legend-item"><div class="dot" style="background:#60a5fa"></div> FK &mdash; внешний ключ</div>
+  <div class="legend-item"><div class="dot" style="background:#a78bfa"></div> UK &mdash; уникальное ограничение</div>
+  <div class="legend-item"><div class="dot" style="background:#475569"></div> &mdash; обычное поле</div>
+  <div class="legend-item">&#128273; PK &nbsp; &#128279; FK &nbsp; &#128274; UK &nbsp; &middot; обычное</div>
+</div>
+
+<div class="groups">
+
+  <!-- GROUP 1 -->
+  <div>
+    <div class="group-label">&#9312; Справочник кристаллических систем</div>
+    <div class="tables-row">
+
+      <div class="table">
+        <div class="table-header th-teal">lattice_type <span class="badge">8 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col-desc">Автоинкремент 1&ndash;8. Каждое значение = одна кристаллическая система</div>
+          <div class="col"><span class="col-icon">&#128274;</span><span class="col-name uk">name_en</span><span class="col-meta">varchar UK</span></div>
+          <div class="col-desc">cubic, hexagonal, trigonal, tetragonal, orthorhombic, monoclinic, rhombohedral, triclinic</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">name_ru</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Русское название: кубическая, гексагональная &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">bravais_lattice</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Символ решётки Браве: cF, cI, cP, hP, mP &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">point_group</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Точечная группа симметрии: m3m, 6/mmm, 4/mmm &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">sg_number_min / max</span><span class="col-meta">smallint</span></div>
+          <div class="col-desc">Диапазон номеров пространственных групп МТК для этой системы (напр. cubic: 195&ndash;230)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">description</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Текстовое описание для отображения в UI (заполнено вручную)</div>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="table-header th-teal">lattice_metadata <span class="badge">8 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk pk">lattice_type_id</span><span class="col-meta">int PK/FK/UK</span></div>
+          <div class="col-desc">Ключ 1:1 с lattice_type.id. Одна запись метаданных = один тип решётки</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">coordination_number</span><span class="col-meta">smallint</span></div>
+          <div class="col-desc">Число ближайших соседей у атома: FCC=12, BCC=8, SC=6</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">packing_efficiency</span><span class="col-meta">real</span></div>
+          <div class="col-desc">Доля объёма ячейки, занятая атомами: FCC=0.74, BCC=0.68, SC=0.52</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">typical_materials</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Примеры веществ: "Al, Cu, NaCl, Ag &hellip;"</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">applications</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Практическое применение: металлургия, полупроводники, ядерная энергетика &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">wiki_url / notes</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Ссылка на Wikipedia и дополнительные заметки</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">enrichment_source</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Источник: "AI_SEARCH" &mdash; все поля сгенерированы GigaChat-2-Max</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">enriched_at</span><span class="col-meta">timestamp</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 2 -->
+  <div>
+    <div class="group-label">&#9313; Эталонные кристаллические структуры</div>
+    <div class="tables-row">
+
+      <div class="table">
+        <div class="table-header th-blue">reference_structure <span class="badge">30 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk">lattice_type_id</span><span class="col-meta">int FK</span></div>
+          <div class="col-desc">К какой кристаллической системе относится &rarr; lattice_type.id (N:1)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">name</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Полное название: "Sodium chloride", "Uranium dioxide" &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">formula</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Химическая формула. COD хранит алфавитно: "Cl Na" вместо "NaCl"</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">cell_length_a / b / c</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Параметры элементарной ячейки в ангстремах (&#8491;)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">cell_volume</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Объём элементарной ячейки в &#8491;&#179;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">cell_angle_alpha / beta / gamma</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Углы между осями в градусах. Для кубической все = 90&deg;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">sg_number</span><span class="col-meta">smallint</span></div>
+          <div class="col-desc">Номер пространственной группы по МТК (1&ndash;230)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">sg_hall / sg_hm</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Обозначения пространственной группы: нотация Холла и Германа&ndash;Могена</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">cod_id</span><span class="col-meta">integer</span></div>
+          <div class="col-desc">ID записи в Crystallography Open Database. NULL у синтетических структур</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">existence_status</span><span class="col-meta">enum</span></div>
+          <div class="col-desc">experimental / theoretical / hypothetical / disputed</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">doi / source_url</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Источник публикации для верификации структуры</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">added_at / updated_at</span><span class="col-meta">timestamp</span></div>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="table-header th-blue">structure_site <span class="badge">390 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk">structure_id</span><span class="col-meta">int FK</span></div>
+          <div class="col-desc">Атом принадлежит этой структуре &rarr; reference_structure.id (N:1)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">atom_label</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Метка из CIF: "Na1", "Cl1" &hellip; NULL для дублированных позиций из XYZ</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">atom_symbol</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Символ элемента: Na, Cl, U, Fe &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">oxidation</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Степень окисления: +1, &minus;1, +4 &hellip; (из CIF, NULL если не указана)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">multiplicity</span><span class="col-meta">smallint</span></div>
+          <div class="col-desc">Кратность положения Вайкова &mdash; число эквивалентных позиций в ячейке</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">wyckoff</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Буква положения Вайкова: a, b, c, d &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">occupancy</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Заселённость 0&ndash;1. 1.0 = позиция полностью занята атомом</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">fract_x / fract_y / fract_z</span><span class="col-meta">numeric</span></div>
+          <div class="col-desc">Абсолютные координаты из XYZ в &#8491; (название исторически неточное)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">norm_x / norm_y / norm_z</span><span class="col-meta">numeric</span></div>
+          <div class="col-desc">Нормализованные координаты [0,1] &mdash; именно по ним идёт поиск совпадений с допуском &#177;1e-4</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 3 -->
+  <div>
+    <div class="group-label">&#9314; Обогащение веществ (AI + научные базы данных)</div>
+    <div class="tables-row">
+
+      <div class="table">
+        <div class="table-header th-violet">substance_info <span class="badge">21 строка</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk uk">structure_id</span><span class="col-meta">int FK/UK</span></div>
+          <div class="col-desc">1:1 с reference_structure.id (UNIQUE). Одна запись обогащения на вещество</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">description</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Связное описание вещества, написанное GigaChat на основе статей</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">applications</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Области применения: ядерная энергетика, электроника, металлургия &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">hazards</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Опасности: радиоактивность, токсичность. Пустая строка если нет</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">properties</span><span class="col-meta">jsonb</span></div>
+          <div class="col-desc">Кристаллографические параметры из reference_structure в виде JSON-объекта: cell_length_a/b/c, cell_volume, angles, sg_number, sg_hall, sg_hm, cod_id</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">scientific_sources</span><span class="col-meta">jsonb</span></div>
+          <div class="col-desc">JSON-массив статей [{doi, title, journal, year, url, source}]. До 10 статей. Источники: CrossRef + OSTI DOE</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">enrichment_source</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Строка-перечень: "COD_PARAMS+CROSSREF+OSTI+AI"</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">enriched_at</span><span class="col-meta">timestamp</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 4 -->
+  <div>
+    <div class="group-label">&#9315; История распознаваний</div>
+    <div class="tables-row">
+
+      <div class="table">
+        <div class="table-header th-amber">recognition_session <span class="badge">1 строка</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">uuid PK</span></div>
+          <div class="col-desc">UUID, генерируется автоматически при каждом новом наборе координат</div>
+          <div class="col"><span class="col-icon">&#128274;</span><span class="col-name uk">input_hash</span><span class="col-meta">char(64) UK</span></div>
+          <div class="col-desc">SHA-256 от нормализованных координат. Если тот же хэш &mdash; сессия переиспользуется (кэш)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">ion_count</span><span class="col-meta">integer</span></div>
+          <div class="col-desc">Количество ионов, введённых пользователем</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">xyz_path</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Путь к XYZ-файлу если ввод из файла. Пустая строка если ввод через UI</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">notes / created_at</span><span class="col-meta">text / timestamp</span></div>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="table-header th-amber">recognition_result <span class="badge">4 строки</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk">session_id</span><span class="col-meta">uuid FK</span></div>
+          <div class="col-desc">К какой сессии относится &rarr; recognition_session.id (N:1)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">method</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Алгоритм: "COORD_MATCH" (поиск по БД) или "CATBOOST" (ML-модель)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">method_version</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Версия: "1.0". Позволяет сравнивать разные версии одного алгоритма</div>
+          <div class="col"><span class="col-icon">&#128274;</span><span class="col-name uk">rank</span><span class="col-meta">smallint UK*</span></div>
+          <div class="col-desc">Место в топе: 1=лучший, 2=второй &hellip; UK по (session_id, method, version, rank)</div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk">predicted_lattice_type_id</span><span class="col-meta">int FK</span></div>
+          <div class="col-desc">Предсказанный тип решётки &rarr; lattice_type.id. ON DELETE SET NULL</div>
+          <div class="col"><span class="col-icon">&#128279;</span><span class="col-name fk">predicted_structure_id</span><span class="col-meta">int FK</span></div>
+          <div class="col-desc">Конкретная структура (NULL для CATBOOST) &rarr; reference_structure.id. ON DELETE SET NULL</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">confidence</span><span class="col-meta">float8</span></div>
+          <div class="col-desc">Уверенность 0.0&ndash;1.0. COORD_MATCH: доля голосов; CATBOOST: вероятность класса</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">vector_path / computed_at</span><span class="col-meta">varchar / ts</span></div>
+          <div class="col-desc">Путь к KDE-вектору на диске (для воспроизводимости) и время расчёта</div>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="table-header th-amber">feature_vector_cache <span class="badge">0 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128274;</span><span class="col-name uk">input_hash</span><span class="col-meta">char(64) UK*</span></div>
+          <div class="col-desc">SHA-256 от координат &mdash; связывает с recognition_session.input_hash</div>
+          <div class="col"><span class="col-icon">&#128274;</span><span class="col-name uk">params_hash</span><span class="col-meta">char(64) UK*</span></div>
+          <div class="col-desc">SHA-256 от параметров модели (bandwidth, grid size &hellip;). UK по паре (input_hash, params_hash)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">method_name</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Метод, считавший вектор: "KDE_RF", "CATBOOST" &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">vector_path</span><span class="col-meta">varchar</span></div>
+          <div class="col-desc">Путь к .npy файлу на диске с numpy-массивом вектора</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">ion_count / computed_at</span><span class="col-meta">int / ts</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 5 -->
+  <div>
+    <div class="group-label">&#9316; Логирование внешних запросов</div>
+    <div class="tables-row">
+
+      <div class="table">
+        <div class="table-header th-slate">external_lookup_log <span class="badge">26 строк</span></div>
+        <div class="col-list">
+          <div class="col"><span class="col-icon">&#128273;</span><span class="col-name pk">id</span><span class="col-meta">integer PK</span></div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">source</span><span class="col-meta">enum</span></div>
+          <div class="col-desc">COD / MATERIALS_PROJECT / CROSSREF / PUBCHEM / OSTI / AI_SEARCH / MANUAL</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">target_type</span><span class="col-meta">enum</span></div>
+          <div class="col-desc">Что обогащали: lattice_type / structure / substance</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">target_id</span><span class="col-meta">integer</span></div>
+          <div class="col-desc">ID объекта в соответствующей таблице. Не FK, т.к. target_type разный</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">query_text</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Точный текст запроса к внешнему API</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">result_summary</span><span class="col-meta">text</span></div>
+          <div class="col-desc">Краткое содержание ответа (первые N символов)</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">enriched_fields</span><span class="col-meta">jsonb</span></div>
+          <div class="col-desc">Список заполненных полей: ["description", "applications", "hazards"]</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">http_status</span><span class="col-meta">smallint</span></div>
+          <div class="col-desc">HTTP-статус: 200, 404, 500 &hellip;</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">is_successful</span><span class="col-meta">boolean</span></div>
+          <div class="col-desc">true = данные получены и сохранены, false = ошибка или пустой ответ</div>
+          <div class="col"><span class="col-icon">&middot;</span><span class="col-name">queried_at</span><span class="col-meta">timestamp</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /groups -->
+
+
+<!-- FOREIGN KEYS -->
+<div class="relations">
+  <div class="relations-header">Все связи (Foreign Keys)</div>
+  <table class="rel-table">
+    <tr>
+      <th>Откуда</th><th></th><th>Куда</th><th>Тип</th><th>ON DELETE</th><th>Смысл связи</th>
+    </tr>
+    <tr>
+      <td><span class="rel-from">lattice_metadata.lattice_type_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">lattice_type.id</span></td>
+      <td class="rel-type">1 : 1</td>
+      <td><span class="on-del-cascade">CASCADE</span></td>
+      <td class="rel-desc">Один тип решётки = одна запись метаданных. Удалить тип &rarr; удалить метаданные</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">reference_structure.lattice_type_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">lattice_type.id</span></td>
+      <td class="rel-type">N : 1</td>
+      <td><span class="on-del-cascade">CASCADE</span></td>
+      <td class="rel-desc">Много структур принадлежат одной системе. NaCl, MgO, CaO &rarr; cubic</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">structure_site.structure_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">reference_structure.id</span></td>
+      <td class="rel-type">N : 1</td>
+      <td><span class="on-del-cascade">CASCADE</span></td>
+      <td class="rel-desc">Атомные позиции принадлежат структуре. NaCl: 57 строк. Удалить структуру &rarr; удалить все атомы</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">substance_info.structure_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">reference_structure.id</span></td>
+      <td class="rel-type">1 : 1</td>
+      <td><span class="on-del-cascade">CASCADE</span></td>
+      <td class="rel-desc">Одно описание на одно вещество (UNIQUE). Удалить структуру &rarr; удалить обогащение</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">recognition_result.session_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">recognition_session.id</span></td>
+      <td class="rel-type">N : 1</td>
+      <td><span class="on-del-cascade">CASCADE</span></td>
+      <td class="rel-desc">Один запрос &rarr; несколько результатов от COORD_MATCH и CATBOOST. Удалить сессию &rarr; удалить все её результаты</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">recognition_result.predicted_lattice_type_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">lattice_type.id</span></td>
+      <td class="rel-type">N : 1</td>
+      <td><span class="on-del-null">SET NULL</span></td>
+      <td class="rel-desc">Предсказанный тип решётки. SET NULL: исторические результаты не теряются при удалении типа</td>
+    </tr>
+    <tr>
+      <td><span class="rel-from">recognition_result.predicted_structure_id</span></td>
+      <td>&rarr;</td>
+      <td><span class="rel-to">reference_structure.id</span></td>
+      <td class="rel-type">N : 1</td>
+      <td><span class="on-del-null">SET NULL</span></td>
+      <td class="rel-desc">Конкретная структура-кандидат. NULL для CATBOOST (он предсказывает только тип, не вещество)</td>
+    </tr>
+  </table>
+</div>
+
+
+<!-- FLOWS -->
+<div style="margin-top:40px">
+  <div class="group-label">Потоки данных</div>
+  <div class="flows">
+
+    <div class="flow-card">
+      <div class="flow-title">&#128300; Загрузка структуры из COD</div>
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text">CIF-файл &rarr; <strong>json_to_db.py</strong>: метаданные, формула, параметры ячейки, пространственная группа, cod_id</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text">INSERT в <strong>reference_structure</strong>. Дедупликация по cod_id &mdash; повторный импорт не создаст дубликат</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text">XYZ-файл с координатами &rarr; <strong>xyz_to_db.py</strong>: shift_coordinates + normalize_coordinates</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-text">INSERT в <strong>structure_site</strong> (fract_x/y/z + norm_x/y/z) для каждого атома ячейки</div></div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">&#129302; Обогащение вещества</div>
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><strong>_load_crystal_properties()</strong>: параметры ячейки из reference_structure &rarr; <code>properties</code> JSONB</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>CrossRef API</strong>: поиск топ-5 статей по запросу "name crystal structure lattice_type"</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><strong>OSTI API</strong>: публикации DOE, важно для UO&#8322;, UN, UC. Дедупликация по DOI с CrossRef</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-text"><strong>GigaChat-2-Max</strong>: синтез description + applications + hazards на основе найденных статей</div></div>
+      <div class="flow-step"><div class="flow-num">5</div><div class="flow-text">UPSERT в <strong>substance_info</strong>. enrichment_source = "COD_PARAMS+CROSSREF+OSTI+AI"</div></div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">&#129517; Распознавание: COORD_MATCH</div>
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text">Пользователь вводит координаты &rarr; shift + normalize &rarr; нормализованные [0,1]</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>get_similar_xyz_from_db()</strong>: SELECT по <strong>structure_site.norm_x/y/z</strong> BETWEEN x&plusmn;1e-4</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><strong>check_coords()</strong>: фильтр по количеству ионов, голосование, вероятности</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-text">INSERT/GET в <strong>recognition_session</strong> (по SHA-256 хэшу) + INSERT в <strong>recognition_result</strong> rank=1</div></div>
+      <div class="flow-step"><div class="flow-num">5</div><div class="flow-text">Фоновый поток: <strong>enrich_substance()</strong> &rarr; substance_info (если ещё не обогащено)</div></div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">&#129504; Распознавание: CATBOOST</div>
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text">Те же нормализованные координаты &rarr; <strong>get_lattice_vectors3()</strong>: расстояния между всеми парами</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>kde_array_1000()</strong>: KDE на 1000-точечной сетке [0,2]. Усреднение по ионам &rarr; вектор 1000-dim</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><strong>CatBoostClassifier</strong>: вероятности по 3 классам (cubic_f, cubic_p, hex_p)</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-text"><strong>resolve_lattice_ids()</strong>: "cubic_f" &rarr; lattice_type.id через name_en</div></div>
+      <div class="flow-step"><div class="flow-num">5</div><div class="flow-text">Топ-3 в <strong>recognition_result</strong> (method=CATBOOST, predicted_structure_id=NULL)</div></div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">&#128218; Обогащение типов решёток</div>
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text">Ручной запуск <strong>enrich_all.py</strong> / <strong>enricher.py</strong> для каждого из 8 типов</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>GigaChat-2-Max</strong>: JSON с coordination_number, packing_efficiency, typical_materials, applications, wiki_url</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text">UPSERT в <strong>lattice_metadata</strong> + запись в <strong>external_lookup_log</strong></div></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- NOTES -->
+<div style="margin-top:40px">
+  <div class="group-label">Известные проблемы и ограничения</div>
+  <div class="notes">
+
+    <div class="note warn">
+      <div class="note-title">&#9888; Дубликаты структур</div>
+      <p>NaCl (id=3 synthetic + id=22 COD) и MgO (id=19 + id=25). COD хранит формулы алфавитно («Cl Na»), дедупликация по формуле не срабатывает. Нужно удалить синтетические записи без координат.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="note-title">&#9888; Неверные типы у Fe и W</div>
+      <p>Записаны как <code>monoclinic</code>, должны быть <code>cubic</code>. Ошибка вошла при ручном заполнении через <code>complete_db.py</code>.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="note-title">&#9888; 20 структур без координат</div>
+      <p>Синтетические записи id=2&ndash;21 (UO&#8322;, Fe, Al, Ti, UN &hellip;) имеют метаданные, но structure_site пустой. Поиск по ним невозможен до загрузки XYZ-файлов из COD.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="note-title">&#9888; Изоструктурная неразличимость</div>
+      <p>NaCl, CaO, MgO, KCl &mdash; одинаковая rock-salt структура, одинаковые norm_x/y/z. COORD_MATCH не различает их без учёта атомных символов. Побеждает тот, у кого больше строк в structure_site.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="note-title">&#9888; fract_x/y/z &mdash; название неточное</div>
+      <p>Хранят абсолютные координаты в &#8491;, а не дробные [0,1]. Нормализация делается отдельно в <code>norm_x/y/z</code>. На работу алгоритма не влияет.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="note-title">&#9888; CatBoost &mdash; только 3 класса</div>
+      <p>Модель знает <code>cubic_f</code>, <code>cubic_p</code>, <code>hex_p</code>. Confidence всегда ~0.33 (равномерное). Нужна переобучка на полном датасете 8 систем. Интеграция с БД готова.</p>
+    </div>
+
+    <div class="note ok">
+      <div class="note-title">&#10003; feature_vector_cache готов к использованию</div>
+      <p>Схема правильная, таблица пустая. Подключить &mdash; одна строка в <code>ml_predict.py</code> после вычисления вектора.</p>
+    </div>
+
+    <div class="note info">
+      <div class="note-title">&#8505; NOT NULL везде</div>
+      <p>Все поля NOT NULL. Пустые значения хранятся как <code>''</code>, <code>{}</code> или <code>[]</code> в JSONB. Упрощает обработку в Python: нет проверок на None для строковых полей.</p>
+    </div>
+
+    <div class="note info">
+      <div class="note-title">&#8505; ON DELETE CASCADE vs SET NULL</div>
+      <p>CASCADE у структурных таблиц: удалить reference_structure &rarr; каскадно удалятся structure_site и substance_info. SET NULL у recognition_result: исторические результаты не теряются при удалении структуры из справочника.</p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

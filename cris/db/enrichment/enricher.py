@@ -1,12 +1,18 @@
 """
 Оркестратор обогащения: COD + Materials Project + AI.
 
+AI-провайдер выбирается через переменную окружения AI_PROVIDER:
+    AI_PROVIDER=gigachat   — GigaChat (Сбер), нужен GIGACHAT_CREDENTIALS
+    AI_PROVIDER=claude     — Claude (Anthropic), нужен ANTHROPIC_API_KEY
+    AI_PROVIDER=auto       — сначала GigaChat, при неудаче Claude (по умолчанию)
+
 Примеры:
     from cris.db.enrichment.enricher import enrich_lattice_type, enrich_structure
     enrich_lattice_type(lattice_type_id=8)       # кубическая
     enrich_structure(structure_id=1, formula="NaCl")
 """
 import json
+import os
 from datetime import datetime
 
 from cris.logger import logger
@@ -16,8 +22,31 @@ from cris.db.repository.structure import update_external_ids
 from cris.db.models import LatticeMetadata
 from cris.db.enrichment.cod_api import search as cod_search
 from cris.db.enrichment.mp_api import search as mp_search
-from cris.db.enrichment.ai_search import enrich_lattice_type as ai_enrich_lattice
 from cris.db.enrichment.robocrys_describer import describe_and_save
+
+# ── Выбор AI-провайдера ───────────────────────────────────────────────────────
+_AI_PROVIDER = os.getenv("AI_PROVIDER", "auto").lower()
+
+def _get_ai_enrich_fn():
+    """Возвращает функцию enrich_lattice_type нужного провайдера."""
+    if _AI_PROVIDER == "gigachat":
+        from cris.db.enrichment.gigachat_search import enrich_lattice_type
+        return enrich_lattice_type
+    if _AI_PROVIDER == "claude":
+        from cris.db.enrichment.ai_search import enrich_lattice_type
+        return enrich_lattice_type
+    # auto: пробуем GigaChat, если вернул пустой dict — Claude
+    from cris.db.enrichment import gigachat_search, ai_search
+    def _auto(name_en, name_ru):
+        result = gigachat_search.enrich_lattice_type(name_en, name_ru)
+        if result:
+            logger.debug("AI provider used: GigaChat")
+            return result
+        logger.debug("GigaChat returned nothing, falling back to Claude")
+        return ai_search.enrich_lattice_type(name_en, name_ru)
+    return _auto
+
+_ai_enrich_lattice = _get_ai_enrich_fn()
 
 
 def _log(source: str, target_type: str, target_id: int,
@@ -38,18 +67,18 @@ def enrich_lattice_type(lattice_type_id: int) -> bool:
     lt = get_lattice(lattice_type_id)
     if not lt:
         return False
-    data = ai_enrich_lattice(lt.name_en, lt.name_ru)
+    data = _ai_enrich_lattice(lt.name_en, lt.name_ru)
     if not data:
         _log("AI_SEARCH", "lattice_type", lattice_type_id,
              f"enrich {lt.name_en}", "", {}, 0, False)
         return False
     upsert_metadata(LatticeMetadata(
         lattice_type_id=lattice_type_id,
-        discoverer=data.get("discoverer", ""),
-        discovery_year=data.get("discovery_year"),
-        discovery_context=data.get("discovery_context", ""),
+        coordination_number=data.get("coordination_number"),
+        packing_efficiency=data.get("packing_efficiency"),
+        typical_materials=data.get("typical_materials", ""),
+        applications=data.get("applications", ""),
         wiki_url=data.get("wiki_url", ""),
-        review_doi=data.get("review_doi", ""),
         notes=data.get("notes", ""),
         enriched_at=datetime.now(),
         enrichment_source="AI_SEARCH",

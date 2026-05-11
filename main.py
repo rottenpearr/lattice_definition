@@ -1,5 +1,6 @@
 import csv
 import sys
+import threading
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -11,6 +12,10 @@ from cris.app.generated.Ion_Dialog_ui import Ui_Dialog  # Интерфейс д�
 from cris.app.generated.Main_Window_ui import Ui_MainWindow  # Интерфейс главного окна
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.queries import get_similar_xyz_from_db, check_coords
+from cris.db.repository.recognition import get_or_create_session, save_result
+from cris.db.enrichment.substance_enricher import enrich_substance
+from cris.core.ml_predict import predict_catboost, resolve_lattice_ids
+from cris.logger import logger
 from cris.tools.report import save_docx
 
 
@@ -181,6 +186,70 @@ class MainWindow(QMainWindow):
         result_possible_lattice_probability = query_data[1][1]
         result_possible_substance = query_data[2][0]
         result_possible_substance_probability = query_data[2][1]
+
+        # ── Сохраняем сессию распознавания и результат в БД ──────────────────
+        try:
+            norm_tuples = [(row[1], row[2], row[3]) for row in normalized_data]
+            ion_count   = int(self.ui.combo_box_ions.currentText())
+            session = get_or_create_session(ion_count=ion_count, normalized_coords=norm_tuples)
+
+            top_lt_id = result_possible_lattice[0] if result_possible_lattice else None
+            top_st_id = result_possible_substance[0] if result_possible_substance else None
+            save_result(
+                session_id=session.id,
+                method="COORD_MATCH",
+                method_version="1.0",
+                rank=1,
+                lattice_type_id=top_lt_id,
+                structure_id=top_st_id,
+                confidence=round(result_possible_lattice_probability / 100.0, 4),
+            )
+            logger.info("Session saved: id={} lt_id={} st_id={}", session.id[:8], top_lt_id, top_st_id)
+        except Exception as e:
+            logger.warning("Could not save recognition session: {}", e)
+
+        # ── CatBoost: записываем ML-предсказания в recognition_result ────────
+        try:
+            cb_preds = predict_catboost(normalized_data)
+            if cb_preds:
+                resolve_lattice_ids(cb_preds)
+                for rank, pred in enumerate(cb_preds, start=1):
+                    save_result(
+                        session_id=session.id,
+                        method="CATBOOST",
+                        method_version="1.0",
+                        rank=rank,
+                        lattice_type_id=pred["lattice_type_id"],
+                        structure_id=None,   # CatBoost предсказывает тип, не конкретную структуру
+                        confidence=pred["confidence"],
+                    )
+                logger.info(
+                    "CatBoost saved: top={} ({:.0f}%)",
+                    cb_preds[0]["class"],
+                    cb_preds[0]["confidence"] * 100,
+                )
+        except Exception as e:
+            logger.warning("CatBoost prediction failed: {}", e)
+
+        # ── Запускаем обогащение вещества в фоне (не блокируем UI) ───────────
+        if result_possible_substance is not None:
+            st_id      = result_possible_substance[0]
+            st_name    = result_possible_substance[1]
+            st_formula = result_possible_substance[13] if len(result_possible_substance) > 13 else ""
+            lt_name    = str(result_possible_lattice[2]) if result_possible_lattice else ""
+
+            def _bg_enrich():
+                try:
+                    enrich_substance(
+                        structure_id=st_id,
+                        formula=st_formula or st_name,
+                        name=st_name,
+                        lattice_type=lt_name,
+                    )
+                except Exception as exc:
+                    logger.warning("Background substance enrichment failed: {}", exc)
+
+            threading.Thread(target=_bg_enrich, daemon=True).start()
 
         result_lattice_types = " ".join(list(str(item[1]) + " " + f"{item[3]:.2f}%;" for item in result_lattice_types))
         result_substances = " ".join(list(str(item[1]) + " " + f"{item[2]:.2f}%;" for item in result_substances))
