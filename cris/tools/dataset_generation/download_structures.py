@@ -24,13 +24,15 @@ import os
 import sys
 from pathlib import Path
 
+_ROOT = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(_ROOT))
+
 import psycopg2
 from mp_api.client import MPRester
 
 from cris.db.config import db_config
 
 # ── Пути ─────────────────────────────────────────────────────────────────────
-_ROOT   = Path(__file__).parent.parent.parent.parent   # корень проекта
 OUT_DIR = _ROOT / "data" / "structures" / "micro" / "source"
 
 # Элементы для поиска (по умолчанию)

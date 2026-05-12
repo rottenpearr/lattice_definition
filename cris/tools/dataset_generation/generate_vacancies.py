@@ -1,23 +1,31 @@
 """
-Генерирует структуры с вакансиями из XYZ-файлов и сохраняет в data/structures/inaccurate/.
+Генерирует структуры с вакансиями из XYZ-файлов.
 
 Для каждого исходного файла создаёт несколько вариантов с разным процентом вакансий.
 Вакансии расставляются случайно, с фиксированным seed для воспроизводимости.
 
+Именование выходных файлов: {source_stem}_vac{N}pct_{index:03d}.xyz
+Подробнее: cris/tools/dataset_generation/naming.py
+
 Использование:
-    # Обработать все структуры из accurate/
-    python ML/CatBoost/generate_vacancies.py
+    # Обработать все структуры из micro/source/
+    python cris/tools/dataset_generation/generate_vacancies.py
 
     # Только конкретный файл
-    python ML/CatBoost/generate_vacancies.py --input data/structures/accurate/UC.xyz
+    python cris/tools/dataset_generation/generate_vacancies.py --input data/structures/micro/source/UC_mp-72.xyz
 
     # Задать уровни вакансий и количество вариантов
-    python ML/CatBoost/generate_vacancies.py --rates 0.05 0.10 0.15 --variants 3
+    python cris/tools/dataset_generation/generate_vacancies.py --rates 0.05 0.10 0.15 --variants 3
 """
 
 import argparse
 import random
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(ROOT))
+from cris.tools.dataset_generation.naming import make_generated_stem
 
 # Пути по умолчанию
 ACCURATE_DIR = Path(__file__).parent.parent.parent.parent / "data" / "structures" / "micro" / "source"
@@ -95,14 +103,15 @@ def process_file(xyz_path: Path, rates: list, variants: int, out_dir: Path):
             result_atoms = generate_vacancies(atoms, rate, seed)
 
             n_removed = len(atoms) - len(result_atoms)
-            out_name = f"{stem}-vacancy{rate_pct}pct_v{variant}.xyz"
+            out_stem = make_generated_stem(stem, {'vac': rate_pct}, variant)
+            out_name = f"{out_stem}.xyz"
             out_path = out_dir / out_name
 
             if out_path.exists():
                 print(f"    Уже есть: {out_name}")
                 continue
 
-            new_comment = f"{comment} | vacancy={rate_pct}% removed={n_removed} variant={variant}"
+            new_comment = f"{comment} | vac={rate_pct}pct removed={n_removed} variant={variant}"
             write_xyz(out_path, result_atoms, new_comment)
             print(f"    {out_name}  ({len(atoms)} → {len(result_atoms)} атомов, -{n_removed})")
             generated += 1
