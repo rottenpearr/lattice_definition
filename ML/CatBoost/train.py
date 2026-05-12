@@ -97,7 +97,7 @@ def train(kde_dir: Path, iterations: int, depth: int, lr: float, test_size: floa
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Обучение CatBoost на KDE-датасете")
     parser.add_argument("--kde-dir", type=Path,
-                        default=ROOT / "data" / "kde_arrays" / "macro",
+                        default=ROOT / "data" / "kde_arrays" / "micro",
                         help="Папка с KDE-массивами")
     parser.add_argument("--iterations", type=int, default=500)
     parser.add_argument("--depth",      type=int, default=6)
