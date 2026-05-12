@@ -28,7 +28,13 @@ DEFAULT_MODEL = Path(__file__).parent / "catboost_lattice.cbm"
 
 def xyz_to_feature_vector(xyz_path: str, noise_percent: float = 0.0, seed: int = 42) -> np.ndarray:
     """XYZ → усреднённый KDE-вектор (такой же формат, как при обучении)."""
-    coords = xyz_to_normalized_coords_with_noise(xyz_path, noise_percent=noise_percent, seed=seed)
+    # Резолвим путь: абсолютный оставляем как есть, относительный — от корня проекта
+    p = Path(xyz_path)
+    if not p.is_absolute():
+        p = ROOT / p
+    if not p.exists():
+        raise FileNotFoundError(f"XYZ-файл не найден: {p}")
+    coords = xyz_to_normalized_coords_with_noise(str(p), noise_percent=noise_percent, seed=seed)
     vectors_dict = get_lattice_vectors3(coords)
 
     ion_arrays = []
