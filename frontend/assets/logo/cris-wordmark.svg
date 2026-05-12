@@ -1,0 +1,19 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" fill="none">
+  
+  <g transform="translate(4,8)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    
+    <path d="M10 14 L28 6 L46 14 L28 22 Z"></path>
+    
+    <path d="M10 32 L28 24 L46 32 L28 40 Z"></path>
+    
+    <path d="M10 14 L10 32"></path>
+    <path d="M28 6  L28 24"></path>
+    <path d="M46 14 L46 32"></path>
+    <path d="M28 22 L28 40"></path>
+  </g>
+  
+  <circle cx="32" cy="30" r="3.6" fill="#2540FF"></circle>
+  
+  <text x="68" y="36" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="26" fill="currentColor" letter-spacing="-0.5">CRIS</text>
+</svg>

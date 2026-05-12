@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--night);color:var(--night-ink);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+  .row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .sw{border:1px solid var(--night-line);border-radius:10px;overflow:hidden;background:var(--night-card);}
+  .chip{height:54px;}
+  .body{padding:8px 10px;display:flex;flex-direction:column;gap:2px;}
+  .name{font-family:var(--font-mono);font-size:11px;color:var(--night-ink);}
+  .hex{font-family:var(--font-mono);font-size:10px;color:var(--night-mute);}
+  .label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--night-mute);}
+</style></head><body><div class="card">
+  <div class="label">Dark — workspace / 3D viewer surfaces</div>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--night);"></div><div class="body"><span class="name">night</span><span class="hex">#0E1014</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--night-elev);"></div><div class="body"><span class="name">night-elev</span><span class="hex">#161A20</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--night-card);"></div><div class="body"><span class="name">night-card</span><span class="hex">#1B1F26</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--night-ink);"></div><div class="body"><span class="name" style="color:var(--night);">night-ink</span><span class="hex" style="color:var(--mute);">#F2F2F0</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--signal);"></div><div class="body"><span class="name" style="color:var(--ink);">signal</span><span class="hex" style="color:var(--ink-soft);">#DCFF3A</span></div></div>
+  </div>
+</div></body></html>

@@ -1,0 +1,255 @@
+/* ============================================================
+   CRIS — Crystal Recognition & Identification System
+   Design tokens: color + type
+   ============================================================ */
+
+/* ---------- Fonts ---------- */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ============================================================
+     COLORS — paper + ink + one signal blue, one signal lime.
+     A scientific-instrument palette.
+     ============================================================ */
+
+  /* Base — surfaces */
+  --paper:        #F2EFE8;   /* page background, warm off-white */
+  --paper-deep:   #EAE6DC;   /* subtle alternate band */
+  --card:         #FBFAF6;   /* raised surfaces */
+  --canvas:       #FFFFFF;   /* pure white for charts / 3D scenes */
+  --ink:          #14171C;   /* primary text + strokes */
+  --ink-soft:     #2A2D34;   /* secondary text on light */
+  --mute:         #5C606A;   /* tertiary text, labels */
+  --mute-soft:    #9094A0;   /* placeholder, disabled */
+  --hairline:     rgba(20, 23, 28, 0.10);   /* 1px dividers */
+  --hairline-strong: rgba(20, 23, 28, 0.22);
+
+  /* Brand — cobalt blue (precision / scientific instrument) */
+  --cobalt:        #2540FF;
+  --cobalt-deep:   #1A2DB8;
+  --cobalt-soft:   #DCE2FF;
+  --cobalt-wash:   #EEF1FF;
+
+  /* Signal — electric lime (spectra, UV, "live") */
+  --signal:        #DCFF3A;
+  --signal-deep:   #B5D700;
+  --signal-soft:   #F4FFB8;
+
+  /* Semantic */
+  --ok:        #2A8A56;
+  --ok-soft:   #DFF2E6;
+  --warn:      #C8841A;
+  --warn-soft: #FBEED5;
+  --bad:       #C8341A;
+  --bad-soft:  #FBE0DA;
+
+  /* Dark companion (used by 3D workspace) */
+  --night:        #0E1014;
+  --night-elev:   #161A20;
+  --night-card:   #1B1F26;
+  --night-line:   rgba(255,255,255,0.10);
+  --night-ink:    #F2F2F0;
+  --night-mute:   #8A8E97;
+
+  /* ============================================================
+     TYPE
+     Display:  Space Grotesk  — geometric, technical, branded
+     Body:     IBM Plex Sans  — humanist, readable, Cyrillic-clean
+     Mono:     JetBrains Mono — coordinates, code, spectra labels
+     ============================================================ */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* Size scale — 12 / 13 / 14 / 16 / 18 / 22 / 28 / 36 / 48 / 64 */
+  --t-12: 0.75rem;
+  --t-13: 0.8125rem;
+  --t-14: 0.875rem;
+  --t-16: 1rem;
+  --t-18: 1.125rem;
+  --t-22: 1.375rem;
+  --t-28: 1.75rem;
+  --t-36: 2.25rem;
+  --t-48: 3rem;
+  --t-64: 4rem;
+  --t-80: 5rem;
+
+  /* Line height + tracking */
+  --lh-tight: 1.04;
+  --lh-snug:  1.15;
+  --lh-normal: 1.45;
+  --lh-loose: 1.6;
+  --track-tight: -0.022em;
+  --track-flat:  -0.005em;
+  --track-wide:  0.08em;
+  --track-mono:  0.02em;
+
+  /* ============================================================
+     SPACING — 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96
+     ============================================================ */
+  --s-2: 2px;
+  --s-4: 4px;
+  --s-6: 6px;
+  --s-8: 8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-20: 20px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-48: 48px;
+  --s-64: 64px;
+  --s-96: 96px;
+  --s-128: 128px;
+
+  /* ============================================================
+     RADII — sparse. CRIS prefers crisp corners; a small radius
+     for interactive surfaces and a slightly larger one for cards.
+     ============================================================ */
+  --r-0:  0px;
+  --r-2:  2px;
+  --r-4:  4px;
+  --r-6:  6px;
+  --r-10: 10px;
+  --r-14: 14px;
+  --r-full: 999px;
+
+  /* ============================================================
+     SHADOWS — flat by default. Two elevations only.
+     ============================================================ */
+  --shadow-card: 0 1px 0 rgba(20,23,28,0.04), 0 2px 12px rgba(20,23,28,0.04);
+  --shadow-pop:  0 8px 28px rgba(20,23,28,0.10), 0 2px 6px rgba(20,23,28,0.06);
+  --inset-press: inset 0 2px 0 rgba(20,23,28,0.06);
+
+  /* ============================================================
+     MOTION
+     ============================================================ */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.5, 0, 0.2, 1);
+  --t-fast: 120ms;
+  --t-med:  220ms;
+  --t-slow: 420ms;
+}
+
+/* ============================================================
+   SEMANTIC TYPE STYLES — apply directly with class names.
+   ============================================================ */
+
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+}
+
+.t-display {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5.5vw, var(--t-80));
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-tight);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.t-h1 {
+  font-family: var(--font-display);
+  font-size: var(--t-48);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-tight);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.t-h2 {
+  font-family: var(--font-display);
+  font-size: var(--t-36);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--track-tight);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.t-h3 {
+  font-family: var(--font-display);
+  font-size: var(--t-28);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--track-flat);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.t-h4 {
+  font-family: var(--font-display);
+  font-size: var(--t-22);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--track-flat);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.t-lead {
+  font-family: var(--font-body);
+  font-size: var(--t-18);
+  line-height: var(--lh-loose);
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.t-body {
+  font-family: var(--font-body);
+  font-size: var(--t-16);
+  line-height: var(--lh-loose);
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.t-small {
+  font-family: var(--font-body);
+  font-size: var(--t-14);
+  line-height: var(--lh-normal);
+  color: var(--ink-soft);
+}
+
+.t-mute {
+  color: var(--mute);
+}
+
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: var(--t-14);
+  letter-spacing: var(--track-mono);
+  color: var(--ink);
+}
+
+.t-mono-sm {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: var(--track-mono);
+  color: var(--mute);
+}
+
+.t-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--t-16);
+  line-height: var(--lh-loose);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+
+::selection { background: var(--signal); color: var(--ink); }

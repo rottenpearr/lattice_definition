@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);width:100%;}
+  .chip{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;border:1px solid var(--hairline-strong);background:var(--card);color:var(--ink);}
+  .dot{width:6px;height:6px;border-radius:999px;}
+  .c-ok{background:var(--ok-soft);color:#0F5B33;border-color:transparent;}
+  .c-warn{background:var(--warn-soft);color:#7A4B00;border-color:transparent;}
+  .c-bad{background:var(--bad-soft);color:#7A1E0D;border-color:transparent;}
+  .c-info{background:var(--cobalt-wash);color:var(--cobalt-deep);border-color:transparent;}
+  .c-live{background:var(--signal);color:var(--ink);border-color:transparent;}
+  .c-ghost{background:transparent;}
+</style></head><body><div class="card">
+  <div class="meta">Badges & chips</div>
+  <span class="chip c-ok"><span class="dot" style="background:var(--ok);"></span>matched · confidence 0.87</span>
+  <span class="chip c-warn"><span class="dot" style="background:var(--warn);"></span>low confidence</span>
+  <span class="chip c-bad"><span class="dot" style="background:var(--bad);"></span>no match</span>
+  <span class="chip c-info">cubic_f</span>
+  <span class="chip c-info">space group 225</span>
+  <span class="chip c-live">● live</span>
+  <span class="chip c-ghost">rank 3</span>
+  <span class="chip">U · uranium</span>
+  <span class="chip">8 ions</span>
+</div></body></html>

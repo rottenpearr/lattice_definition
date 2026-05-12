@@ -17,3 +17,6 @@ gigachat>=0.1.28
 loguru>=0.7.0
 robocrys~=0.2.9
 python-dotenv>=1.0.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9

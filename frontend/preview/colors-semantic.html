@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .sw{border:1px solid var(--hairline);border-radius:10px;overflow:hidden;background:var(--card);}
+  .chip{height:64px;}
+  .body{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;}
+  .name{font-family:var(--font-mono);font-size:12px;color:var(--ink);}
+  .hex{font-family:var(--font-mono);font-size:11px;color:var(--mute);}
+  .label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--mute);}
+</style></head><body><div class="card">
+  <div class="label">Semantic — ok / warn / bad</div>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--ok);"></div><div class="body"><span class="name">ok</span><span class="hex">#2A8A56</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--warn);"></div><div class="body"><span class="name">warn</span><span class="hex">#C8841A</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--bad);"></div><div class="body"><span class="name">bad</span><span class="hex">#C8341A</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--ok-soft);"></div><div class="body"><span class="name">ok-soft</span><span class="hex">#DFF2E6</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--warn-soft);"></div><div class="body"><span class="name">warn-soft</span><span class="hex">#FBEED5</span></div></div>
+    <div class="sw"><div class="chip" style="background:var(--bad-soft);"></div><div class="body"><span class="name">bad-soft</span><span class="hex">#FBE0DA</span></div></div>
+  </div>
+</div></body></html>

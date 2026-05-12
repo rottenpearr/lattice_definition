@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  .bg{height:120px;border-radius:8px;border:1px solid var(--hairline);position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:10px;}
+  .bg .lbl{font-family:var(--font-mono);font-size:10px;color:var(--ink);background:var(--paper);padding:2px 6px;border-radius:4px;letter-spacing:0.06em;}
+  .lattice{background:
+    radial-gradient(circle at 1px 1px, rgba(20,23,28,0.18) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--paper);}
+  .grid{background:
+    linear-gradient(rgba(20,23,28,0.06) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(20,23,28,0.06) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--paper);}
+  .paper{background:var(--paper);}
+</style></head><body><div class="card">
+  <div class="meta">Backgrounds — paper / lattice-dot / grid</div>
+  <div class="bg paper"><span class="lbl">paper · flat</span></div>
+  <div class="bg lattice"><span class="lbl">lattice-dot · 24px · 6% ink</span></div>
+  <div class="bg grid"><span class="lbl">grid · 32px · 6% ink</span></div>
+</div></body></html>
