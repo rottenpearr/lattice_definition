@@ -233,6 +233,34 @@ python cris/tools/dataset_generation/generate_all_datasets.py --force
 
 KDE-массивы сохраняются в `data/kde_arrays/`. Поддерживается resume — уже сгенерированные итерации пропускаются.
 
+### 5. Сгенерировать метки (labels.csv)
+
+```bash
+# Автоматически из БД + имён файлов
+python cris/tools/dataset_generation/generate_labels.py
+
+# Без обращения к БД (только по именам файлов)
+python cris/tools/dataset_generation/generate_labels.py --no-db
+```
+
+Файл `data/kde_arrays/labels.csv` содержит маппинг `name → lattice_type` для всех структур.  
+Должен быть обновлён после добавления новых структур или генерации вакансий.
+
+### 6. Обучить CatBoost
+
+```bash
+# Обучить на micro-датасете (по умолчанию)
+python ML/CatBoost/train.py
+
+# Указать другую папку с KDE
+python ML/CatBoost/train.py --kde-dir data/kde_arrays/macro
+
+# Предсказать тип решётки для XYZ-файла
+python ML/CatBoost/predict.py data/structures/micro/source/UO2_mp-865305.xyz
+```
+
+Модель сохраняется в `ML/CatBoost/catboost_lattice.cbm`.
+
 ---
 
 ## База данных
