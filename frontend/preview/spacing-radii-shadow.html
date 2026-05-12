@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:18px;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  .row{display:flex;gap:18px;}
+  .item{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .box{background:var(--card);border:1px solid var(--hairline);height:60px;}
+  .lbl{font-family:var(--font-mono);font-size:11px;color:var(--mute);}
+  .name{font-family:var(--font-mono);font-size:12px;color:var(--ink);}
+</style></head><body><div class="card">
+  <div>
+    <div class="meta" style="margin-bottom:10px;">Radii — 0 / 2 / 4 / 6 / 10 / 14 / full</div>
+    <div class="row">
+      <div class="item"><div class="box" style="border-radius:0;"></div><div class="name">r-0</div></div>
+      <div class="item"><div class="box" style="border-radius:2px;"></div><div class="name">r-2</div></div>
+      <div class="item"><div class="box" style="border-radius:4px;"></div><div class="name">r-4</div></div>
+      <div class="item"><div class="box" style="border-radius:6px;"></div><div class="name">r-6</div></div>
+      <div class="item"><div class="box" style="border-radius:10px;"></div><div class="name">r-10</div></div>
+      <div class="item"><div class="box" style="border-radius:14px;"></div><div class="name">r-14</div></div>
+      <div class="item"><div class="box" style="border-radius:999px;"></div><div class="name">r-full</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="meta" style="margin-bottom:10px;">Shadows — card / pop / inset-press</div>
+    <div class="row">
+      <div class="item"><div class="box" style="border-radius:8px;background:var(--card);box-shadow:var(--shadow-card);"></div><div class="name">shadow-card</div></div>
+      <div class="item"><div class="box" style="border-radius:8px;background:var(--card);box-shadow:var(--shadow-pop);"></div><div class="name">shadow-pop</div></div>
+      <div class="item"><div class="box" style="border-radius:8px;background:var(--card);box-shadow:var(--inset-press);"></div><div class="name">inset-press</div></div>
+    </div>
+  </div>
+</div></body></html>

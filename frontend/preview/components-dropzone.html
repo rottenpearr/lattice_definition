@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  .dropzone{border:1.5px dashed var(--hairline-strong);border-radius:10px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--card);}
+  .dropzone.over{border-color:var(--cobalt);background:var(--cobalt-wash);}
+  .icon{width:32px;height:32px;color:var(--mute);}
+  .title{font-family:var(--font-body);font-size:14px;color:var(--ink);font-weight:500;}
+  .sub{font-family:var(--font-body);font-size:13px;color:var(--mute);}
+  .fileline{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--hairline);border-radius:6px;}
+  .fname{font-family:var(--font-mono);font-size:13px;color:var(--ink);}
+  .fsize{font-family:var(--font-mono);font-size:11px;color:var(--mute);}
+</style></head><body><div class="card">
+  <div class="meta">Dropzone — CIF / XYZ upload</div>
+  <div class="dropzone over">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="color:var(--cobalt);"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+    <div class="title">Перетащите CIF/XYZ или выберите файл</div>
+    <div class="sub">до 1000 ионов · поддерживаются P1, Wyckoff, fractional</div>
+  </div>
+  <div class="fileline">
+    <span class="fname">UN_supercell_5x5x5.cif</span>
+    <span class="fsize">14.2 KB · 250 sites</span>
+  </div>
+</div></body></html>

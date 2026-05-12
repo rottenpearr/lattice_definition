@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:24px;}
+  .row{display:flex;gap:16px;}
+  .sw{display:flex;flex-direction:column;gap:8px;flex:1;}
+  .chip{height:74px;border-radius:10px;border:1px solid var(--hairline);box-shadow:var(--shadow-card);}
+  .name{font-family:var(--font-mono);font-size:12px;color:var(--ink);}
+  .hex{font-family:var(--font-mono);font-size:11px;color:var(--mute);}
+  .label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--mute);margin-bottom:4px;}
+  .group{display:flex;gap:8px;align-items:flex-end;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--ink);color:var(--paper);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;}
+</style></head><body><div class="card">
+  <div>
+    <div class="label">Signal — cobalt (brand)  <span class="badge">primary</span></div>
+    <div class="row">
+      <div class="sw"><div class="chip" style="background:var(--cobalt-wash);"></div><div class="name">cobalt-wash</div><div class="hex">#EEF1FF</div></div>
+      <div class="sw"><div class="chip" style="background:var(--cobalt-soft);"></div><div class="name">cobalt-soft</div><div class="hex">#DCE2FF</div></div>
+      <div class="sw"><div class="chip" style="background:var(--cobalt);"></div><div class="name">cobalt</div><div class="hex">#2540FF</div></div>
+      <div class="sw"><div class="chip" style="background:var(--cobalt-deep);"></div><div class="name">cobalt-deep</div><div class="hex">#1A2DB8</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">Signal — lime (live / spectra)  <span class="badge" style="background:var(--signal);color:var(--ink);">live</span></div>
+    <div class="row">
+      <div class="sw"><div class="chip" style="background:var(--signal-soft);"></div><div class="name">signal-soft</div><div class="hex">#F4FFB8</div></div>
+      <div class="sw"><div class="chip" style="background:var(--signal);"></div><div class="name">signal</div><div class="hex">#DCFF3A</div></div>
+      <div class="sw"><div class="chip" style="background:var(--signal-deep);"></div><div class="name">signal-deep</div><div class="hex">#B5D700</div></div>
+      <div class="sw" style="visibility:hidden;"><div class="chip"></div><div class="name">.</div></div>
+    </div>
+  </div>
+</div></body></html>

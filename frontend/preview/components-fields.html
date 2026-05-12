@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  label{display:flex;flex-direction:column;gap:6px;}
+  .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  input,select{font-family:var(--font-body);font-size:14px;padding:10px 12px;border:1px solid var(--hairline-strong);border-radius:6px;background:var(--card);color:var(--ink);outline:none;}
+  input:focus,select:focus{border-color:var(--cobalt);box-shadow:0 0 0 3px var(--cobalt-wash);}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+  .coord{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--hairline-strong);border-radius:6px;overflow:hidden;}
+  .seg button{padding:6px 12px;font-family:var(--font-mono);font-size:12px;background:transparent;border:none;color:var(--mute);cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;}
+  .seg button.active{background:var(--ink);color:var(--paper);}
+</style></head><body><div class="card">
+  <div class="meta">Form fields — coordinate entry</div>
+  <div class="row">
+    <label><span class="lbl">label</span><input value="U1"></label>
+    <label><span class="lbl">x</span><input class="coord" value="0.5000"></label>
+    <label><span class="lbl">y</span><input class="coord" value="0.5000"></label>
+    <label><span class="lbl">z</span><input class="coord" value="0.5000"></label>
+  </div>
+  <div style="display:flex;gap:16px;align-items:flex-end;">
+    <label style="flex:1;"><span class="lbl">формат входа</span>
+      <div class="seg"><button class="active">CIF</button><button>XYZ</button><button>manual</button></div>
+    </label>
+    <label style="flex:1;"><span class="lbl">метод</span>
+      <select><option>Ensemble (RF + CatBoost)</option><option>Random Forest</option><option>CatBoost</option><option>KDE similarity</option></select>
+    </label>
+  </div>
+</div></body></html>

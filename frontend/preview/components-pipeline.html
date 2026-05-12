@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--night);color:var(--night-ink);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--night-mute);}
+  .step{display:flex;gap:14px;align-items:center;font-family:var(--font-mono);font-size:13px;}
+  .dot{width:10px;height:10px;border-radius:999px;border:1.5px solid var(--night-mute);flex-shrink:0;}
+  .done .dot{background:var(--ok);border-color:var(--ok);}
+  .active .dot{background:var(--signal);border-color:var(--signal);box-shadow:0 0 0 4px rgba(220,255,58,0.18);animation:pulse 1.2s infinite;}
+  .pending .dot{background:transparent;}
+  .label{flex:1;color:var(--night-ink);}
+  .pending .label{color:var(--night-mute);}
+  .time{font-family:var(--font-mono);font-size:11px;color:var(--night-mute);}
+  @keyframes pulse{50%{box-shadow:0 0 0 8px rgba(220,255,58,0.04);}}
+</style></head><body><div class="card">
+  <div class="meta">ML pipeline — live status</div>
+  <div class="step done"><span class="dot"></span><span class="label">parse_input</span><span class="time">0.04s</span></div>
+  <div class="step done"><span class="dot"></span><span class="label">normalize_coordinates</span><span class="time">0.12s</span></div>
+  <div class="step done"><span class="dot"></span><span class="label">count_ions · 250 sites</span><span class="time">0.01s</span></div>
+  <div class="step active"><span class="dot"></span><span class="label">compute_kde_spectrum</span><span class="time">…</span></div>
+  <div class="step pending"><span class="dot"></span><span class="label">ensemble_predict (rf + catboost)</span><span class="time">—</span></div>
+  <div class="step pending"><span class="dot"></span><span class="label">match_reference_structure</span><span class="time">—</span></div>
+</div></body></html>

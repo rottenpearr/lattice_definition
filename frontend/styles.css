@@ -1,0 +1,256 @@
+/* ============================================================
+   CRIS UI Kit — global styles
+   Builds on top of colors_and_type.css (loaded first).
+   ============================================================ */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }
+
+/* ===== Lattice dot background ===== */
+.bg-lattice {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(20,23,28,0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ===== Container ===== */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+@media (max-width: 720px) {
+  .container { padding: 0 20px; }
+}
+
+/* ===== Eyebrow ===== */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: var(--ink);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out),
+              color var(--t-fast) var(--ease-out),
+              border-color var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out);
+  font-family: var(--font-body);
+  line-height: 1.2;
+}
+.btn:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+.btn-primary { background: var(--cobalt); color: white; }
+.btn-primary:hover { background: var(--cobalt-deep); }
+.btn-secondary { background: var(--card); color: var(--ink); border-color: var(--ink); }
+.btn-secondary:hover { background: var(--ink); color: var(--paper); }
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: rgba(20,23,28,0.06); }
+.btn-quiet { background: var(--cobalt-wash); color: var(--cobalt-deep); }
+.btn-quiet:hover { background: var(--cobalt-soft); }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+.btn-lg { padding: 14px 22px; font-size: 15px; }
+.btn-icon { padding: 9px; }
+.btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* dark variants */
+.btn-on-dark.btn-secondary {
+  background: transparent; color: var(--night-ink); border-color: var(--night-line);
+}
+.btn-on-dark.btn-secondary:hover { background: var(--night-card); border-color: var(--night-mute); }
+.btn-on-dark.btn-ghost { color: var(--night-ink); }
+.btn-on-dark.btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+/* ===== Form fields ===== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+}
+.input, .select, .textarea {
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.input.mono, .textarea.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--cobalt);
+  box-shadow: 0 0 0 3px var(--cobalt-wash);
+}
+.textarea { min-height: 80px; resize: vertical; }
+
+/* ===== Card ===== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+.card-pad { padding: 24px; }
+.card-pad-lg { padding: 32px; }
+
+/* ===== Chip / Badge ===== */
+.chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--hairline-strong);
+  background: var(--card);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.chip-info { background: var(--cobalt-wash); color: var(--cobalt-deep); border-color: transparent; }
+.chip-ok { background: var(--ok-soft); color: #0F5B33; border-color: transparent; }
+.chip-warn { background: var(--warn-soft); color: #7A4B00; border-color: transparent; }
+.chip-bad { background: var(--bad-soft); color: #7A1E0D; border-color: transparent; }
+.chip-live { background: var(--signal); color: var(--ink); border-color: transparent; }
+.chip-ink { background: var(--ink); color: var(--paper); border-color: transparent; }
+.chip-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+
+/* ===== Segmented control ===== */
+.seg {
+  display: inline-flex;
+  background: var(--card);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.seg button {
+  padding: 7px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--mute);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.seg button.active { background: var(--ink); color: var(--paper); }
+.seg button:hover:not(.active) { background: rgba(20,23,28,0.04); color: var(--ink); }
+
+/* ===== Tabs / nav-link ===== */
+.nav-link {
+  font-size: 14px;
+  padding: 6px 0;
+  color: var(--ink-soft);
+  position: relative;
+  transition: color var(--t-fast);
+  cursor: pointer;
+}
+.nav-link:hover { color: var(--ink); }
+.nav-link.active { color: var(--ink); font-weight: 500; }
+.nav-link.active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -3px;
+  height: 2px; background: var(--ink);
+}
+
+/* ===== Section headers ===== */
+.section { padding: 96px 0; }
+.section-tight { padding: 64px 0; }
+.section-title { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.022em; color: var(--ink); }
+
+/* ===== Lattice node animation ===== */
+@keyframes node-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+/* ===== Pipeline (dark) ===== */
+.pipeline-step {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 0;
+}
+.pipeline-dot {
+  width: 10px; height: 10px; border-radius: 999px;
+  border: 1.5px solid var(--night-mute);
+  flex-shrink: 0;
+}
+.pipeline-step.done .pipeline-dot { background: var(--ok); border-color: var(--ok); }
+.pipeline-step.active .pipeline-dot {
+  background: var(--signal); border-color: var(--signal);
+  box-shadow: 0 0 0 4px rgba(220,255,58,0.18);
+  animation: pulse-signal 1.4s infinite var(--ease-in-out);
+}
+.pipeline-step.pending .pipeline-dot { background: transparent; }
+.pipeline-step .pipeline-label { flex: 1; color: var(--night-ink); }
+.pipeline-step.pending .pipeline-label { color: var(--night-mute); }
+.pipeline-step .pipeline-time { font-size: 11px; color: var(--night-mute); }
+
+@keyframes pulse-signal {
+  50% { box-shadow: 0 0 0 8px rgba(220,255,58,0.04); }
+}
+
+/* ===== 3D viewer surface (placeholder) ===== */
+.viewer {
+  background: var(--night);
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(37,64,255,0.15), transparent 60%),
+    radial-gradient(circle at 70% 80%, rgba(220,255,58,0.08), transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== Hairline divider ===== */
+.hr { height: 1px; background: var(--hairline); border: none; margin: 0; }
+.hr-strong { background: var(--hairline-strong); }
+
+/* ===== Marquee axis (decorative axis tick on hero) ===== */
+.tick-rule { background-image: linear-gradient(to right, var(--hairline-strong) 1px, transparent 1px); background-size: 8px 1px; height: 1px; }

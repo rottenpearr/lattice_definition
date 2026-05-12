@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .card{padding:24px 28px;display:flex;flex-direction:column;gap:16px;}
+  .row{display:flex;gap:12px;align-items:center;}
+  .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  .btn{font-family:var(--font-body);font-size:14px;font-weight:500;padding:10px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .12s var(--ease-out);display:inline-flex;gap:8px;align-items:center;}
+  .b-primary{background:var(--cobalt);color:white;}
+  .b-primary:hover{background:var(--cobalt-deep);}
+  .b-secondary{background:var(--card);color:var(--ink);border-color:var(--ink);}
+  .b-secondary:hover{background:var(--ink);color:var(--paper);}
+  .b-ghost{background:transparent;color:var(--ink);}
+  .b-ghost:hover{background:var(--hairline);}
+  .b-quiet{background:var(--cobalt-wash);color:var(--cobalt-deep);}
+  .b-quiet:hover{background:var(--cobalt-soft);}
+  .b-danger{background:var(--bad);color:white;}
+  .b-icon{padding:10px;}
+  .arrow{width:14px;height:14px;}
+</style></head><body><div class="card">
+  <div class="meta">Buttons</div>
+  <div class="row">
+    <button class="btn b-primary">Распознать решётку <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button class="btn b-secondary">Загрузить CIF</button>
+    <button class="btn b-quiet">Подробнее</button>
+    <button class="btn b-ghost">Отмена</button>
+    <button class="btn b-danger">Удалить</button>
+  </div>
+  <div class="row">
+    <button class="btn b-primary" disabled style="opacity:.4;cursor:not-allowed;">Распознать решётку</button>
+    <button class="btn b-secondary" style="background:var(--ink);color:var(--paper);">Активное</button>
+    <button class="btn b-icon b-secondary"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="btn b-icon b-quiet"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.2 4.2l4.3 4.3M15.5 15.5l4.3 4.3M1 12h6M17 12h6M4.2 19.8l4.3-4.3M15.5 8.5l4.3-4.3"/></svg></button>
+  </div>
+  <div class="meta">States: default · hover · disabled · icon</div>
+</div></body></html>

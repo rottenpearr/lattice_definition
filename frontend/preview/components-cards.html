@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--paper);}
+  .wrap{padding:24px 28px;display:flex;gap:16px;}
+  .card{background:var(--card);border:1px solid var(--hairline);border-radius:10px;box-shadow:var(--shadow-card);padding:20px;flex:1;display:flex;flex-direction:column;gap:10px;}
+  .label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--mute);}
+  .num{font-family:var(--font-display);font-size:36px;font-weight:500;letter-spacing:-0.022em;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .sub{font-family:var(--font-body);font-size:13px;color:var(--ink-soft);}
+  .bar{height:4px;background:var(--hairline);border-radius:2px;overflow:hidden;}
+  .bar > div{height:100%;background:var(--cobalt);}
+  .small-meta{font-family:var(--font-mono);font-size:11px;color:var(--mute);}
+</style></head><body><div class="wrap">
+  <div class="card">
+    <div class="label">Recognized type</div>
+    <div class="num">FCC</div>
+    <div class="sub">cubic, face-centered · sg 225</div>
+    <div class="bar"><div style="width:87%;"></div></div>
+    <div class="small-meta">confidence 0.87 · rank 1/8</div>
+  </div>
+  <div class="card">
+    <div class="label">Substance match</div>
+    <div class="num" style="font-size:28px;">Uranium nitride</div>
+    <div class="sub">UN · Materials Project mp-2731</div>
+    <div class="bar"><div style="width:71%;background:var(--signal-deep);"></div></div>
+    <div class="small-meta">probability 0.71</div>
+  </div>
+</div></body></html>
