@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS substance_info (
 CREATE INDEX IF NOT EXISTS idx_substance_structure ON substance_info (structure_id);
 
 -- ─────────────────────────────────────────────────────────────
--- 6. Сессия распознавания
+-- 5. Сессия распознавания
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_session (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS recognition_session (
 CREATE INDEX IF NOT EXISTS idx_session_hash ON recognition_session (input_hash);
 
 -- ─────────────────────────────────────────────────────────────
--- 8. Результат распознавания
+-- 6. Результат распознавания
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recognition_result (
     id              SERIAL PRIMARY KEY,
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS recognition_result (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 9. Кэш feature-векторов (KDE и др.)
+-- 7. Кэш feature-векторов (KDE и др.)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS feature_vector_cache (
     input_hash   CHAR(64) NOT NULL,   -- SHA-256 нормализованных координат
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS feature_vector_cache (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 10. Лог запросов к внешним источникам
+-- 8. Лог запросов к внешним источникам
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS external_lookup_log (
     id             SERIAL PRIMARY KEY,
