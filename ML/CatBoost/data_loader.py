@@ -94,13 +94,17 @@ def load_dataset(kde_dir: Path = KDE_DIR, verbose: bool = True):
     X, y, names = [], [], []
     skipped = []
 
-    # Сканируем micro/ и macro/
-    for subdir in ["micro", "macro"]:
-        sub_path = kde_dir / subdir
-        if not sub_path.exists():
-            continue
+    # Определяем что сканировать:
+    # - если kde_dir содержит micro/ или macro/ → сканируем их
+    # - иначе сканируем kde_dir напрямую (передан конкретный подкаталог)
+    has_subdirs = any((kde_dir / s).exists() for s in ["micro", "macro"])
+    if has_subdirs:
+        scan_paths = [kde_dir / s for s in ["micro", "macro"] if (kde_dir / s).exists()]
+    else:
+        scan_paths = [kde_dir]
 
-        for struct_dir in sorted(sub_path.iterdir()):
+    for scan_path in scan_paths:
+        for struct_dir in sorted(scan_path.iterdir()):
             if not struct_dir.is_dir():
                 continue
 
