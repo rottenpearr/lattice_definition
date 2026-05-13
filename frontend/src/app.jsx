@@ -1,4 +1,4 @@
-/* CRIS — App entry */
+/* CRIS — App entry (updated: workspace uses its own header) */
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -34,12 +34,10 @@ const App = () => {
   });
   const [anchor, setAnchor] = React.useState(null);
 
-  /* Persist route on every change */
   React.useEffect(() => {
     sessionStorage.setItem("cris_route", route);
   }, [route]);
 
-  /* Navigate: change route + optional anchor scroll */
   const navigate = React.useCallback((id, anchorId) => {
     setRoute(id);
     if (anchorId) {
@@ -49,16 +47,14 @@ const App = () => {
     }
   }, []);
 
-  /* After route renders, scroll to pending anchor with header offset */
   React.useEffect(() => {
     if (!anchor) return;
-    // Double-rAF: first frame React commits DOM, second frame layout is stable
     let id1, id2;
     id1 = requestAnimationFrame(() => {
       id2 = requestAnimationFrame(() => {
         const el = document.getElementById(anchor);
         if (el) {
-          const top = el.getBoundingClientRect().top + window.scrollY - 80; // 64px header + 16px gap
+          const top = el.getBoundingClientRect().top + window.scrollY - 80;
           window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         }
         setAnchor(null);
@@ -69,17 +65,21 @@ const App = () => {
 
   return (
     <>
-      <Header route={route} setRoute={navigate} />
-      {/* Spacer so content starts below the fixed header */}
-      <div style={{ height: 64 }} />
+      {/* [CHANGE] Global header hidden on workspace — it has its own dark header */}
+      {route !== "workspace" && <Header route={route} setRoute={navigate} />}
+      {route !== "workspace" && <div style={{ height: 64 }} />}
+
       {route === "home" && <HomeScreen setRoute={navigate} />}
+
       {route === "workspace" && (
         <ErrorBoundary>
-          <WorkspaceScreen />
+          {/* [CHANGE] Pass setRoute so WorkspaceHeader can navigate back to home */}
+          <WorkspaceScreen setRoute={navigate} />
         </ErrorBoundary>
       )}
+
       {route === "about" && <AboutScreen />}
-      {route === "docs" && <DocsScreen />}
+      {route === "docs"  && <DocsScreen />}
       {route !== "workspace" && <Footer setRoute={navigate} />}
     </>
   );
