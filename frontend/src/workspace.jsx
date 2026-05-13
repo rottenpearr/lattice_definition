@@ -133,6 +133,7 @@ const WorkspaceScreen = () => {
   const [coordType, setCoordType] = React.useState("frac");
   const [result,    setResult]    = React.useState(null);    // AnalyzeResponse от API
   const [apiError,  setApiError]  = React.useState(null);    // строка ошибки
+  const [methods,   setMethods]   = React.useState({ db: true, catboost: false, rf: false });
   const screenshotApiRef = React.useRef(null);
 
   /* Предупреждение при попытке закрыть/перезагрузить страницу */
@@ -224,6 +225,7 @@ const WorkspaceScreen = () => {
           onFileLoad={handleFileLoad}
           onFileClear={handleFileClear}
           sites={sites} setSites={setSites}
+          methods={methods} setMethods={setMethods}
           onStart={start}
         />
         <WsCenter
@@ -234,7 +236,7 @@ const WorkspaceScreen = () => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} />
       </div>
     </main>
   );
@@ -261,7 +263,7 @@ const WorkspaceToolbar = ({ stage, onReset, result }) => {
 /* ============================================================
    LEFT PANEL — input
    ============================================================ */
-const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, onStart }) => (
+const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, methods, setMethods, onStart }) => (
   <aside style={{ borderRight: "1px solid var(--hairline)", padding: 24, overflowY: "auto", background: "var(--paper)" }}>
     <Eyebrow>01 · Input</Eyebrow>
     <h3 className="section-title" style={{ fontSize: 22, margin: "10px 0 18px", lineHeight: 1.2 }}>Структура для распознавания</h3>
@@ -279,20 +281,26 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
       ? <FileInput file={file} onFileLoad={onFileLoad} onClear={onFileClear} />
       : <ManualInput sites={sites} setSites={setSites} />}
     <div style={{ marginTop: 20, padding: 16, background: "var(--card)", borderRadius: 10, border: "1px solid var(--hairline)" }}>
-      <Eyebrow>Параметры</Eyebrow>
-      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Метод">
-          <select className="select">
-            <option value="ensemble">Ensemble (RF + CatBoost + DB)</option>
-            <option value="catboost">CatBoost</option>
-            <option value="rf">Random Forest</option>
-            <option value="kde">KDE Classifier</option>
-            <option value="db">DB matching</option>
-          </select>
-        </Field>
-        <Field label="Top-N результатов">
-          <input className="input mono" defaultValue="5" />
-        </Field>
+      <Eyebrow>Методы распознавания</Eyebrow>
+      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        {[
+          { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
+          { key: "catboost", label: "CatBoost",         note: "ML на KDE-векторах" },
+          { key: "rf",       label: "Random Forest",    note: "ML на KDE-векторах" },
+        ].map(({ key, label, note }) => (
+          <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={!!methods[key]}
+              onChange={e => setMethods(m => ({ ...m, [key]: e.target.checked }))}
+              style={{ marginTop: 2, accentColor: "var(--cobalt)", width: 14, height: 14, flexShrink: 0 }}
+            />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--mute)" }}>{note}</div>
+            </div>
+          </label>
+        ))}
       </div>
     </div>
     <div style={{ marginTop: 24 }}>
@@ -613,7 +621,7 @@ const ViewerPipeline = () => (
 /* ============================================================
    RIGHT PANEL — verdict + chat
    ============================================================ */
-const WsRightPanel = ({ stage, result, apiError, siteCount }) => {
+const WsRightPanel = ({ stage, result, apiError, siteCount, methods }) => {
   const verdictContext = result?.success ? {
     lattice_type: result.lattice?.name_ru,
     lattice_en:   result.lattice?.name_en,
@@ -657,7 +665,7 @@ const WsRightPanel = ({ stage, result, apiError, siteCount }) => {
       {/* Блок вердикта — высота задаётся splitPct */}
       <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0, padding: 24 }}>
         {stage === "result"
-          ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} />
+          ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} />
           : <VerdictPlaceholder />}
       </div>
 
@@ -698,7 +706,49 @@ const VerdictPlaceholder = () => (
   </div>
 );
 
-const VerdictBlock = ({ result, apiError, siteCount }) => {
+/* ── Одна строка рейтинга решёток ── */
+const RankingRow = ({ item, top }) => (
+  <div style={{ marginTop: 7, display: "grid", gridTemplateColumns: "80px 1fr 36px", gap: 8, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+    <span style={{ color: top ? "var(--cobalt)" : "var(--ink-soft)" }}>{item.name_en ?? item.name_ru}</span>
+    <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${item.prob * 100}%`, background: top ? "var(--cobalt)" : "var(--mute-soft)" }} />
+    </div>
+    <span style={{ color: "var(--mute)", textAlign: "right" }}>{item.prob.toFixed(2)}</span>
+  </div>
+);
+
+/* ── Блок результата одного метода ── */
+const MethodResult = ({ label, result, active }) => {
+  const borderColor = active && result ? "var(--cobalt)" : "var(--hairline)";
+  return (
+    <div style={{ border: `1px solid ${borderColor}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--mute)" }}>{label}</span>
+        {!active
+          ? <Chip tone="default">не выбран</Chip>
+          : !result
+          ? <Chip tone="warn">нет данных</Chip>
+          : <Chip tone="ok" dot>{result.confidence != null ? result.confidence.toFixed(2) : "—"}</Chip>
+        }
+      </div>
+      {active && result ? (
+        <>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{result.name_en ?? "—"}</div>
+          {result.name_ru && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{result.name_ru}</div>}
+          {result.ranking?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {result.ranking.slice(0, 3).map((item, i) => <RankingRow key={i} item={item} top={i === 0} />)}
+            </div>
+          )}
+        </>
+      ) : active ? (
+        <div style={{ fontSize: 12, color: "var(--mute)" }}>Метод будет подключён позже</div>
+      ) : null}
+    </div>
+  );
+};
+
+const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
   if (apiError) return (
     <div>
       <Eyebrow>02 · Verdict</Eyebrow>
@@ -708,67 +758,63 @@ const VerdictBlock = ({ result, apiError, siteCount }) => {
     </div>
   );
 
-  if (!result?.success) return (
-    <div>
-      <Eyebrow>02 · Verdict</Eyebrow>
-      <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>
-        {result?.message || "Совпадающих структур не найдено в эталонной БД"}
-      </p>
-    </div>
-  );
+  // Итоговый (суммарный) результат — берём из DB если есть, иначе null
+  const summary = result?.success ? result.lattice : null;
+  const structure = result?.success ? result.structure : null;
 
-  const { lattice, structure, lattice_ranking } = result;
+  // Результаты по методам (пока реален только DB)
+  const dbResult = result?.success ? {
+    name_en:    result.lattice?.name_en,
+    name_ru:    result.lattice?.name_ru,
+    confidence: result.lattice?.confidence,
+    ranking:    result.lattice_ranking,
+  } : null;
 
   return (
     <div>
       <Eyebrow>02 · Verdict</Eyebrow>
-      <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>{lattice?.name_en ?? "—"}</h3>
-        <Chip tone="ok" dot>{lattice?.confidence != null ? lattice.confidence.toFixed(2) : "—"}</Chip>
-      </div>
-      {lattice?.name_ru && (
-        <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>{lattice.name_ru}</div>
-      )}
-      <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {siteCount > 0 && <Chip tone="info">{siteCount} ions</Chip>}
-        {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
-        {structure?.sg_hm  && <Chip tone="info">{structure.sg_hm}</Chip>}
-      </div>
 
-      {structure && (
+      {/* ── Суммарный результат ── */}
+      {summary ? (
         <>
-          <hr className="hr" style={{ margin: "18px 0" }} />
-          <Eyebrow>Probable substance</Eyebrow>
-          <div style={{ marginTop: 10, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500 }}>
-            {structure.name ?? "—"}
-            {structure.formula && structure.formula !== structure.name ? ` · ${structure.formula}` : ""}
+          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>{summary.name_en ?? "—"}</h3>
+            <Chip tone="ok" dot>{summary.confidence != null ? summary.confidence.toFixed(2) : "—"}</Chip>
           </div>
-          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {structure.sg_number && <Chip>sg {structure.sg_number}</Chip>}
-            {structure.confidence != null && (
-              <Chip tone="info">structure conf. {structure.confidence.toFixed(2)}</Chip>
-            )}
+          {summary.name_ru && <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>{summary.name_ru}</div>}
+          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {siteCount > 0 && <Chip tone="info">{siteCount} ions</Chip>}
+            {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
+            {structure?.sg_hm  && <Chip tone="info">{structure.sg_hm}</Chip>}
           </div>
-        </>
-      )}
-
-      {lattice_ranking?.length > 0 && (
-        <>
-          <hr className="hr" style={{ margin: "18px 0" }} />
-          <Eyebrow>Ranking</Eyebrow>
-          {lattice_ranking.map((item, i) => (
-            <div key={i} style={{ marginTop: 8, display: "grid", gridTemplateColumns: "76px 1fr 38px", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-              <span style={{ color: i === 0 ? "var(--cobalt)" : "var(--ink-soft)" }}>{item.name_en ?? item.name_ru}</span>
-              <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${item.prob * 100}%`, background: i === 0 ? "var(--cobalt)" : "var(--mute-soft)" }} />
+          {structure && (
+            <>
+              <hr className="hr" style={{ margin: "14px 0" }} />
+              <Eyebrow>Probable substance</Eyebrow>
+              <div style={{ marginTop: 8, fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500 }}>
+                {structure.name ?? "—"}
+                {structure.formula && structure.formula !== structure.name ? ` · ${structure.formula}` : ""}
               </div>
-              <span style={{ color: "var(--mute)", textAlign: "right" }}>{item.prob.toFixed(2)}</span>
-            </div>
-          ))}
+              <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {structure.sg_number && <Chip>sg {structure.sg_number}</Chip>}
+              </div>
+            </>
+          )}
         </>
+      ) : (
+        <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>
+          {result?.message || "Совпадающих структур не найдено"}
+        </p>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+      {/* ── Результаты по методам ── */}
+      <hr className="hr" style={{ margin: "14px 0" }} />
+      <Eyebrow>По методам</Eyebrow>
+      <MethodResult label="По базе данных" result={dbResult}      active={!!methods?.db} />
+      <MethodResult label="CatBoost"        result={null}          active={!!methods?.catboost} />
+      <MethodResult label="Random Forest"   result={null}          active={!!methods?.rf} />
+
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
         <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
         <Button variant="ghost"  size="sm" icon={<IconCopy    size={14} />}>Цитата</Button>
