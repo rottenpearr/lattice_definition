@@ -124,7 +124,7 @@ const FeaturesSection = () => {
 };
 
 /* ---------- Description ---------- */
-const API_BASE_HOME = "http://localhost:8001";
+const API_BASE_HOME = "http://localhost:8002";
 
 const DescriptionSection = () => {
   const [liveStats, setLiveStats] = React.useState(null);

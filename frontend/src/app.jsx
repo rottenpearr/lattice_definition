@@ -25,9 +25,19 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+const VALID_ROUTES = ["home", "workspace", "about", "docs"];
+
 const App = () => {
-  const [route, setRoute] = React.useState("home");
+  const [route, setRoute] = React.useState(() => {
+    const saved = sessionStorage.getItem("cris_route");
+    return VALID_ROUTES.includes(saved) ? saved : "home";
+  });
   const [anchor, setAnchor] = React.useState(null);
+
+  /* Persist route on every change */
+  React.useEffect(() => {
+    sessionStorage.setItem("cris_route", route);
+  }, [route]);
 
   /* Navigate: change route + optional anchor scroll */
   const navigate = React.useCallback((id, anchorId) => {

@@ -1,6 +1,6 @@
 /* CRIS — Workspace screen (drag-n-drop, manual input, pipeline, verdict, chat) */
 
-const API_BASE = "http://localhost:8001";
+const API_BASE = "http://localhost:8002";
 
 /* ── Default sample: UN unit cell (NaCl-type FCC, a=4.89Å) ── */
 const DEFAULT_SITES = [
@@ -132,6 +132,18 @@ const WorkspaceScreen = () => {
   const [cell,  setCell]          = React.useState(DEFAULT_CELL);
   const [coordType, setCoordType] = React.useState("frac");
   const screenshotApiRef = React.useRef(null);
+
+  /* Предупреждение при попытке закрыть/перезагрузить страницу */
+  React.useEffect(() => {
+    const isDirty = file !== null || stage === "running" || stage === "result";
+    if (!isDirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [file, stage]);
 
   const start = () => {
     setStage("running");
@@ -577,14 +589,83 @@ const ViewerPipeline = () => (
 /* ============================================================
    RIGHT PANEL — verdict + chat
    ============================================================ */
-const WsRightPanel = ({ stage }) => (
-  <aside style={{ borderLeft: "1px solid var(--hairline)", display: "flex", flexDirection: "column", background: "var(--paper)" }}>
-    <div style={{ padding: 24, flex: "0 0 auto", overflowY: "auto", maxHeight: "62%", borderBottom: "1px solid var(--hairline)" }}>
-      {stage === "result" ? <VerdictBlock /> : <VerdictPlaceholder />}
-    </div>
-    <ChatPanel stage={stage} />
-  </aside>
-);
+/* Mock verdict context — заменить на реальные данные когда ML подключат */
+const MOCK_VERDICT_CONTEXT = {
+  lattice_type: "Кубическая гранецентрированная (FCC)",
+  lattice_en:   "cubic_f",
+  formula:      "UN",
+  confidence:   0.87,
+  sg_hm:        "Fm-3m",
+  ion_count:    8,
+};
+
+const WsRightPanel = ({ stage }) => {
+  const panelRef   = React.useRef(null);
+  const [splitPct, setSplitPct] = React.useState(52); // % высоты под вердикт
+  const dragging   = React.useRef(false);
+
+  const onDividerMouseDown = (e) => {
+    e.preventDefault();
+    dragging.current = true;
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (ev) => {
+      if (!dragging.current || !panelRef.current) return;
+      const rect = panelRef.current.getBoundingClientRect();
+      const pct  = ((ev.clientY - rect.top) / rect.height) * 100;
+      setSplitPct(Math.min(Math.max(pct, 20), 78)); // зажимаем 20%–78%
+    };
+
+    const onMouseUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup",   onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup",   onMouseUp);
+  };
+
+  return (
+    <aside ref={panelRef} style={{ borderLeft: "1px solid var(--hairline)", display: "flex", flexDirection: "column", background: "var(--paper)", minHeight: 0, overflow: "hidden" }}>
+
+      {/* Блок вердикта — высота задаётся splitPct */}
+      <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0 }}>
+        {stage === "result" ? <VerdictBlock /> : <VerdictPlaceholder />}
+      </div>
+
+      {/* Разделитель */}
+      <div
+        onMouseDown={onDividerMouseDown}
+        style={{
+          flexShrink:  0,
+          height:      6,
+          cursor:      "row-resize",
+          background:  "var(--hairline)",
+          borderTop:   "1px solid var(--hairline)",
+          borderBottom:"1px solid var(--hairline)",
+          display:     "flex",
+          alignItems:  "center",
+          justifyContent: "center",
+          transition:  "background 0.15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = "var(--cobalt-wash)"}
+        onMouseLeave={e => e.currentTarget.style.background = "var(--hairline)"}
+      >
+        {/* три точки-ручка */}
+        <div style={{ display: "flex", gap: 3 }}>
+          {[0,1,2].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--mute)" }} />)}
+        </div>
+      </div>
+
+      {/* Чат — занимает остаток */}
+      <ChatPanel stage={stage} context={stage === "result" ? MOCK_VERDICT_CONTEXT : null} />
+    </aside>
+  );
+};
 
 const VerdictPlaceholder = () => (
   <div>
@@ -641,43 +722,168 @@ const VerdictBlock = () => (
   </div>
 );
 
-const ChatPanel = ({ stage }) => {
-  const messages = stage === "result" ? [
-    { role: "system", text: "Спросите про решётку или вещество." },
-    { role: "user",   text: "Почему модель уверенно отнесла к FCC?" },
-    { role: "ai",     text: "KDE-спектр совпал с эталоном UN (Materials Project mp-2731) с расстоянием 0.013 в L2. Random Forest и CatBoost вернули одинаковый top-1 — это согласованное предсказание." },
-  ] : [
-    { role: "system", text: "AI-ассистент включается после распознавания." },
-  ];
+const ChatPanel = ({ stage, context }) => {
+  const [messages, setMessages] = React.useState([]); // [{role:"user"|"assistant", content:""}]
+  const [input,    setInput]    = React.useState("");
+  const [loading,  setLoading]  = React.useState(false);
+  const [error,    setError]    = React.useState(null);
+  const bottomRef = React.useRef(null);
+  const inputRef  = React.useRef(null);
+
+  const active = stage === "result";
+
+  /* Сбрасываем историю когда пользователь запускает новое распознавание */
+  React.useEffect(() => {
+    if (stage === "running") {
+      setMessages([]);
+      setError(null);
+    }
+  }, [stage]);
+
+  /* Автоскролл вниз при каждом новом сообщении */
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading || !active) return;
+
+    const userMsg = { role: "user", content: text };
+    const history = [...messages, userMsg];
+    setMessages(history);
+    setInput("");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history,
+          context:  context || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  };
+
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 24, minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 24, minHeight: 0, overflow: "hidden" }}>
+
+      {/* Заголовок */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexShrink: 0 }}>
         <IconSparkles size={14} />
         <span className="eyebrow" style={{ margin: 0 }}>AI · GigaChat MAX 2</span>
+        {loading && (
+          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--mute)", fontFamily: "var(--font-mono)" }}>
+            печатает…
+          </span>
+        )}
       </div>
+
+      {/* Лента сообщений */}
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
+
+        {/* Заглушка до распознавания */}
+        {!active && (
+          <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>
+            AI-ассистент включается после распознавания.
+          </p>
+        )}
+
+        {/* Подсказка после вердикта, если диалог пустой */}
+        {active && messages.length === 0 && (
+          <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>
+            Спросите про решётку, вещество или методы распознавания.
+          </p>
+        )}
+
+        {/* Сообщения */}
         {messages.map((m, i) => (
           <div key={i} style={{
-            alignSelf:   m.role === "user" ? "flex-end" : "flex-start",
-            background:  m.role === "user" ? "var(--cobalt)" : m.role === "ai" ? "var(--card)" : "transparent",
-            color:       m.role === "user" ? "white" : m.role === "system" ? "var(--mute)" : "var(--ink)",
-            border:      m.role === "ai"   ? "1px solid var(--hairline)" : "none",
+            alignSelf:    m.role === "user" ? "flex-end" : "flex-start",
+            background:   m.role === "user" ? "var(--cobalt)" : "var(--card)",
+            color:        m.role === "user" ? "white" : "var(--ink)",
+            border:       m.role === "assistant" ? "1px solid var(--hairline)" : "none",
             borderRadius: 10,
-            padding:      m.role === "system" ? "0" : "10px 14px",
-            fontSize:     m.role === "system" ? 13 : 14,
-            fontStyle:    m.role === "system" ? "italic" : "normal",
-            maxWidth:     m.role === "system" ? "100%" : "85%",
-            lineHeight:   1.5,
-          }}>{m.text}</div>
+            padding:      "10px 14px",
+            fontSize:     14,
+            maxWidth:     "85%",
+            lineHeight:   1.55,
+            whiteSpace:   "pre-wrap",
+          }}>
+            {m.content}
+          </div>
         ))}
+
+        {/* Индикатор загрузки */}
+        {loading && (
+          <div style={{
+            alignSelf: "flex-start", background: "var(--card)",
+            border: "1px solid var(--hairline)", borderRadius: 10,
+            padding: "10px 14px", fontSize: 14, color: "var(--mute)",
+            fontFamily: "var(--font-mono)",
+          }}>
+            ···
+          </div>
+        )}
+
+        {/* Ошибка */}
+        {error && (
+          <div style={{
+            alignSelf: "flex-start", background: "#fff0f0",
+            border: "1px solid #ffc0c0", borderRadius: 10,
+            padding: "10px 14px", fontSize: 13, color: "#c00", maxWidth: "85%",
+          }}>
+            Ошибка: {error}
+          </div>
+        )}
+
+        <div ref={bottomRef} />
       </div>
-      <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center", border: "1px solid var(--hairline-strong)", borderRadius: 6, background: "var(--card)", padding: "4px 4px 4px 12px" }}>
+
+      {/* Поле ввода */}
+      <div style={{
+        marginTop: 12, flexShrink: 0,
+        display: "flex", gap: 8, alignItems: "center",
+        border: `1px solid ${active ? "var(--hairline-strong)" : "var(--hairline)"}`,
+        borderRadius: 6, background: "var(--card)",
+        padding: "4px 4px 4px 12px",
+        opacity: active ? 1 : 0.5,
+      }}>
         <input
-          placeholder={stage === "result" ? "Спросите про вещество…" : "Запустите распознавание"}
-          disabled={stage !== "result"}
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={active ? "Спросите про вещество… (Enter)" : "Запустите распознавание"}
+          disabled={!active || loading}
           style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, padding: "8px 0" }}
         />
-        <Button variant="primary" size="sm" disabled={stage !== "result"} icon={<IconSend size={14} />} />
+        <Button
+          variant="primary" size="sm"
+          disabled={!active || loading || !input.trim()}
+          icon={<IconSend size={14} />}
+          onClick={send}
+        />
       </div>
     </div>
   );
