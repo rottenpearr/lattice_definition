@@ -98,7 +98,7 @@ const LatticeDiagram = ({ size = 220, animated = true }) => {
 /* ---------- Features ---------- */
 const FeaturesSection = () => {
   const features = [
-    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация решётки в куб [0, 1] проходит автоматически." },
+    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация решётки в куб [0, 2] проходит автоматически." },
     { eyebrow: "02 · METHOD", title: "Ансамбль методов, не один", body: "Random Forest, CatBoost и поиск по внутренней базе данных работают параллельно. Доступны ранжирование и достоверность по каждому методу." },
     { eyebrow: "03 · VERDICT", title: "Не только тип, но и структура", body: "Кроме типа кристаллической решётки, система возвращает наиболее вероятную эталонную структуру и ссылки на эталоны в COD и Materials Project." },
     { eyebrow: "04 · ASK", title: "AI-ассистент в контексте анализа", body: "GigaChat MAX 2 знает базу CRIS и научные источники. Спросите про вещество, метод или интерпретацию результата." },
@@ -216,7 +216,7 @@ const EmbedSection = ({ setRoute }) => (
           Тот же ансамбль распознавания доступен как Python-пакет и REST API. Один интерфейс — для веб-приложения и для batch-режима на кластере.
         </p>
         <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-          <Button variant="primary" size="lg" icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>github.com/rottenpearr</Button>
+          <Button variant="primary" size="lg" icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>github.com/rottenpearr/lattice_definition</Button>
           <Button variant="secondary" size="lg" onDark icon={<IconBook size={16} />} onClick={() => setRoute("docs")}>Документация</Button>
         </div>
       </div>
