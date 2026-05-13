@@ -131,6 +131,9 @@ const WorkspaceScreen = () => {
   const [sites, setSites]         = React.useState([]);      // empty on start
   const [cell,  setCell]          = React.useState(DEFAULT_CELL);
   const [coordType, setCoordType] = React.useState("frac");
+  const [result,    setResult]    = React.useState(null);    // AnalyzeResponse от API
+  const [apiError,  setApiError]  = React.useState(null);    // строка ошибки
+  const [methods,   setMethods]   = React.useState({ db: true, catboost: false, rf: false });
   const screenshotApiRef = React.useRef(null);
 
   /* Предупреждение при попытке закрыть/перезагрузить страницу */
@@ -145,31 +148,47 @@ const WorkspaceScreen = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [file, stage]);
 
-  const start = () => {
+  const start = async () => {
+    if (sites.length < 2) return;
     setStage("running");
+    setResult(null);
+    setApiError(null);
 
-    // Логируем сессию в БД (fire & forget — не блокирует UI)
-    if (sites.length >= 2) {
-      const cartSites = sites.map(s => {
-        const fx = parseFloat(s.x) || 0;
-        const fy = parseFloat(s.y) || 0;
-        const fz = parseFloat(s.z) || 0;
-        const [cx, cy, cz] = coordType === "cart"
-          ? [fx, fy, fz]
-          : fracToCart(fx, fy, fz, cell);
-        return { label: s.label, x: cx, y: cy, z: cz };
-      });
-      fetch(`${API_BASE}/api/session`, {
+    const cartSites = sites.map(s => {
+      const fx = parseFloat(s.x) || 0;
+      const fy = parseFloat(s.y) || 0;
+      const fz = parseFloat(s.z) || 0;
+      const [cx, cy, cz] = coordType === "cart"
+        ? [fx, fy, fz]
+        : fracToCart(fx, fy, fz, cell);
+      return { label: s.label, x: cx, y: cy, z: cz };
+    });
+
+    // Логируем сессию (fire & forget)
+    fetch(`${API_BASE}/api/session`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ sites: cartSites }),
+    }).catch(() => {});
+
+    // Основной запрос анализа
+    try {
+      const res  = await fetch(`${API_BASE}/api/analyze`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ sites: cartSites }),
-      }).catch(() => {}); // молча игнорируем если API недоступен
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      setResult(data);
+    } catch (e) {
+      setApiError(e.message);
+    } finally {
+      setStage("result");
     }
-
-    setTimeout(() => setStage("result"), 2400);
   };
 
-  const reset = () => setStage("input");
+  const reset = () => { setStage("input"); setResult(null); setApiError(null); };
 
   const handleScreenshot = () => {
     if (!screenshotApiRef.current) return;
@@ -198,7 +217,7 @@ const WorkspaceScreen = () => {
 
   return (
     <main style={{ background: "var(--paper)", minHeight: "calc(100vh - 64px)" }}>
-      <WorkspaceToolbar stage={stage} onReset={reset} />
+      <WorkspaceToolbar stage={stage} onReset={reset} result={result} />
       <div style={{ display: "grid", gridTemplateColumns: "360px 1fr 380px", height: "calc(100vh - 64px - 56px)", minHeight: 640 }}>
         <WsLeftPanel
           stage={stage} mode={mode} setMode={setMode}
@@ -206,6 +225,7 @@ const WorkspaceScreen = () => {
           onFileLoad={handleFileLoad}
           onFileClear={handleFileClear}
           sites={sites} setSites={setSites}
+          methods={methods} setMethods={setMethods}
           onStart={start}
         />
         <WsCenter
@@ -216,28 +236,34 @@ const WorkspaceScreen = () => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} />
       </div>
     </main>
   );
 };
 
-const WorkspaceToolbar = ({ stage, onReset }) => (
+const WorkspaceToolbar = ({ stage, onReset, result }) => {
+  const confidence = result?.lattice?.confidence;
+  const matched    = result?.success;
+  const chipTone   = stage === "result" ? (matched ? "ok" : "warn") : stage === "running" ? "live" : "default";
+  const chipLabel  = stage === "result"
+    ? (matched ? `matched · ${confidence != null ? confidence.toFixed(2) : "—"}` : "no match")
+    : stage === "running" ? "computing" : "idle";
+  return (
   <div style={{ borderBottom: "1px solid var(--hairline)", background: "var(--paper)", height: 56, display: "flex", alignItems: "center", padding: "0 24px", gap: 24 }}>
-    <div className="eyebrow">Workspace · session 2026-05-12-14:08</div>
+    <div className="eyebrow">Workspace</div>
     <div style={{ flex: 1 }} />
-    <Chip dot tone={stage === "result" ? "ok" : stage === "running" ? "live" : "default"}>
-      {stage === "result" ? "matched · 0.87" : stage === "running" ? "computing" : "idle"}
-    </Chip>
+    <Chip dot tone={chipTone}>{chipLabel}</Chip>
     <Button variant="ghost" size="sm" icon={<IconHelp size={14} />}>Подсказка</Button>
     <Button variant="ghost" size="sm" icon={<IconRotate size={14} />} onClick={onReset}>Сбросить</Button>
   </div>
-);
+  );
+};
 
 /* ============================================================
    LEFT PANEL — input
    ============================================================ */
-const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, onStart }) => (
+const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, methods, setMethods, onStart }) => (
   <aside style={{ borderRight: "1px solid var(--hairline)", padding: 24, overflowY: "auto", background: "var(--paper)" }}>
     <Eyebrow>01 · Input</Eyebrow>
     <h3 className="section-title" style={{ fontSize: 22, margin: "10px 0 18px", lineHeight: 1.2 }}>Структура для распознавания</h3>
@@ -255,20 +281,26 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
       ? <FileInput file={file} onFileLoad={onFileLoad} onClear={onFileClear} />
       : <ManualInput sites={sites} setSites={setSites} />}
     <div style={{ marginTop: 20, padding: 16, background: "var(--card)", borderRadius: 10, border: "1px solid var(--hairline)" }}>
-      <Eyebrow>Параметры</Eyebrow>
-      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Метод">
-          <select className="select">
-            <option value="ensemble">Ensemble (RF + CatBoost + DB)</option>
-            <option value="catboost">CatBoost</option>
-            <option value="rf">Random Forest</option>
-            <option value="kde">KDE Classifier</option>
-            <option value="db">DB matching</option>
-          </select>
-        </Field>
-        <Field label="Top-N результатов">
-          <input className="input mono" defaultValue="5" />
-        </Field>
+      <Eyebrow>Методы распознавания</Eyebrow>
+      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        {[
+          { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
+          { key: "catboost", label: "CatBoost",         note: "ML на KDE-векторах" },
+          { key: "rf",       label: "Random Forest",    note: "ML на KDE-векторах" },
+        ].map(({ key, label, note }) => (
+          <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={!!methods[key]}
+              onChange={e => setMethods(m => ({ ...m, [key]: e.target.checked }))}
+              style={{ marginTop: 2, accentColor: "var(--cobalt)", width: 14, height: 14, flexShrink: 0 }}
+            />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--mute)" }}>{note}</div>
+            </div>
+          </label>
+        ))}
       </div>
     </div>
     <div style={{ marginTop: 24 }}>
@@ -589,17 +621,15 @@ const ViewerPipeline = () => (
 /* ============================================================
    RIGHT PANEL — verdict + chat
    ============================================================ */
-/* Mock verdict context — заменить на реальные данные когда ML подключат */
-const MOCK_VERDICT_CONTEXT = {
-  lattice_type: "Кубическая гранецентрированная (FCC)",
-  lattice_en:   "cubic_f",
-  formula:      "UN",
-  confidence:   0.87,
-  sg_hm:        "Fm-3m",
-  ion_count:    8,
-};
-
-const WsRightPanel = ({ stage }) => {
+const WsRightPanel = ({ stage, result, apiError, siteCount, methods }) => {
+  const verdictContext = result?.success ? {
+    lattice_type: result.lattice?.name_ru,
+    lattice_en:   result.lattice?.name_en,
+    formula:      result.structure?.formula,
+    confidence:   result.lattice?.confidence,
+    sg_hm:        result.structure?.sg_hm,
+    ion_count:    siteCount,
+  } : null;
   const panelRef   = React.useRef(null);
   const [splitPct, setSplitPct] = React.useState(52); // % высоты под вердикт
   const dragging   = React.useRef(false);
@@ -633,8 +663,10 @@ const WsRightPanel = ({ stage }) => {
     <aside ref={panelRef} style={{ borderLeft: "1px solid var(--hairline)", display: "flex", flexDirection: "column", background: "var(--paper)", minHeight: 0, overflow: "hidden" }}>
 
       {/* Блок вердикта — высота задаётся splitPct */}
-      <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0 }}>
-        {stage === "result" ? <VerdictBlock /> : <VerdictPlaceholder />}
+      <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0, padding: 24 }}>
+        {stage === "result"
+          ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} />
+          : <VerdictPlaceholder />}
       </div>
 
       {/* Разделитель */}
@@ -662,65 +694,134 @@ const WsRightPanel = ({ stage }) => {
       </div>
 
       {/* Чат — занимает остаток */}
-      <ChatPanel stage={stage} context={stage === "result" ? MOCK_VERDICT_CONTEXT : null} />
+      <ChatPanel stage={stage} context={stage === "result" ? verdictContext : null} />
     </aside>
   );
 };
 
 const VerdictPlaceholder = () => (
-  <div>
+  <div style={{ padding: 24 }}>
     <Eyebrow>02 · Verdict</Eyebrow>
     <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>После запуска здесь появится тип решётки, эталонное вещество и экспорт.</p>
   </div>
 );
 
-const VerdictBlock = () => (
-  <div>
-    <Eyebrow>02 · Verdict</Eyebrow>
-    <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-      <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>cubic_f</h3>
-      <Chip tone="ok" dot>0.87</Chip>
+/* ── Одна строка рейтинга решёток ── */
+const RankingRow = ({ item, top }) => (
+  <div style={{ marginTop: 7, display: "grid", gridTemplateColumns: "80px 1fr 36px", gap: 8, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+    <span style={{ color: top ? "var(--cobalt)" : "var(--ink-soft)" }}>{item.name_en ?? item.name_ru}</span>
+    <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${item.prob * 100}%`, background: top ? "var(--cobalt)" : "var(--mute-soft)" }} />
     </div>
-    <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>FCC · face-centered cubic · space group 225</div>
-    <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
-      <Chip tone="info">8 ions / cell</Chip>
-      <Chip tone="info">a = 4.890 Å</Chip>
-      <Chip tone="info">α=β=γ = 90°</Chip>
-    </div>
-    <hr className="hr" style={{ margin: "18px 0" }} />
-    <Eyebrow>Probable substance</Eyebrow>
-    <div style={{ marginTop: 10, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500 }}>Uranium nitride · UN</div>
-    <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
-      Тугоплавкое керамическое топливо. Высокая теплопроводность, плотность 14.32 г/см³. Используется в реакторах IV поколения.
-    </div>
-    <div style={{ marginTop: 12, display: "flex", gap: 6 }}>
-      <Chip>mp-2731</Chip>
-      <Chip>COD 1531114</Chip>
-    </div>
-    <hr className="hr" style={{ margin: "18px 0" }} />
-    <Eyebrow>Top-5 ranking</Eyebrow>
-    {[
-      ["cubic_f",  "FCC",                  0.87, true ],
-      ["cubic_p",  "primitive cubic",      0.07, false],
-      ["cubic_i",  "BCC",                  0.04, false],
-      ["tetra_p",  "primitive tetragonal", 0.01, false],
-      ["hex_p",    "hexagonal",            0.01, false],
-    ].map(([k, v, p, top], i) => (
-      <div key={i} style={{ marginTop: 8, display: "grid", gridTemplateColumns: "76px 1fr 38px", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-        <span style={{ color: top ? "var(--cobalt)" : "var(--ink-soft)" }}>{k}</span>
-        <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${p * 100}%`, background: top ? "var(--cobalt)" : "var(--mute-soft)" }} />
-        </div>
-        <span style={{ color: "var(--mute)", textAlign: "right" }}>{p.toFixed(2)}</span>
-      </div>
-    ))}
-    <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-      <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
-      <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
-      <Button variant="ghost"  size="sm" icon={<IconCopy    size={14} />}>Цитата</Button>
-    </div>
+    <span style={{ color: "var(--mute)", textAlign: "right" }}>{item.prob.toFixed(2)}</span>
   </div>
 );
+
+/* ── Блок результата одного метода ── */
+const MethodResult = ({ label, result, active }) => {
+  const borderColor = active && result ? "var(--cobalt)" : "var(--hairline)";
+  return (
+    <div style={{ border: `1px solid ${borderColor}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--mute)" }}>{label}</span>
+        {!active
+          ? <Chip tone="default">не выбран</Chip>
+          : !result
+          ? <Chip tone="warn">нет данных</Chip>
+          : <Chip tone="ok" dot>{result.confidence != null ? result.confidence.toFixed(2) : "—"}</Chip>
+        }
+      </div>
+      {active && result ? (
+        <>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{result.name_en ?? "—"}</div>
+          {result.name_ru && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{result.name_ru}</div>}
+          {result.ranking?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {result.ranking.slice(0, 3).map((item, i) => <RankingRow key={i} item={item} top={i === 0} />)}
+            </div>
+          )}
+        </>
+      ) : active ? (
+        <div style={{ fontSize: 12, color: "var(--mute)" }}>Метод будет подключён позже</div>
+      ) : null}
+    </div>
+  );
+};
+
+const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
+  if (apiError) return (
+    <div>
+      <Eyebrow>02 · Verdict</Eyebrow>
+      <div style={{ marginTop: 16, padding: "12px 14px", background: "rgba(245,101,101,0.08)", border: "1px solid rgba(245,101,101,0.2)", borderRadius: 8, fontSize: 13, color: "#e53e3e" }}>
+        ⚠ {apiError}
+      </div>
+    </div>
+  );
+
+  // Итоговый (суммарный) результат — берём из DB если есть, иначе null
+  const summary = result?.success ? result.lattice : null;
+  const structure = result?.success ? result.structure : null;
+
+  // Результаты по методам (пока реален только DB)
+  const dbResult = result?.success ? {
+    name_en:    result.lattice?.name_en,
+    name_ru:    result.lattice?.name_ru,
+    confidence: result.lattice?.confidence,
+    ranking:    result.lattice_ranking,
+  } : null;
+
+  return (
+    <div>
+      <Eyebrow>02 · Verdict</Eyebrow>
+
+      {/* ── Суммарный результат ── */}
+      {summary ? (
+        <>
+          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>{summary.name_en ?? "—"}</h3>
+            <Chip tone="ok" dot>{summary.confidence != null ? summary.confidence.toFixed(2) : "—"}</Chip>
+          </div>
+          {summary.name_ru && <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>{summary.name_ru}</div>}
+          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {siteCount > 0 && <Chip tone="info">{siteCount} ions</Chip>}
+            {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
+            {structure?.sg_hm  && <Chip tone="info">{structure.sg_hm}</Chip>}
+          </div>
+          {structure && (
+            <>
+              <hr className="hr" style={{ margin: "14px 0" }} />
+              <Eyebrow>Probable substance</Eyebrow>
+              <div style={{ marginTop: 8, fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500 }}>
+                {structure.name ?? "—"}
+                {structure.formula && structure.formula !== structure.name ? ` · ${structure.formula}` : ""}
+              </div>
+              <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {structure.sg_number && <Chip>sg {structure.sg_number}</Chip>}
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>
+          {result?.message || "Совпадающих структур не найдено"}
+        </p>
+      )}
+
+      {/* ── Результаты по методам ── */}
+      <hr className="hr" style={{ margin: "14px 0" }} />
+      <Eyebrow>По методам</Eyebrow>
+      <MethodResult label="По базе данных" result={dbResult}      active={!!methods?.db} />
+      <MethodResult label="CatBoost"        result={null}          active={!!methods?.catboost} />
+      <MethodResult label="Random Forest"   result={null}          active={!!methods?.rf} />
+
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
+        <Button variant="ghost"  size="sm" icon={<IconCopy    size={14} />}>Цитата</Button>
+      </div>
+    </div>
+  );
+};
 
 const ChatPanel = ({ stage, context }) => {
   const [messages, setMessages] = React.useState([]); // [{role:"user"|"assistant", content:""}]
