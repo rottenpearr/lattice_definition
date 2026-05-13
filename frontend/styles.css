@@ -254,3 +254,6 @@ button { font: inherit; }
 
 /* ===== Marquee axis (decorative axis tick on hero) ===== */
 .tick-rule { background-image: linear-gradient(to right, var(--hairline-strong) 1px, transparent 1px); background-size: 8px 1px; height: 1px; }
+
+/* ===== KaTeX display math — reduce default margin: 1em 0 ===== */
+.katex-display { margin: 0.15em 0 !important; }
