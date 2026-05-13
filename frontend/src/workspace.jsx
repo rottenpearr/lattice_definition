@@ -131,6 +131,8 @@ const WorkspaceScreen = () => {
   const [sites, setSites]         = React.useState([]);      // empty on start
   const [cell,  setCell]          = React.useState(DEFAULT_CELL);
   const [coordType, setCoordType] = React.useState("frac");
+  const [result,    setResult]    = React.useState(null);    // AnalyzeResponse от API
+  const [apiError,  setApiError]  = React.useState(null);    // строка ошибки
   const screenshotApiRef = React.useRef(null);
 
   /* Предупреждение при попытке закрыть/перезагрузить страницу */
@@ -145,31 +147,47 @@ const WorkspaceScreen = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [file, stage]);
 
-  const start = () => {
+  const start = async () => {
+    if (sites.length < 2) return;
     setStage("running");
+    setResult(null);
+    setApiError(null);
 
-    // Логируем сессию в БД (fire & forget — не блокирует UI)
-    if (sites.length >= 2) {
-      const cartSites = sites.map(s => {
-        const fx = parseFloat(s.x) || 0;
-        const fy = parseFloat(s.y) || 0;
-        const fz = parseFloat(s.z) || 0;
-        const [cx, cy, cz] = coordType === "cart"
-          ? [fx, fy, fz]
-          : fracToCart(fx, fy, fz, cell);
-        return { label: s.label, x: cx, y: cy, z: cz };
-      });
-      fetch(`${API_BASE}/api/session`, {
+    const cartSites = sites.map(s => {
+      const fx = parseFloat(s.x) || 0;
+      const fy = parseFloat(s.y) || 0;
+      const fz = parseFloat(s.z) || 0;
+      const [cx, cy, cz] = coordType === "cart"
+        ? [fx, fy, fz]
+        : fracToCart(fx, fy, fz, cell);
+      return { label: s.label, x: cx, y: cy, z: cz };
+    });
+
+    // Логируем сессию (fire & forget)
+    fetch(`${API_BASE}/api/session`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ sites: cartSites }),
+    }).catch(() => {});
+
+    // Основной запрос анализа
+    try {
+      const res  = await fetch(`${API_BASE}/api/analyze`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ sites: cartSites }),
-      }).catch(() => {}); // молча игнорируем если API недоступен
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      setResult(data);
+    } catch (e) {
+      setApiError(e.message);
+    } finally {
+      setStage("result");
     }
-
-    setTimeout(() => setStage("result"), 2400);
   };
 
-  const reset = () => setStage("input");
+  const reset = () => { setStage("input"); setResult(null); setApiError(null); };
 
   const handleScreenshot = () => {
     if (!screenshotApiRef.current) return;
@@ -198,7 +216,7 @@ const WorkspaceScreen = () => {
 
   return (
     <main style={{ background: "var(--paper)", minHeight: "calc(100vh - 64px)" }}>
-      <WorkspaceToolbar stage={stage} onReset={reset} />
+      <WorkspaceToolbar stage={stage} onReset={reset} result={result} />
       <div style={{ display: "grid", gridTemplateColumns: "360px 1fr 380px", height: "calc(100vh - 64px - 56px)", minHeight: 640 }}>
         <WsLeftPanel
           stage={stage} mode={mode} setMode={setMode}
@@ -216,23 +234,29 @@ const WorkspaceScreen = () => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} />
       </div>
     </main>
   );
 };
 
-const WorkspaceToolbar = ({ stage, onReset }) => (
+const WorkspaceToolbar = ({ stage, onReset, result }) => {
+  const confidence = result?.lattice?.confidence;
+  const matched    = result?.success;
+  const chipTone   = stage === "result" ? (matched ? "ok" : "warn") : stage === "running" ? "live" : "default";
+  const chipLabel  = stage === "result"
+    ? (matched ? `matched · ${confidence != null ? confidence.toFixed(2) : "—"}` : "no match")
+    : stage === "running" ? "computing" : "idle";
+  return (
   <div style={{ borderBottom: "1px solid var(--hairline)", background: "var(--paper)", height: 56, display: "flex", alignItems: "center", padding: "0 24px", gap: 24 }}>
-    <div className="eyebrow">Workspace · session 2026-05-12-14:08</div>
+    <div className="eyebrow">Workspace</div>
     <div style={{ flex: 1 }} />
-    <Chip dot tone={stage === "result" ? "ok" : stage === "running" ? "live" : "default"}>
-      {stage === "result" ? "matched · 0.87" : stage === "running" ? "computing" : "idle"}
-    </Chip>
+    <Chip dot tone={chipTone}>{chipLabel}</Chip>
     <Button variant="ghost" size="sm" icon={<IconHelp size={14} />}>Подсказка</Button>
     <Button variant="ghost" size="sm" icon={<IconRotate size={14} />} onClick={onReset}>Сбросить</Button>
   </div>
-);
+  );
+};
 
 /* ============================================================
    LEFT PANEL — input
@@ -589,17 +613,15 @@ const ViewerPipeline = () => (
 /* ============================================================
    RIGHT PANEL — verdict + chat
    ============================================================ */
-/* Mock verdict context — заменить на реальные данные когда ML подключат */
-const MOCK_VERDICT_CONTEXT = {
-  lattice_type: "Кубическая гранецентрированная (FCC)",
-  lattice_en:   "cubic_f",
-  formula:      "UN",
-  confidence:   0.87,
-  sg_hm:        "Fm-3m",
-  ion_count:    8,
-};
-
-const WsRightPanel = ({ stage }) => {
+const WsRightPanel = ({ stage, result, apiError, siteCount }) => {
+  const verdictContext = result?.success ? {
+    lattice_type: result.lattice?.name_ru,
+    lattice_en:   result.lattice?.name_en,
+    formula:      result.structure?.formula,
+    confidence:   result.lattice?.confidence,
+    sg_hm:        result.structure?.sg_hm,
+    ion_count:    siteCount,
+  } : null;
   const panelRef   = React.useRef(null);
   const [splitPct, setSplitPct] = React.useState(52); // % высоты под вердикт
   const dragging   = React.useRef(false);
@@ -633,8 +655,10 @@ const WsRightPanel = ({ stage }) => {
     <aside ref={panelRef} style={{ borderLeft: "1px solid var(--hairline)", display: "flex", flexDirection: "column", background: "var(--paper)", minHeight: 0, overflow: "hidden" }}>
 
       {/* Блок вердикта — высота задаётся splitPct */}
-      <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0 }}>
-        {stage === "result" ? <VerdictBlock /> : <VerdictPlaceholder />}
+      <div style={{ height: `${splitPct}%`, flex: "0 0 auto", overflowY: "auto", minHeight: 0, padding: 24 }}>
+        {stage === "result"
+          ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} />
+          : <VerdictPlaceholder />}
       </div>
 
       {/* Разделитель */}
@@ -662,65 +686,96 @@ const WsRightPanel = ({ stage }) => {
       </div>
 
       {/* Чат — занимает остаток */}
-      <ChatPanel stage={stage} context={stage === "result" ? MOCK_VERDICT_CONTEXT : null} />
+      <ChatPanel stage={stage} context={stage === "result" ? verdictContext : null} />
     </aside>
   );
 };
 
 const VerdictPlaceholder = () => (
-  <div>
+  <div style={{ padding: 24 }}>
     <Eyebrow>02 · Verdict</Eyebrow>
     <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>После запуска здесь появится тип решётки, эталонное вещество и экспорт.</p>
   </div>
 );
 
-const VerdictBlock = () => (
-  <div>
-    <Eyebrow>02 · Verdict</Eyebrow>
-    <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-      <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>cubic_f</h3>
-      <Chip tone="ok" dot>0.87</Chip>
-    </div>
-    <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>FCC · face-centered cubic · space group 225</div>
-    <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
-      <Chip tone="info">8 ions / cell</Chip>
-      <Chip tone="info">a = 4.890 Å</Chip>
-      <Chip tone="info">α=β=γ = 90°</Chip>
-    </div>
-    <hr className="hr" style={{ margin: "18px 0" }} />
-    <Eyebrow>Probable substance</Eyebrow>
-    <div style={{ marginTop: 10, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500 }}>Uranium nitride · UN</div>
-    <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
-      Тугоплавкое керамическое топливо. Высокая теплопроводность, плотность 14.32 г/см³. Используется в реакторах IV поколения.
-    </div>
-    <div style={{ marginTop: 12, display: "flex", gap: 6 }}>
-      <Chip>mp-2731</Chip>
-      <Chip>COD 1531114</Chip>
-    </div>
-    <hr className="hr" style={{ margin: "18px 0" }} />
-    <Eyebrow>Top-5 ranking</Eyebrow>
-    {[
-      ["cubic_f",  "FCC",                  0.87, true ],
-      ["cubic_p",  "primitive cubic",      0.07, false],
-      ["cubic_i",  "BCC",                  0.04, false],
-      ["tetra_p",  "primitive tetragonal", 0.01, false],
-      ["hex_p",    "hexagonal",            0.01, false],
-    ].map(([k, v, p, top], i) => (
-      <div key={i} style={{ marginTop: 8, display: "grid", gridTemplateColumns: "76px 1fr 38px", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-        <span style={{ color: top ? "var(--cobalt)" : "var(--ink-soft)" }}>{k}</span>
-        <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${p * 100}%`, background: top ? "var(--cobalt)" : "var(--mute-soft)" }} />
-        </div>
-        <span style={{ color: "var(--mute)", textAlign: "right" }}>{p.toFixed(2)}</span>
+const VerdictBlock = ({ result, apiError, siteCount }) => {
+  if (apiError) return (
+    <div>
+      <Eyebrow>02 · Verdict</Eyebrow>
+      <div style={{ marginTop: 16, padding: "12px 14px", background: "rgba(245,101,101,0.08)", border: "1px solid rgba(245,101,101,0.2)", borderRadius: 8, fontSize: 13, color: "#e53e3e" }}>
+        ⚠ {apiError}
       </div>
-    ))}
-    <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-      <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
-      <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
-      <Button variant="ghost"  size="sm" icon={<IconCopy    size={14} />}>Цитата</Button>
     </div>
-  </div>
-);
+  );
+
+  if (!result?.success) return (
+    <div>
+      <Eyebrow>02 · Verdict</Eyebrow>
+      <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>
+        {result?.message || "Совпадающих структур не найдено в эталонной БД"}
+      </p>
+    </div>
+  );
+
+  const { lattice, structure, lattice_ranking } = result;
+
+  return (
+    <div>
+      <Eyebrow>02 · Verdict</Eyebrow>
+      <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>{lattice?.name_en ?? "—"}</h3>
+        <Chip tone="ok" dot>{lattice?.confidence != null ? lattice.confidence.toFixed(2) : "—"}</Chip>
+      </div>
+      {lattice?.name_ru && (
+        <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>{lattice.name_ru}</div>
+      )}
+      <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {siteCount > 0 && <Chip tone="info">{siteCount} ions</Chip>}
+        {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
+        {structure?.sg_hm  && <Chip tone="info">{structure.sg_hm}</Chip>}
+      </div>
+
+      {structure && (
+        <>
+          <hr className="hr" style={{ margin: "18px 0" }} />
+          <Eyebrow>Probable substance</Eyebrow>
+          <div style={{ marginTop: 10, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500 }}>
+            {structure.name ?? "—"}
+            {structure.formula && structure.formula !== structure.name ? ` · ${structure.formula}` : ""}
+          </div>
+          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {structure.sg_number && <Chip>sg {structure.sg_number}</Chip>}
+            {structure.confidence != null && (
+              <Chip tone="info">structure conf. {structure.confidence.toFixed(2)}</Chip>
+            )}
+          </div>
+        </>
+      )}
+
+      {lattice_ranking?.length > 0 && (
+        <>
+          <hr className="hr" style={{ margin: "18px 0" }} />
+          <Eyebrow>Ranking</Eyebrow>
+          {lattice_ranking.map((item, i) => (
+            <div key={i} style={{ marginTop: 8, display: "grid", gridTemplateColumns: "76px 1fr 38px", gap: 10, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+              <span style={{ color: i === 0 ? "var(--cobalt)" : "var(--ink-soft)" }}>{item.name_en ?? item.name_ru}</span>
+              <div style={{ height: 4, background: "var(--hairline)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${item.prob * 100}%`, background: i === 0 ? "var(--cobalt)" : "var(--mute-soft)" }} />
+              </div>
+              <span style={{ color: "var(--mute)", textAlign: "right" }}>{item.prob.toFixed(2)}</span>
+            </div>
+          ))}
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
+        <Button variant="ghost"  size="sm" icon={<IconCopy    size={14} />}>Цитата</Button>
+      </div>
+    </div>
+  );
+};
 
 const ChatPanel = ({ stage, context }) => {
   const [messages, setMessages] = React.useState([]); // [{role:"user"|"assistant", content:""}]
