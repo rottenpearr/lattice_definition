@@ -64,7 +64,7 @@ python main.py
 
 ```bash
 # Из корня проекта
-uvicorn backend.api:app --reload --port 8001
+uvicorn backend.api:app --reload --port 8002
 ```
 
 API будет доступно на `http://localhost:8001`.  

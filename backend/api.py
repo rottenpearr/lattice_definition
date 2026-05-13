@@ -1,11 +1,17 @@
 """
 CRIS — FastAPI backend
-Запуск: uvicorn api:app --reload --port 8000
-Документация: http://localhost:8000/docs
+Запуск: uvicorn backend.api:app --reload --port 8001
+Документация: http://localhost:8001/docs
 """
 
 import hashlib
 import json
+import os
+import sys
+
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env")  # всегда берёт .env из корня проекта
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +21,19 @@ from typing import Optional
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.connection import get_cursor
 from cris.db.queries import check_coords
+
+# ── GigaChat (опционально) ────────────────────────────────────────────────────
+try:
+    from gigachat import GigaChat
+    from gigachat.models import Chat, Messages, MessagesRole
+    _GIGACHAT_AVAILABLE = True
+except ImportError:
+    _GIGACHAT_AVAILABLE = False
+
+_GC_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
+_GC_SCOPE       = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
+_GC_MODEL       = os.getenv("GIGACHAT_MODEL", "GigaChat-2-Max")
+_GC_READY       = _GIGACHAT_AVAILABLE and bool(_GC_CREDENTIALS)
 
 # ── Приложение ────────────────────────────────────────────────────────────────
 
@@ -85,6 +104,31 @@ class AnalyzeResponse(BaseModel):
     lattice_ranking: list[RankingItem] = []
 
 
+class ChatMessage(BaseModel):
+    role: str     # "user" | "assistant"
+    content: str
+
+
+class StructureContext(BaseModel):
+    """Контекст текущей структуры — передаётся фронтом после распознавания."""
+    lattice_type:   Optional[str] = None   # например "Кубическая гранецентрированная (FCC)"
+    lattice_en:     Optional[str] = None   # "cubic_f"
+    formula:        Optional[str] = None   # "UN"
+    confidence:     Optional[float] = None # 0.87
+    sg_hm:          Optional[str] = None   # "Fm-3m"
+    ion_count:      Optional[int] = None
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]            # вся история диалога
+    context:  Optional[StructureContext] = None
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    model: str
+
+
 # ── Эндпоинты ─────────────────────────────────────────────────────────────────
 
 def _input_hash(normalized: list) -> str:
@@ -99,6 +143,23 @@ def _input_hash(normalized: list) -> str:
 def health():
     """Проверка — сервер жив."""
     return {"status": "ok", "version": "0.1.0"}
+
+
+@app.get("/api/debug/env")
+def debug_env():
+    """Диагностика — проверить загрузку переменных окружения."""
+    return {
+        "gigachat_available": _GIGACHAT_AVAILABLE,
+        "gigachat_ready":     _GC_READY,
+        "credentials_set":    bool(_GC_CREDENTIALS),
+        "credentials_len":    len(_GC_CREDENTIALS),
+        "scope":              _GC_SCOPE,
+        "model":              _GC_MODEL,
+        "env_file":           str(Path(__file__).parent.parent / ".env"),
+        "env_file_exists":    (Path(__file__).parent.parent / ".env").exists(),
+        "python_executable":  sys.executable,
+        "python_version":     sys.version,
+    }
 
 
 @app.get("/api/stats")
@@ -125,6 +186,77 @@ def stats():
         "lattice_count":  lattice_count,
         "session_count":  session_count,
     }
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+def chat(body: ChatRequest):
+    """
+    Чат с GigaChat в контексте кристаллографического вердикта.
+
+    Фронт передаёт:
+      - messages : полную историю диалога (role=user/assistant)
+      - context  : данные о распознанной структуре (опционально)
+
+    Бэк добавляет системный промпт с контекстом структуры и отправляет в GigaChat.
+    """
+    if not _GC_READY:
+        raise HTTPException(
+            status_code=503,
+            detail="GigaChat недоступен: проверьте GIGACHAT_CREDENTIALS в .env",
+        )
+
+    if not body.messages:
+        raise HTTPException(status_code=400, detail="Список messages пуст")
+
+    # ── Системный промпт ──────────────────────────────────────────
+    system_lines = [
+        "Ты — ИИ-ассистент системы CRIS (Crystal Recognition & Identification System).",
+        "Ты помогаешь учёным и инженерам разбираться в результатах распознавания кристаллических решёток.",
+        "Отвечай научно, кратко и по существу. Используй русский язык.",
+    ]
+
+    ctx = body.context
+    if ctx:
+        system_lines.append("\nТекущая структура, о которой идёт разговор:")
+        if ctx.lattice_type:
+            system_lines.append(f"  • Тип решётки: {ctx.lattice_type}" +
+                                 (f" ({ctx.lattice_en})" if ctx.lattice_en else ""))
+        if ctx.formula:
+            system_lines.append(f"  • Формула: {ctx.formula}")
+        if ctx.confidence is not None:
+            system_lines.append(f"  • Confidence: {ctx.confidence:.2f}")
+        if ctx.sg_hm:
+            system_lines.append(f"  • Пространственная группа: {ctx.sg_hm}")
+        if ctx.ion_count:
+            system_lines.append(f"  • Число ионов: {ctx.ion_count}")
+
+    system_prompt = "\n".join(system_lines)
+
+    # ── Формируем payload для GigaChat ───────────────────────────
+    gc_messages = [Messages(role=MessagesRole.SYSTEM, content=system_prompt)]
+    for m in body.messages:
+        role = MessagesRole.USER if m.role == "user" else MessagesRole.ASSISTANT
+        gc_messages.append(Messages(role=role, content=m.content))
+
+    payload = Chat(
+        model=_GC_MODEL,
+        messages=gc_messages,
+        max_tokens=1024,
+        temperature=0.5,
+    )
+
+    try:
+        with GigaChat(
+            credentials=_GC_CREDENTIALS,
+            scope=_GC_SCOPE,
+            verify_ssl_certs=False,
+        ) as giga:
+            response = giga.chat(payload)
+            reply = response.choices[0].message.content.strip()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"GigaChat error: {e}")
+
+    return ChatResponse(reply=reply, model=_GC_MODEL)
 
 
 @app.post("/api/session")
