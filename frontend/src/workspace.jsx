@@ -698,51 +698,52 @@ const TypingDots = () => {
 const renderWithLatex = (text) => {
   const kt = window.katex;
 
-  // Разбиваем на токены: $$...$$, $...$, **...**, *...*, остаток
-  const regex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
+  // Токены: \begin{...}...\end{...}, $$...$$, $...$, **...**, *...*
+  const regex = /(\\begin\{[^}]+\}[\s\S]+?\\end\{[^}]+\}|\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
   const parts = [];
   let last = 0, match, key = 0;
 
+  const pushText = (str) => {
+    str.split("\n").forEach((line, i, arr) => {
+      parts.push(<span key={key++}>{line}</span>);
+      if (i < arr.length - 1) parts.push(<br key={key++} />);
+    });
+  };
+
+  const renderDisplay = (inner) => {
+    try {
+      const html = kt.renderToString(inner.trim(), { displayMode: true, throwOnError: false });
+      parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }}
+        style={{ display: "block", textAlign: "center", margin: "3px 0", overflowX: "auto" }} />);
+    } catch { pushText(inner); }
+  };
+
   while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) {
-      // Обычный текст — сохраняем переносы строк
-      text.slice(last, match.index).split("\n").forEach((line, i, arr) => {
-        parts.push(<span key={key++}>{line}</span>);
-        if (i < arr.length - 1) parts.push(<br key={key++} />);
-      });
-    }
+    if (match.index > last) pushText(text.slice(last, match.index));
 
     const raw = match[0];
-    if (raw.startsWith("$$") && kt) {
-      const inner = raw.slice(2, -2);
+    if (!kt) { pushText(raw); }
+    else if (raw.startsWith("\\begin{")) {
+      renderDisplay(raw);
+    } else if (raw.startsWith("$$")) {
+      renderDisplay(raw.slice(2, -2));
+    } else if (raw.startsWith("$")) {
       try {
-        const html = kt.renderToString(inner.trim(), { displayMode: true, throwOnError: false });
-        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} style={{ display: "block", textAlign: "center", margin: "8px 0", overflowX: "auto" }} />);
-      } catch { parts.push(<span key={key++}>{raw}</span>); }
-    } else if (raw.startsWith("$") && kt) {
-      const inner = raw.slice(1, -1);
-      try {
-        const html = kt.renderToString(inner.trim(), { displayMode: false, throwOnError: false });
+        const html = kt.renderToString(raw.slice(1, -1).trim(), { displayMode: false, throwOnError: false });
         parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} style={{ verticalAlign: "middle" }} />);
-      } catch { parts.push(<span key={key++}>{raw}</span>); }
+      } catch { pushText(raw); }
     } else if (raw.startsWith("**")) {
       parts.push(<strong key={key++}>{raw.slice(2, -2)}</strong>);
     } else if (raw.startsWith("*")) {
       parts.push(<em key={key++}>{raw.slice(1, -1)}</em>);
     } else {
-      parts.push(<span key={key++}>{raw}</span>);
+      pushText(raw);
     }
 
     last = match.index + raw.length;
   }
 
-  if (last < text.length) {
-    text.slice(last).split("\n").forEach((line, i, arr) => {
-      parts.push(<span key={key++}>{line}</span>);
-      if (i < arr.length - 1) parts.push(<br key={key++} />);
-    });
-  }
-
+  if (last < text.length) pushText(text.slice(last));
   return <span>{parts}</span>;
 };
 
