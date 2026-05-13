@@ -32,10 +32,9 @@ const Header = ({ route, setRoute }) => {
   }, [route]);
 
   const items = [
-    { id: "home",      label: "Главная" },
-    { id: "workspace", label: "Рабочее пространство" },
-    { id: "about",     label: "О проекте" },
-    { id: "docs",      label: "Документация" },
+    { id: "home",  label: "Главная" },
+    { id: "about", label: "О проекте" },
+    { id: "docs",  label: "Документация" },
   ];
 
   return (
@@ -66,7 +65,7 @@ const Header = ({ route, setRoute }) => {
           ))}
         </nav>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Button variant="ghost" size="sm" icon={<IconGithub size={16} />}>GitHub</Button>
+          <Button variant="ghost" size="sm" icon={<IconGithub size={16} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>GitHub</Button>
           <Button variant="primary" size="sm" iconRight={<IconArrowRight size={14} />} onClick={() => setRoute("workspace")}>
             Открыть workspace
           </Button>
@@ -96,8 +95,8 @@ const Footer = ({ setRoute }) => (
       <FooterCol title="Проект" links={[
         ["О методах", () => setRoute("about")],
         ["Команда", () => setRoute("about", "team")],
-        ["GitHub", null],
-        ["Patentr", null],
+        ["GitHub", () => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")],
+        ["Патент", null],
       ]} />
       <FooterCol title="Связь" links={[
         ["team@cris.science", null],

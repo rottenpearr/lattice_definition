@@ -6,7 +6,7 @@ const HomeScreen = ({ setRoute }) => (
     <FeaturesSection />
     <DescriptionSection />
     <TeamSection />
-    <EmbedSection />
+    <EmbedSection setRoute={setRoute} />
   </main>
 );
 
@@ -17,21 +17,21 @@ const Hero = ({ setRoute }) => (
       <div>
         <Eyebrow>Crystal recognition · v0.4.1</Eyebrow>
         <h1 className="section-title" style={{ fontSize: 72, lineHeight: 1.02, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
-          Определяем тип<br />кристаллической<br />решётки по координатам<span style={{ color: "var(--cobalt)" }}>.</span>
+          Определяем тип<br />кристаллической<br />решётки<span style={{ color: "var(--cobalt)" }}>.</span>
         </h1>
         <p style={{ fontSize: 19, color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: 540, margin: 0 }}>
-          Загрузите CIF/XYZ или введите координаты ионов вручную. Ансамбль RF + CatBoost + KDE-сравнение вернёт тип решётки Браве, ближайшее эталонное вещество и 3D-визуализацию ячейки.
+          Загрузите CIF/XYZ или введите координаты ионов вручную. Система определит тип кристаллической решётки, найдёт ближайшую эталонную структуру и построит 3D-визуализацию ячейки.
         </p>
         <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
           <Button variant="primary" size="lg" iconRight={<IconArrowRight size={16} />} onClick={() => setRoute("workspace")}>
             Перейти в workspace
           </Button>
           <Button variant="secondary" size="lg" icon={<IconBook size={16} />} onClick={() => setRoute("docs")}>
-            Quick start
+            Быстрый старт
           </Button>
         </div>
         <div style={{ marginTop: 32, display: "flex", gap: 28, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: ".06em", color: "var(--mute)", textTransform: "uppercase" }}>
-          <span>● 8 типов решёток</span><span>● 4 ML-метода</span><span>● 1240+ эталонных структур</span>
+          <span>● 3 метода распознавания</span><span>● 1240+ эталонных структур</span><span>● открытый исходный код</span>
         </div>
       </div>
       <HeroVisual />
@@ -98,12 +98,12 @@ const LatticeDiagram = ({ size = 220, animated = true }) => {
 /* ---------- Features ---------- */
 const FeaturesSection = () => {
   const features = [
-    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются supercell до 1000 ионов, нормализация в куб [0, 1] идёт автоматически." },
-    { eyebrow: "02 · METHOD", title: "Ансамбль ML, не один метод", body: "Random Forest, CatBoost и KDE-similarity голосуют параллельно. Видны все ранкинги и confidence по каждому методу." },
-    { eyebrow: "03 · VERDICT", title: "Не только тип, но и вещество", body: "Кроме типа решётки Браве, сервис возвращает наиболее вероятное вещество и ссылки на эталоны в COD / Materials Project." },
-    { eyebrow: "04 · ASK", title: "AI-агент рядом с вердиктом", body: "GigaChat MAX 2 знает базу CRIS и научные источники. Спросите про вещество, метод или интерпретацию результата." },
-    { eyebrow: "05 · 3D", title: "Поворачиваемая визуализация", body: "Интерактивная 3D-сцена ячейки в стиле VESTA. Скриншот, экспорт в PNG/POSCAR — в одно нажатие." },
-    { eyebrow: "06 · EMBED", title: "Библиотека для своего пайплайна", body: "Тот же ансамбль доступен как pip-пакет `cris-core`. REST API и Python SDK работают с теми же эталонами." },
+    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация решётки в куб [0, 1] проходит автоматически." },
+    { eyebrow: "02 · METHOD", title: "Ансамбль методов, не один", body: "Random Forest, CatBoost и поиск по внутренней базе данных работают параллельно. Доступны ранжирование и достоверность по каждому методу." },
+    { eyebrow: "03 · VERDICT", title: "Не только тип, но и структура", body: "Кроме типа кристаллической решётки, система возвращает наиболее вероятную эталонную структуру и ссылки на эталоны в COD и Materials Project." },
+    { eyebrow: "04 · ASK", title: "AI-ассистент в контексте анализа", body: "GigaChat MAX 2 знает базу CRIS и научные источники. Спросите про вещество, метод или интерпретацию результата." },
+    { eyebrow: "05 · 3D", title: "Удобная визуализация", body: "Интерактивная 3D-сцена элементарной ячейки с возможностью вращения и масштабирования прямо в браузере." },
+    { eyebrow: "06 · EMBED", title: "Встраиваемая библиотека", body: "Тот же ансамбль доступен как пакет `cris-core`. REST API и Python SDK работают с теми же эталонами." },
   ];
   return (
     <section className="section">
@@ -142,8 +142,8 @@ const DescriptionSection = () => {
 
   const statCards = [
     { n: structCount,  l: "эталонных структур" },
-    { n: latticeCount, l: "типов решёток Браве" },
-    { n: "0.94",       l: "F1 на тестовом сете" },
+    { n: "3",          l: "метода распознавания" },
+    { n: "0.94",       l: "точность распознавания" },
     { n: sessionCount, l: "сессий распознавания" },
   ];
 
@@ -153,10 +153,10 @@ const DescriptionSection = () => {
         <div>
           <Eyebrow>Что это и зачем</Eyebrow>
           <h2 className="section-title" style={{ fontSize: 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
-            Кристаллография<br />без VESTA, MS и часов ручной работы.
+            Кристаллография<br />без часов ручной работы.
           </h2>
           <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
-            Распознавание типа решётки по позициям атомов — рутинная, но утомительная задача в материаловедении и MD-исследованиях. CRIS делает её одним запросом: подайте координаты, получите тип, эталон и confidence.
+            Распознавание типа решётки по позициям атомов — рутинная, но утомительная задача в материаловедении и MD-исследованиях. CRIS делает её одним запросом: подайте координаты, получите тип, эталон и оценку достоверности.
           </p>
           <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, marginTop: 16 }}>
             Веб-сервис нужен научному сообществу как открытая, воспроизводимая альтернатива закрытым коммерческим пакетам — с прозрачным датасетом, открытыми весами моделей и полным аудит-логом каждого распознавания.
@@ -185,7 +185,7 @@ const TeamSection = () => {
   return (
     <section className="section">
       <div className="container">
-        <SectionTitle eyebrow="Команда" title="Три исследователя, один пайплайн" lead="CRIS — результат трёх дипломных работ в области численного материаловедения и распознавания." />
+        <SectionTitle eyebrow="Команда" title="Авторы" lead="CRIS — результат трёх дипломных работ в области численного материаловедения и распознавания." />
         <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
           {team.map((t, i) => (
             <Card pad="lg" key={i}>
@@ -201,7 +201,7 @@ const TeamSection = () => {
 };
 
 /* ---------- Embed / GitHub ---------- */
-const EmbedSection = () => (
+const EmbedSection = ({ setRoute }) => (
   <section className="section" style={{ background: "var(--ink)", color: "var(--night-ink)" }}>
     <div className="container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
       <div>
@@ -216,8 +216,8 @@ const EmbedSection = () => (
           Тот же ансамбль распознавания доступен как Python-пакет и REST API. Один интерфейс — для веб-приложения и для batch-режима на кластере.
         </p>
         <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-          <Button variant="primary" size="lg" icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />}>github.com/cris-team/cris</Button>
-          <Button variant="secondary" size="lg" onDark icon={<IconBook size={16} />}>Docs</Button>
+          <Button variant="primary" size="lg" icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>github.com/rottenpearr</Button>
+          <Button variant="secondary" size="lg" onDark icon={<IconBook size={16} />} onClick={() => setRoute("docs")}>Документация</Button>
         </div>
       </div>
       <div style={{ background: "var(--night-elev)", borderRadius: 10, border: "1px solid var(--night-line)", padding: 20, fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--night-ink)" }}>
