@@ -694,34 +694,56 @@ const TypingDots = () => {
   );
 };
 
-/* ── Рендер текста с LaTeX ($...$ и $$...$$) ── */
+/* ── Рендер текста: LaTeX + базовый Markdown ── */
 const renderWithLatex = (text) => {
-  if (typeof katex === "undefined") return <span style={{ whiteSpace: "pre-wrap" }}>{text}</span>;
-  const regex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g;
+  const kt = window.katex;
+
+  // Разбиваем на токены: $$...$$, $...$, **...**, *...*, остаток
+  const regex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
   const parts = [];
-  let last = 0, match;
+  let last = 0, match, key = 0;
+
   while ((match = regex.exec(text)) !== null) {
-    if (match.index > last)
-      parts.push(<span key={`t${last}`} style={{ whiteSpace: "pre-wrap" }}>{text.slice(last, match.index)}</span>);
-    const raw     = match[0];
-    const display = raw.startsWith("$$");
-    const inner   = display ? raw.slice(2, -2) : raw.slice(1, -1);
-    try {
-      const html = katex.renderToString(inner.trim(), { displayMode: display, throwOnError: false });
-      parts.push(
-        <span key={`k${match.index}`}
-          dangerouslySetInnerHTML={{ __html: html }}
-          style={display ? { display: "block", textAlign: "center", margin: "8px 0", overflowX: "auto" } : { verticalAlign: "middle" }}
-        />
-      );
-    } catch {
-      parts.push(<span key={`e${match.index}`} style={{ whiteSpace: "pre-wrap" }}>{raw}</span>);
+    if (match.index > last) {
+      // Обычный текст — сохраняем переносы строк
+      text.slice(last, match.index).split("\n").forEach((line, i, arr) => {
+        parts.push(<span key={key++}>{line}</span>);
+        if (i < arr.length - 1) parts.push(<br key={key++} />);
+      });
     }
+
+    const raw = match[0];
+    if (raw.startsWith("$$") && kt) {
+      const inner = raw.slice(2, -2);
+      try {
+        const html = kt.renderToString(inner.trim(), { displayMode: true, throwOnError: false });
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} style={{ display: "block", textAlign: "center", margin: "8px 0", overflowX: "auto" }} />);
+      } catch { parts.push(<span key={key++}>{raw}</span>); }
+    } else if (raw.startsWith("$") && kt) {
+      const inner = raw.slice(1, -1);
+      try {
+        const html = kt.renderToString(inner.trim(), { displayMode: false, throwOnError: false });
+        parts.push(<span key={key++} dangerouslySetInnerHTML={{ __html: html }} style={{ verticalAlign: "middle" }} />);
+      } catch { parts.push(<span key={key++}>{raw}</span>); }
+    } else if (raw.startsWith("**")) {
+      parts.push(<strong key={key++}>{raw.slice(2, -2)}</strong>);
+    } else if (raw.startsWith("*")) {
+      parts.push(<em key={key++}>{raw.slice(1, -1)}</em>);
+    } else {
+      parts.push(<span key={key++}>{raw}</span>);
+    }
+
     last = match.index + raw.length;
   }
-  if (last < text.length)
-    parts.push(<span key={`t${last}`} style={{ whiteSpace: "pre-wrap" }}>{text.slice(last)}</span>);
-  return parts.length ? parts : <span style={{ whiteSpace: "pre-wrap" }}>{text}</span>;
+
+  if (last < text.length) {
+    text.slice(last).split("\n").forEach((line, i, arr) => {
+      parts.push(<span key={key++}>{line}</span>);
+      if (i < arr.length - 1) parts.push(<br key={key++} />);
+    });
+  }
+
+  return <span>{parts}</span>;
 };
 
 /* ── Chat ── */
@@ -768,7 +790,6 @@ const ChatPanel = ({ stage, context }) => {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexShrink: 0 }}>
         <IconSparkles size={14} />
         <WsLabel>GigaChat MAX 2</WsLabel>
-        {loading && <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--mute)", fontFamily: "var(--font-mono)" }}>печатает…</span>}
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
