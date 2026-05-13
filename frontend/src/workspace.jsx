@@ -383,9 +383,9 @@ const ManualInput = ({ sites, setSites }) => {
         <div style={{ minWidth: 280 }}>
         <div style={{ display: "grid", gridTemplateColumns: "52px 68px 68px 68px 24px", padding: "7px 8px", background: "var(--paper-deep)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--mute)" }}>
           <span style={{ paddingLeft: 6 }}>label</span>
-          <span style={{ paddingLeft: 6, color: "#FF6B6B" }}>x</span>
-          <span style={{ paddingLeft: 6, color: "#6BFF9E" }}>y</span>
-          <span style={{ paddingLeft: 6, color: "#6B9EFF" }}>z</span>
+          <span style={{ paddingLeft: 6 }}>x</span>
+          <span style={{ paddingLeft: 6 }}>y</span>
+          <span style={{ paddingLeft: 6 }}>z</span>
           <span />
         </div>
         {sites.map((s, i) => (
@@ -680,6 +680,50 @@ const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
   );
 };
 
+/* ── Анимация "печатает..." ── */
+const TypingDots = () => {
+  const [dots, setDots] = React.useState(1);
+  React.useEffect(() => {
+    const id = setInterval(() => setDots(d => d === 3 ? 1 : d + 1), 420);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--mute)" }}>
+      {"печатает" + ".".repeat(dots)}
+    </span>
+  );
+};
+
+/* ── Рендер текста с LaTeX ($...$ и $$...$$) ── */
+const renderWithLatex = (text) => {
+  if (typeof katex === "undefined") return <span style={{ whiteSpace: "pre-wrap" }}>{text}</span>;
+  const regex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g;
+  const parts = [];
+  let last = 0, match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > last)
+      parts.push(<span key={`t${last}`} style={{ whiteSpace: "pre-wrap" }}>{text.slice(last, match.index)}</span>);
+    const raw     = match[0];
+    const display = raw.startsWith("$$");
+    const inner   = display ? raw.slice(2, -2) : raw.slice(1, -1);
+    try {
+      const html = katex.renderToString(inner.trim(), { displayMode: display, throwOnError: false });
+      parts.push(
+        <span key={`k${match.index}`}
+          dangerouslySetInnerHTML={{ __html: html }}
+          style={display ? { display: "block", textAlign: "center", margin: "8px 0", overflowX: "auto" } : { verticalAlign: "middle" }}
+        />
+      );
+    } catch {
+      parts.push(<span key={`e${match.index}`} style={{ whiteSpace: "pre-wrap" }}>{raw}</span>);
+    }
+    last = match.index + raw.length;
+  }
+  if (last < text.length)
+    parts.push(<span key={`t${last}`} style={{ whiteSpace: "pre-wrap" }}>{text.slice(last)}</span>);
+  return parts.length ? parts : <span style={{ whiteSpace: "pre-wrap" }}>{text}</span>;
+};
+
 /* ── Chat ── */
 const ChatPanel = ({ stage, context }) => {
   const [messages, setMessages] = React.useState([]);
@@ -737,11 +781,15 @@ const ChatPanel = ({ stage, context }) => {
             color:        m.role === "user" ? "white" : "var(--ink)",
             border:       m.role === "assistant" ? "1px solid var(--hairline)" : "none",
             borderRadius: m.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
-            padding: "10px 14px", fontSize: 13, maxWidth: "88%", lineHeight: 1.55, whiteSpace: "pre-wrap",
-          }}>{m.content}</div>
+            padding: "10px 14px", fontSize: 13, maxWidth: "88%", lineHeight: 1.6,
+          }}>
+            {m.role === "assistant" ? renderWithLatex(m.content) : m.content}
+          </div>
         ))}
         {loading && (
-          <div style={{ alignSelf: "flex-start", background: "var(--card)", border: "1px solid var(--hairline)", borderRadius: 10, padding: "10px 14px", fontSize: 14, color: "var(--mute)", fontFamily: "var(--font-mono)" }}>···</div>
+          <div style={{ alignSelf: "flex-start", background: "var(--card)", border: "1px solid var(--hairline)", borderRadius: 10, padding: "10px 14px" }}>
+            <TypingDots />
+          </div>
         )}
         {error && (
           <div style={{ alignSelf: "flex-start", background: "#fff0f0", border: "1px solid #ffc0c0", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#c00", maxWidth: "88%" }}>
