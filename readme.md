@@ -75,8 +75,6 @@ cd frontend
 python -m http.server 3000
 ```
 
-> **Windows PowerShell:** `&&` не поддерживается — запускайте команды в отдельных терминалах как показано выше.
-
 Открыть в браузере: **`http://localhost:3000`**
 
 - API: `http://localhost:8002`
@@ -102,13 +100,33 @@ python -m http.server 3000
 ## Структура проекта
 
 ```
+backend/
+└── api.py                     # FastAPI-приложение: /api/analyze, /api/chat, /api/stats, …
+
+frontend/                      # Веб-интерфейс (статика, без сборщика)
+├── src/
+│   ├── app.jsx                # Корневой компонент, роутинг
+│   ├── workspace.jsx          # Рабочее пространство: ввод координат, вердикт, AI-чат
+│   ├── home.jsx               # Главная страница
+│   ├── viewer3d.jsx           # 3D-визуализация структуры (Three.js)
+│   ├── chrome.jsx             # Шапка / навигация
+│   ├── about_docs.jsx         # Страница «О системе»
+│   ├── atoms.jsx              # Переиспользуемые UI-компоненты
+│   └── icons.jsx              # SVG-иконки
+├── assets/                    # Статические ресурсы (изображения, иконки)
+├── index.html                 # Точка входа: подключает React, KaTeX, Three.js
+├── styles.css                 # Глобальные стили
+└── colors_and_type.css        # Дизайн-токены (цвета, типографика)
+
 cris/                          # Основной пакет
-├── app/generated/             # Скомпилированные UI-файлы (не редактировать)
+├── logger.py                  # Настройка логирования
+├── app/generated/             # Скомпилированные UI-файлы Qt (не редактировать)
 ├── core/
 │   ├── coordinates.py         # Нормализация координат → [0, 1]
 │   ├── vectors.py             # Попарные расстояния между ионами
 │   ├── spectrum.py            # KDE-спектры (Gaussian)
-│   ├── identification.py      # Точка входа в идентификацию
+│   ├── identification.py      # Точка входа в идентификацию по KDE
+│   ├── ml_predict.py          # Обёртка ML-предсказания для интеграции с ядром
 │   └── clustering.py          # Кластеризация структур (UMAP + HDBSCAN)
 ├── db/
 │   ├── config.py              # Параметры подключения к PostgreSQL (.env)
@@ -116,32 +134,41 @@ cris/                          # Основной пакет
 │   ├── queries.py             # Поиск эталонных структур по координатам
 │   ├── models.py              # Датаклассы (LatticeType, ReferenceStructure, …)
 │   ├── schema/                # SQL-схема и скрипты инициализации
-│   ├── repository/            # CRUD: lattice, structure, recognition
-│   ├── enrichment/            # Внешние API: COD, Materials Project, Claude AI
-│   └── importers/             # Импорт CIF/JSON/XYZ → БД
+│   ├── repository/            # CRUD: lattice, structure, recognition, substance
+│   ├── enrichment/            # Внешние API: COD, MP, GigaChat, CrossRef, PubChem и др.
+│   ├── importers/             # Импорт CIF/JSON/XYZ → БД
+│   └── fixes/                 # Скрипты исправления данных в БД
 ├── tools/                     # Вспомогательные и исследовательские скрипты
 │   ├── enrich_all.py          # Обогащение БД из COD/MP/Claude (CLI)
 │   ├── complete_db.py         # Полная инициализация БД одной командой
+│   ├── import_db_structures.py # Импорт структур из data/db/ в БД
 │   ├── testing.py             # Загрузка XYZ с опциональным шумом
 │   ├── report.py              # Генерация DOCX-отчёта
+│   ├── smoke_test_pg.py       # Быстрая проверка подключения к PostgreSQL
+│   ├── test_api_keys.py       # Проверка внешних API-ключей
 │   └── dataset_generation/    # Генерация обучающих датасетов
-│       ├── download_structures.py   # Скачать XYZ из Materials Project API
 │       ├── crystal_generator.py     # Генератор структур: 14 типов Браве, мотив, шум, вакансии
+│       ├── download_structures.py   # Скачать XYZ из Materials Project API
 │       ├── generate_vacancies.py    # Создать варианты с вакансиями
 │       ├── generate_all_datasets.py # Пакетная генерация KDE (с resume)
-│       └── generate_dataset.py      # Генерация KDE-датасета для одной структуры
-└── ...
-
-assets/
-├── ui/                        # Исходные .ui файлы (Qt Designer)
-├── icons/                     # SVG-иконки
-├── images/                    # Изображения типов решёток (PNG/SVG)
-└── resources.qrc
+│       ├── generate_dataset.py      # Генерация KDE-датасета для одной структуры
+│       ├── generate_labels.py       # Сформировать labels.csv из БД + имён файлов
+│       └── naming.py                # Соглашения об именовании файлов датасета
 
 ML/                            # Исследовательские скрипты и эксперименты
+├── CatBoost/
+│   ├── train.py               # Обучение CatBoost по KDE-векторам
+│   ├── predict.py             # Предсказание типа решётки по XYZ-файлу
+│   ├── data_loader.py         # Загрузка KDE-датасета для обучения
+│   └── catboost_lattice.cbm   # Обученная модель (.gitignore)
 ├── clustering/                # UMAP + HDBSCAN кластеризация
 ├── spectre_diff/              # Сравнение спектров (Вассерштейн)
-└── ...
+├── rf_optimized_model.pkl     # Обученный Random Forest (.gitignore)
+└── *.ipynb                    # Исследовательские ноутбуки
+
+RESEARCH/                      # Теория, патенты, исследовательские документы
+├── Project_Information.md
+└── Research_Diary.md
 
 data/
 ├── db/                        # Источники базы данных — в git
@@ -151,10 +178,10 @@ data/
 ├── structures/                # XYZ-структуры
 │   ├── micro/                 # Юнит-ячейки (4–80 атомов)
 │   │   ├── source/            # Скачанные из MP/CIF — в git
-│   │   └── generated/        # С вакансиями/шумом — .gitignore
+│   │   └── generated/         # С вакансиями/шумом — .gitignore
 │   └── macro/                 # Суперячейки NxNxN
 │       ├── source/            # Чистые суперячейки — .gitignore (генерируются локально)
-│       └── generated/        # С вакансиями/шумом — .gitignore
+│       └── generated/         # С вакансиями/шумом — .gitignore
 ├── examples/                  # CSV-примеры для UI — в git
 └── kde_arrays/                # KDE-массивы (.gitignore — только локально)
     ├── micro/                 # KDE от юнит-ячеек (source + generated)
