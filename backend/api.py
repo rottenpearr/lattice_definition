@@ -1,7 +1,7 @@
 """
 CRIS — FastAPI backend
-Запуск: uvicorn backend.api:app --reload --port 8001
-Документация: http://localhost:8001/docs
+Запуск: uvicorn backend.api:app --reload --port 8002
+Документация: http://localhost:8002/docs
 """
 
 import hashlib
@@ -11,7 +11,7 @@ import sys
 
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / ".env")  # всегда берёт .env из корня проекта
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,10 +40,9 @@ _GC_READY       = _GIGACHAT_AVAILABLE and bool(_GC_CREDENTIALS)
 app = FastAPI(
     title="CRIS API",
     description="Crystal Recognition & Identification System",
-    version="0.1.0",
+    version="0.4.3",
 )
 
-# CORS — разрешаем запросы с фронта (localhost:3000 при локальной разработке)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -53,7 +52,7 @@ app.add_middleware(
 )
 
 
-# ── Схемы запроса / ответа ────────────────────────────────────────────────────
+# ── Схемы ─────────────────────────────────────────────────────────────────────
 
 class Ion(BaseModel):
     label: str
@@ -63,10 +62,6 @@ class Ion(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    """
-    Тело запроса: список ионов в декартовых координатах (Å).
-    Фронт конвертирует fractional → cartesian перед отправкой.
-    """
     sites: list[Ion]
 
 
@@ -99,29 +94,20 @@ class RankingItem(BaseModel):
 class AnalyzeResponse(BaseModel):
     success: bool
     message: str = ""
+    session_id: Optional[str] = None
     lattice: Optional[LatticeResult] = None
     structure: Optional[StructureResult] = None
     lattice_ranking: list[RankingItem] = []
 
 
 class ChatMessage(BaseModel):
-    role: str     # "user" | "assistant"
+    role: str       # "user" | "assistant"
     content: str
 
 
-class StructureContext(BaseModel):
-    """Контекст текущей структуры — передаётся фронтом после распознавания."""
-    lattice_type:   Optional[str] = None   # например "Кубическая гранецентрированная (FCC)"
-    lattice_en:     Optional[str] = None   # "cubic_f"
-    formula:        Optional[str] = None   # "UN"
-    confidence:     Optional[float] = None # 0.87
-    sg_hm:          Optional[str] = None   # "Fm-3m"
-    ion_count:      Optional[int] = None
-
-
 class ChatRequest(BaseModel):
-    messages: list[ChatMessage]            # вся история диалога
-    context:  Optional[StructureContext] = None
+    session_id: str                 # UUID из /api/analyze
+    messages: list[ChatMessage]     # вся история диалога (фронт хранит локально)
 
 
 class ChatResponse(BaseModel):
@@ -129,7 +115,102 @@ class ChatResponse(BaseModel):
     model: str
 
 
-# ── Эндпоинты ─────────────────────────────────────────────────────────────────
+# ── Вспомогательные функции ───────────────────────────────────────────────────
+
+import re as _re
+
+_SUBSCRIPT_MAP   = str.maketrans('0123456789+-', '₀₁₂₃₄₅₆₇₈₉₊₋')
+_SUPERSCRIPT_MAP = str.maketrans('0123456789+-', '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻')
+
+# LaTeX команды → Unicode символы
+_LATEX_COMMANDS = [
+    # Греческие буквы
+    (r'\\alpha',   'α'), (r'\\beta',    'β'), (r'\\gamma',   'γ'),
+    (r'\\delta',   'δ'), (r'\\epsilon', 'ε'), (r'\\zeta',    'ζ'),
+    (r'\\eta',     'η'), (r'\\theta',   'θ'), (r'\\iota',    'ι'),
+    (r'\\kappa',   'κ'), (r'\\lambda',  'λ'), (r'\\mu',      'μ'),
+    (r'\\nu',      'ν'), (r'\\xi',      'ξ'), (r'\\pi',      'π'),
+    (r'\\rho',     'ρ'), (r'\\sigma',   'σ'), (r'\\tau',     'τ'),
+    (r'\\upsilon', 'υ'), (r'\\phi',     'φ'), (r'\\chi',     'χ'),
+    (r'\\psi',     'ψ'), (r'\\omega',   'ω'),
+    (r'\\Gamma',   'Γ'), (r'\\Delta',   'Δ'), (r'\\Theta',   'Θ'),
+    (r'\\Lambda',  'Λ'), (r'\\Xi',      'Ξ'), (r'\\Pi',      'Π'),
+    (r'\\Sigma',   'Σ'), (r'\\Phi',     'Φ'), (r'\\Psi',     'Ψ'),
+    (r'\\Omega',   'Ω'),
+    # Единицы и спецсимволы
+    (r'\\AA\b',    'Å'), (r'\\angstrom','Å'),
+    (r'\\degree',  '°'), (r'\\circ',    '°'),
+    (r'\\cdot',    '·'), (r'\\times',   '×'),
+    (r'\\pm',      '±'), (r'\\mp',      '∓'),
+    (r'\\leq',     '≤'), (r'\\geq',     '≥'),
+    (r'\\neq',     '≠'), (r'\\approx',  '≈'),
+    (r'\\infty',   '∞'), (r'\\partial', '∂'),
+    (r'\\nabla',   '∇'), (r'\\sqrt',    '√'),
+    # Пробелы LaTeX
+    (r'\\,',  ''), (r'\\;',  ' '), (r'\\ ',  ' '), (r'\\!',  ''),
+    (r'\\quad', ' '), (r'\\qquad', '  '),
+]
+
+
+def _latex_to_text(expr: str) -> str:
+    """Конвертирует LaTeX-выражение в читаемый Unicode-текст."""
+    s = expr
+
+    # \text{...} \mathrm{...} \mathbf{...} и т.п. → содержимое
+    s = _re.sub(r'\\(?:text|mathrm|mathbf|mathit|mathsf|mbox|operatorname)\{([^}]*)\}', r'\1', s)
+
+    # {,} → ,  и  {.} → .  (европейский разделитель в числах)
+    s = _re.sub(r'\{([.,])\}', r'\1', s)
+
+    # Убираем лишние фигурные скобки вокруг одного символа: {a} → a
+    s = _re.sub(r'\{([^{}])\}', r'\1', s)
+
+    # Команды → Unicode
+    for pattern, repl in _LATEX_COMMANDS:
+        s = _re.sub(pattern, repl, s)
+
+    # Подстрочные: _{...} или _X
+    def _do_sub(m):
+        inner = (m.group(1) or m.group(2) or '').strip('{}')
+        return inner.translate(_SUBSCRIPT_MAP)
+    s = _re.sub(r'_\{([^}]*)\}|_([^\s{\\])', _do_sub, s)
+
+    # Надстрочные: ^{...} или ^X
+    def _do_sup(m):
+        inner = (m.group(1) or m.group(2) or '').strip('{}')
+        return inner.translate(_SUPERSCRIPT_MAP)
+    s = _re.sub(r'\^\{([^}]*)\}|\^([^\s{\\])', _do_sup, s)
+
+    # Оставшиеся фигурные скобки убираем
+    s = s.replace('{', '').replace('}', '')
+
+    # Оставшиеся \команды без аргументов убираем
+    s = _re.sub(r'\\[a-zA-Z]+\*?', '', s)
+
+    return s.strip()
+
+
+def _fix_gigachat_unicode(text: str) -> str:
+    """Заменяет GigaChat-специфичные escape-последовательности и LaTeX-паттерны на Unicode."""
+    # 1. \unicodexXXXX → chr()
+    def _uni_sub(m):
+        try:
+            return chr(int(m.group(1), 16))
+        except ValueError:
+            return m.group(0)
+    text = _re.sub(r'\\unicodex([0-9A-Fa-f]{4,6})', _uni_sub, text)
+
+    # 2. Блоки $$...$$ (display math)
+    text = _re.sub(r'\$\$(.+?)\$\$', lambda m: _latex_to_text(m.group(1)), text, flags=_re.DOTALL)
+
+    # 3. Инлайн $...$
+    text = _re.sub(r'\$([^$\n]+?)\$', lambda m: _latex_to_text(m.group(1)), text)
+
+    # 4. Одиночные LaTeX-команды вне $$ (GigaChat иногда пишет их без долларов)
+    text = _latex_to_text(text)
+
+    return text
+
 
 def _input_hash(normalized: list) -> str:
     """SHA-256 нормализованных координат — стабильный идентификатор входа."""
@@ -137,17 +218,209 @@ def _input_hash(normalized: list) -> str:
     return hashlib.sha256(json.dumps(coords).encode()).hexdigest()
 
 
+def _find_or_create_session(input_hash: str, ion_count: int) -> str:
+    """
+    Ищет существующую сессию по хешу координат.
+    Если не найдена — создаёт новую.
+    Возвращает session_id (UUID строкой).
+    """
+    with get_cursor() as cur:
+        cur.execute(
+            "SELECT id FROM recognition_session WHERE input_hash = %s ORDER BY created_at DESC LIMIT 1",
+            (input_hash,)
+        )
+        row = cur.fetchone()
+        if row:
+            return str(row[0])
+        cur.execute(
+            "INSERT INTO recognition_session (ion_count, input_hash) VALUES (%s, %s) RETURNING id",
+            (ion_count, input_hash)
+        )
+        return str(cur.fetchone()[0])
+
+
+def _save_recognition_result(session_id: str, lattice_type_id: Optional[int],
+                              structure_id: Optional[int], confidence: float):
+    """Сохраняет результат анализа в recognition_result. Метод — GEOMETRIC (поиск по КДЭ-эталонам)."""
+    with get_cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO recognition_result
+                (session_id, method, method_version, rank,
+                 predicted_lattice_type_id, predicted_structure_id, confidence)
+            VALUES (%s, 'GEOMETRIC', '1.0', 1, %s, %s, %s)
+            ON CONFLICT (session_id, method, method_version, rank)
+            DO UPDATE SET
+                predicted_lattice_type_id = EXCLUDED.predicted_lattice_type_id,
+                predicted_structure_id    = EXCLUDED.predicted_structure_id,
+                confidence                = EXCLUDED.confidence,
+                computed_at               = NOW()
+            """,
+            (session_id, lattice_type_id, structure_id, confidence)
+        )
+
+
+def _load_session_context(session_id: str) -> dict:
+    """
+    Загружает богатый контекст для системного промпта GigaChat.
+    JOIN: recognition_result → lattice_type + lattice_metadata → reference_structure + substance_info
+    """
+    with get_cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                lt.name_ru,
+                lt.name_en,
+                lt.crystal_system,
+                lt.bravais_lattice,
+                lt.description            AS lt_description,
+                lm.coordination_number,
+                lm.packing_efficiency,
+                lm.typical_materials,
+                lm.applications           AS lt_applications,
+                rs.name                   AS struct_name,
+                rs.formula,
+                rs.sg_hm,
+                rs.sg_number,
+                rs.cell_length_a,
+                rs.cell_length_b,
+                rs.cell_length_c,
+                rs.cod_id,
+                rs.mp_id,
+                rs.doi,
+                si.description            AS substance_desc,
+                si.applications           AS substance_apps,
+                si.hazards,
+                si.properties,
+                rr.confidence,
+                rs_session.ion_count
+            FROM recognition_result rr
+            JOIN recognition_session rs_session ON rs_session.id = rr.session_id
+            LEFT JOIN lattice_type lt       ON lt.id  = rr.predicted_lattice_type_id
+            LEFT JOIN lattice_metadata lm   ON lm.lattice_type_id = lt.id
+            LEFT JOIN reference_structure rs ON rs.id = rr.predicted_structure_id
+            LEFT JOIN substance_info si     ON si.structure_id = rs.id
+            WHERE rr.session_id = %s AND rr.method = 'GEOMETRIC' AND rr.rank = 1
+            LIMIT 1
+            """,
+            (session_id,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return {}
+        cols = [d[0] for d in cur.description]
+        return dict(zip(cols, row))
+
+
+def _build_system_prompt(ctx: dict) -> str:
+    """Строит системный промпт из данных БД."""
+    lines = [
+        "Ты — ИИ-ассистент системы CRIS (Crystal Recognition & Identification System).",
+        "Ты помогаешь учёным и инженерам разбираться в результатах распознавания кристаллических решёток.",
+        "Отвечай научно, кратко и по существу. Используй русский язык.",
+        "Пиши формулы и символы обычным текстом Unicode (Fe₃O₄, P4₂/mnm, 5.64 Å) — не используй LaTeX ($...$, \\text{}, \\, и подобное).",
+    ]
+
+    if not ctx:
+        return "\n".join(lines)
+
+    lines.append("\n═══ ТЕКУЩАЯ СТРУКТУРА ═══")
+
+    # Тип решётки
+    lt_name = ctx.get("name_ru") or ctx.get("name_en")
+    if lt_name:
+        en = ctx.get("name_en", "")
+        lines.append(f"Тип решётки: {lt_name}" + (f" ({en})" if en and en != lt_name else ""))
+    if ctx.get("crystal_system"):
+        lines.append(f"Кристаллическая система: {ctx['crystal_system']}")
+    if ctx.get("bravais_lattice"):
+        lines.append(f"Решётка Браве: {ctx['bravais_lattice']}")
+    if ctx.get("confidence") is not None:
+        lines.append(f"Уверенность распознавания: {ctx['confidence']:.2f}")
+    if ctx.get("ion_count"):
+        lines.append(f"Число ионов в ячейке: {ctx['ion_count']}")
+
+    # Метаданные типа решётки
+    if ctx.get("coordination_number"):
+        lines.append(f"Координационное число: {ctx['coordination_number']}")
+    if ctx.get("packing_efficiency"):
+        lines.append(f"Плотность упаковки: {ctx['packing_efficiency']:.2f}")
+    if ctx.get("typical_materials"):
+        lines.append(f"Типичные материалы: {ctx['typical_materials']}")
+    if ctx.get("lt_applications"):
+        lines.append(f"Применения типа решётки: {ctx['lt_applications']}")
+    if ctx.get("lt_description"):
+        lines.append(f"Описание типа: {ctx['lt_description']}")
+
+    # Эталонная структура
+    if ctx.get("struct_name") or ctx.get("formula"):
+        lines.append("")
+        lines.append("═══ ЭТАЛОННАЯ СТРУКТУРА ═══")
+    if ctx.get("struct_name"):
+        lines.append(f"Название: {ctx['struct_name']}")
+    if ctx.get("formula"):
+        lines.append(f"Формула: {ctx['formula']}")
+    if ctx.get("sg_hm"):
+        sg_n = ctx.get("sg_number", "")
+        lines.append(f"Пространственная группа: {ctx['sg_hm']}" + (f" (№{sg_n})" if sg_n else ""))
+    a, b, c = ctx.get("cell_length_a"), ctx.get("cell_length_b"), ctx.get("cell_length_c")
+    if a and b and c:
+        lines.append(f"Параметры ячейки: a={a:.3f} Å, b={b:.3f} Å, c={c:.3f} Å")
+    if ctx.get("cod_id"):
+        lines.append(f"COD ID: {ctx['cod_id']}")
+    if ctx.get("mp_id"):
+        lines.append(f"Materials Project: {ctx['mp_id']}")
+    if ctx.get("doi"):
+        lines.append(f"DOI: {ctx['doi']}")
+
+    # Описание вещества из substance_info
+    if ctx.get("substance_desc"):
+        lines.append("")
+        lines.append("═══ ВЕЩЕСТВО ═══")
+        lines.append(ctx["substance_desc"])
+    if ctx.get("substance_apps"):
+        lines.append(f"Применение: {ctx['substance_apps']}")
+    if ctx.get("hazards"):
+        lines.append(f"Опасность: {ctx['hazards']}")
+    if ctx.get("properties"):
+        try:
+            props = ctx["properties"]
+            if isinstance(props, str):
+                props = json.loads(props)
+            if isinstance(props, dict) and props:
+                lines.append("Свойства: " + "; ".join(f"{k}={v}" for k, v in list(props.items())[:6]))
+        except Exception:
+            pass
+
+    lines.append(
+        "\nОтвечай на вопросы пользователя, опираясь на данные выше."
+        " Если в базе нет конкретных сведений по веществу или применению — используй свои научные знания,"
+        " явно указывая, что это общая информация, а не данные из базы системы CRIS."
+    )
+    return "\n".join(lines)
+
+
+def _save_chat_messages(session_id: str, user_content: str, assistant_content: str):
+    """Сохраняет пару user/assistant в таблицу chat_message."""
+    try:
+        with get_cursor() as cur:
+            cur.execute(
+                "INSERT INTO chat_message (session_id, role, content) VALUES (%s, 'user', %s), (%s, 'assistant', %s)",
+                (session_id, user_content, session_id, assistant_content)
+            )
+    except Exception:
+        pass  # не ломаем ответ из-за ошибки логирования
+
+
 # ── Эндпоинты ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/health")
 def health():
-    """Проверка — сервер жив."""
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.4.3"}
 
 
 @app.get("/api/debug/env")
 def debug_env():
-    """Диагностика — проверить загрузку переменных окружения."""
     return {
         "gigachat_available": _GIGACHAT_AVAILABLE,
         "gigachat_ready":     _GC_READY,
@@ -164,18 +437,12 @@ def debug_env():
 
 @app.get("/api/stats")
 def stats():
-    """
-    Живые счётчики для главной страницы.
-    Возвращает количество эталонных структур, типов решёток и сессий распознавания.
-    """
     try:
         with get_cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM reference_structure")
             struct_count = cur.fetchone()[0]
-
             cur.execute("SELECT COUNT(*) FROM lattice_type")
             lattice_count = cur.fetchone()[0]
-
             cur.execute("SELECT COUNT(*) FROM recognition_session")
             session_count = cur.fetchone()[0]
     except Exception as e:
@@ -188,163 +455,45 @@ def stats():
     }
 
 
-@app.post("/api/chat", response_model=ChatResponse)
-def chat(body: ChatRequest):
-    """
-    Чат с GigaChat в контексте кристаллографического вердикта.
-
-    Фронт передаёт:
-      - messages : полную историю диалога (role=user/assistant)
-      - context  : данные о распознанной структуре (опционально)
-
-    Бэк добавляет системный промпт с контекстом структуры и отправляет в GigaChat.
-    """
-    if not _GC_READY:
-        raise HTTPException(
-            status_code=503,
-            detail="GigaChat недоступен: проверьте GIGACHAT_CREDENTIALS в .env",
-        )
-
-    if not body.messages:
-        raise HTTPException(status_code=400, detail="Список messages пуст")
-
-    # ── Системный промпт ──────────────────────────────────────────
-    system_lines = [
-        "Ты — ИИ-ассистент системы CRIS (Crystal Recognition & Identification System).",
-        "Ты помогаешь учёным и инженерам разбираться в результатах распознавания кристаллических решёток.",
-        "Отвечай научно, кратко и по существу. Используй русский язык.",
-    ]
-
-    ctx = body.context
-    if ctx:
-        system_lines.append("\nТекущая структура, о которой идёт разговор:")
-        if ctx.lattice_type:
-            system_lines.append(f"  • Тип решётки: {ctx.lattice_type}" +
-                                 (f" ({ctx.lattice_en})" if ctx.lattice_en else ""))
-        if ctx.formula:
-            system_lines.append(f"  • Формула: {ctx.formula}")
-        if ctx.confidence is not None:
-            system_lines.append(f"  • Confidence: {ctx.confidence:.2f}")
-        if ctx.sg_hm:
-            system_lines.append(f"  • Пространственная группа: {ctx.sg_hm}")
-        if ctx.ion_count:
-            system_lines.append(f"  • Число ионов: {ctx.ion_count}")
-
-    system_prompt = "\n".join(system_lines)
-
-    # ── Формируем payload для GigaChat ───────────────────────────
-    gc_messages = [Messages(role=MessagesRole.SYSTEM, content=system_prompt)]
-    for m in body.messages:
-        role = MessagesRole.USER if m.role == "user" else MessagesRole.ASSISTANT
-        gc_messages.append(Messages(role=role, content=m.content))
-
-    payload = Chat(
-        model=_GC_MODEL,
-        messages=gc_messages,
-        max_tokens=1024,
-        temperature=0.5,
-    )
-
-    try:
-        with GigaChat(
-            credentials=_GC_CREDENTIALS,
-            scope=_GC_SCOPE,
-            verify_ssl_certs=False,
-        ) as giga:
-            response = giga.chat(payload)
-            reply = response.choices[0].message.content.strip()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"GigaChat error: {e}")
-
-    return ChatResponse(reply=reply, model=_GC_MODEL)
-
-
-@app.post("/api/session")
-def create_session(body: AnalyzeRequest):
-    """
-    Логирует сессию распознавания в БД.
-    Не запускает ML — только сохраняет факт запроса с хешем координат.
-    Возвращает session_id (UUID) для последующей привязки результатов.
-    """
-    if len(body.sites) < 2:
-        raise HTTPException(status_code=400, detail="Нужно минимум 2 иона")
-
-    # Нормализуем координаты для хеша
-    raw = [[s.label, s.x, s.y, s.z] for s in body.sites]
-    try:
-        shifted    = shift_coordinates(raw)
-        normalized = normalize_coordinates(shifted)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    input_hash = _input_hash(normalized)
-
-    try:
-        with get_cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO recognition_session (ion_count, input_hash)
-                VALUES (%s, %s)
-                RETURNING id, created_at
-                """,
-                (len(body.sites), input_hash),
-            )
-            row = cur.fetchone()
-            session_id  = str(row[0])
-            created_at  = row[1].isoformat() if row[1] else None
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DB error: {e}")
-
-    return {
-        "session_id":  session_id,
-        "ion_count":   len(body.sites),
-        "input_hash":  input_hash[:12] + "…",   # короткий превью
-        "created_at":  created_at,
-    }
-
-
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 def analyze(body: AnalyzeRequest):
     """
-    Принимает декартовые координаты ионов, запускает matching по БД.
-
-    Алгоритм:
-    1. Конвертация [[label, x, y, z], ...]
-    2. shift_coordinates + normalize_coordinates
-    3. check_coords() — сравнение с эталонами из reference_structure
-    4. Формирование ответа
+    Принимает декартовые координаты ионов, запускает анализ.
+    Создаёт/находит сессию, сохраняет результат в recognition_result.
+    Возвращает session_id для последующего чата.
     """
     if len(body.sites) < 2:
         raise HTTPException(status_code=400, detail="Нужно минимум 2 иона")
 
-    # 1. Конвертируем в формат [[label, x, y, z], ...]
     raw = [[s.label, s.x, s.y, s.z] for s in body.sites]
 
-    # 2. Нормализуем: сдвиг к началу координат + масштаб в [0, 1]
     try:
         shifted    = shift_coordinates(raw)
         normalized = normalize_coordinates(shifted)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
-    # 3. Собираем словарь {n: [label, nx, ny, nz]} — формат check_coords
+    input_hash  = _input_hash(normalized)
     coords_dict = {i: row for i, row in enumerate(normalized)}
+    result      = check_coords(coords_dict, len(body.sites))
 
-    # 4. Запускаем поиск по БД
-    result = check_coords(coords_dict, len(body.sites))
+    # ── Создаём / находим сессию ──────────────────────────────
+    try:
+        session_id = _find_or_create_session(input_hash, len(body.sites))
+    except Exception:
+        session_id = None
 
     if result is False:
         return AnalyzeResponse(
-            success=False,
-            message="Совпадающих структур не найдено в эталонной БД",
+            success    = False,
+            message    = "Совпадающих структур не найдено в эталонной БД",
+            session_id = session_id,
         )
 
-    # 5. Разбираем результат
     lattice_names, struct_names = result[0]
     lattice_info, lt_prob       = result[1]
     struct_info,  st_prob       = result[2]
 
-    # lattice_type row: (id, name_en, name_ru, description)
     lattice = LatticeResult(
         id          = lattice_info[0] if lattice_info else None,
         name_en     = lattice_info[1] if lattice_info else None,
@@ -353,9 +502,6 @@ def analyze(body: AnalyzeRequest):
         confidence  = round(lt_prob, 2),
     )
 
-    # reference_structure row:
-    # (id, name, cell_a, cell_b, cell_c, cell_vol, alpha, beta, gamma,
-    #  sg_number, sg_hall, sg_hm, doi, formula)
     structure = StructureResult(
         id         = struct_info[0]  if struct_info else None,
         name       = struct_info[1]  if struct_info else None,
@@ -368,23 +514,85 @@ def analyze(body: AnalyzeRequest):
         confidence = round(st_prob, 2),
     )
 
-    # Рейтинг решёток — сортируем по убыванию вероятности
-    # lattice_names = [[id, name_ru, name_en, prob], ...]
-    ranking = sorted(
-        [
-            RankingItem(
-                name_en = lt[2],
-                name_ru = lt[1],
-                prob    = round(lt[3], 2),
+    # ── Сохраняем результат в БД ──────────────────────────────
+    if session_id:
+        try:
+            _save_recognition_result(
+                session_id    = session_id,
+                lattice_type_id = lattice.id,
+                structure_id    = structure.id,
+                confidence      = lattice.confidence,
             )
-            for lt in lattice_names
-        ],
+        except Exception:
+            pass
+
+    ranking = sorted(
+        [RankingItem(name_en=lt[2], name_ru=lt[1], prob=round(lt[3], 2)) for lt in lattice_names],
         key=lambda x: -x.prob,
     )
 
     return AnalyzeResponse(
         success         = True,
+        session_id      = session_id,
         lattice         = lattice,
         structure       = structure,
         lattice_ranking = ranking,
     )
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+def chat(body: ChatRequest):
+    """
+    Чат с GigaChat.
+    - Загружает богатый контекст структуры из БД по session_id
+    - Принимает полную историю сообщений от фронта (обеспечивает continuity)
+    - Сохраняет пару user/assistant в chat_message
+    """
+    if not _GC_READY:
+        raise HTTPException(
+            status_code=503,
+            detail="GigaChat недоступен: проверьте GIGACHAT_CREDENTIALS в .env",
+        )
+
+    if not body.messages:
+        raise HTTPException(status_code=400, detail="Список messages пуст")
+
+    # ── Загружаем контекст из БД ──────────────────────────────
+    try:
+        ctx = _load_session_context(body.session_id)
+    except Exception:
+        ctx = {}
+
+    system_prompt = _build_system_prompt(ctx)
+
+    # ── Формируем payload для GigaChat ───────────────────────
+    gc_messages = [Messages(role=MessagesRole.SYSTEM, content=system_prompt)]
+    for m in body.messages:
+        role = MessagesRole.USER if m.role == "user" else MessagesRole.ASSISTANT
+        gc_messages.append(Messages(role=role, content=m.content))
+
+    payload = Chat(
+        model       = _GC_MODEL,
+        messages    = gc_messages,
+        max_tokens  = 1024,
+        temperature = 0.5,
+    )
+
+    try:
+        with GigaChat(
+            credentials    = _GC_CREDENTIALS,
+            scope          = _GC_SCOPE,
+            verify_ssl_certs = False,
+        ) as giga:
+            response = giga.chat(payload)
+            raw   = response.choices[0].message.content.strip()
+            reply = _fix_gigachat_unicode(raw)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"GigaChat error: {e}")
+
+    # ── Сохраняем в chat_message (fire-and-forget) ────────────
+    user_msg = next((m.content for m in reversed(body.messages) if m.role == "user"), "")
+    if user_msg:
+        _save_chat_messages(body.session_id, user_msg, reply)
+
+    return ChatResponse(reply=reply, model=_GC_MODEL)

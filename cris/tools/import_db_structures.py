@@ -49,18 +49,10 @@ def import_all() -> None:
             lt_id, struct_id = insert_data(cursor, data)
             conn.commit()
 
-            # Ищем XYZ с таким же именем (точное совпадение или начинается с stem)
+            # XYZ — только для справки, координаты читаются из файлов напрямую queries.py
             xyz_candidates = list(XYZ_DIR.glob(f"{stem}.xyz")) + list(XYZ_DIR.glob(f"{stem}_*.xyz"))
-            if xyz_candidates:
-                xyz_path = xyz_candidates[0]
-                raw       = parse_xyz(str(xyz_path))
-                shifted   = shift_coordinates(raw)
-                normalized = normalize_coordinates(shifted)
-                upsert_sites(cursor, raw, normalized, struct_id, lt_id)
-                conn.commit()
-                logger.info("  ✓ {} → structure_id={} lt={} sites={}", stem, struct_id, lt_id, len(raw))
-            else:
-                logger.warning("  ~ {} → structure_id={} (no XYZ found)", stem, struct_id)
+            xyz_note = f" xyz={xyz_candidates[0].name}" if xyz_candidates else " (no XYZ)"
+            logger.info("  ✓ {} → structure_id={} lt={}{}", stem, struct_id, lt_id, xyz_note)
 
             imported += 1
 
