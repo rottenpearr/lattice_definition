@@ -166,6 +166,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sites, setSites]         = React.useState([]);
   const [cell,  setCell]          = React.useState(DEFAULT_CELL);
   const [coordType, setCoordType] = React.useState("frac");
+  const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
   const [methods,   setMethods]   = React.useState({ db: true, catboost: false, rf: false });
@@ -195,11 +196,6 @@ const WorkspaceScreen = ({ setRoute }) => {
       return { label: s.label, x: cx, y: cy, z: cz };
     });
 
-    fetch(`${API_BASE}/api/session`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sites: cartSites }),
-    }).catch(() => {});
-
     try {
       const res  = await fetch(`${API_BASE}/api/analyze`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -208,6 +204,7 @@ const WorkspaceScreen = ({ setRoute }) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
       setResult(data);
+      if (data.session_id) setSessionId(data.session_id);
     } catch (e) {
       setApiError(e.message);
     } finally {
@@ -215,7 +212,7 @@ const WorkspaceScreen = ({ setRoute }) => {
     }
   };
 
-  const reset = () => { setStage("input"); setResult(null); setApiError(null); };
+  const reset = () => { setStage("input"); setResult(null); setApiError(null); setSessionId(null); };
 
   const handleScreenshot = () => {
     if (!screenshotApiRef.current) return;
@@ -251,7 +248,7 @@ const WorkspaceScreen = ({ setRoute }) => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} />
       </div>
     </div>
   );
@@ -489,22 +486,13 @@ const ViewerPipeline = () => (
 /* ══════════════════════════════════════════════════════════
    [CHANGE 3] RIGHT PANEL — tab switcher replaces draggable divider.
    ══════════════════════════════════════════════════════════ */
-const WsRightPanel = ({ stage, result, apiError, siteCount, methods }) => {
+const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId }) => {
   const [tab, setTab] = React.useState("verdict");
 
   /* Auto-switch to verdict when a new result arrives */
   React.useEffect(() => {
     if (stage === "result") setTab("verdict");
   }, [stage]);
-
-  const verdictContext = result?.success ? {
-    lattice_type: result.lattice?.name_ru,
-    lattice_en:   result.lattice?.name_en,
-    formula:      result.structure?.formula,
-    confidence:   result.lattice?.confidence,
-    sg_hm:        result.structure?.sg_hm,
-    ion_count:    siteCount,
-  } : null;
 
   return (
     <aside style={{ borderLeft: "1px solid var(--hairline)", display: "flex", flexDirection: "column", background: "var(--paper)", overflow: "hidden" }}>
@@ -535,7 +523,7 @@ const WsRightPanel = ({ stage, result, apiError, siteCount, methods }) => {
             : <VerdictPlaceholder />}
         </div>
       ) : (
-        <ChatPanel stage={stage} context={stage === "result" ? verdictContext : null} />
+        <ChatPanel stage={stage} sessionId={sessionId} />
       )}
     </aside>
   );
@@ -602,7 +590,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
       [structure?.name, structure?.formula && structure.formula !== structure.name ? `(${structure.formula})` : null, lattice?.name_en ? `, ${lattice.name_en}` : "", structure?.sg_hm ? `, ${structure.sg_hm}` : ""].filter(Boolean).join(" "),
       [structure?.cell_a != null ? `a = ${structure.cell_a.toFixed(3)} Å.` : null, lattice?.confidence != null ? `Confidence: ${lattice.confidence.toFixed(2)}.` : null].filter(Boolean).join(" "),
       structure?.sg_number ? `Space group ${structure.sg_number}.` : null,
-      `Identified by CRIS v0.4.1 (${activeMethods}).`,
+      `Identified by CRIS v0.4.3 (${activeMethods}).`,
     ].filter(Boolean).join(" ");
 
     navigator.clipboard.writeText(lines).then(() => {
@@ -748,14 +736,14 @@ const renderWithLatex = (text) => {
 };
 
 /* ── Chat ── */
-const ChatPanel = ({ stage, context }) => {
+const ChatPanel = ({ stage, sessionId }) => {
   const [messages, setMessages] = React.useState([]);
   const [input,    setInput]    = React.useState("");
   const [loading,  setLoading]  = React.useState(false);
   const [error,    setError]    = React.useState(null);
   const bottomRef = React.useRef(null);
   const inputRef  = React.useRef(null);
-  const active    = stage === "result";
+  const active    = stage === "result" && !!sessionId;
 
   React.useEffect(() => {
     if (stage === "running") { setMessages([]); setError(null); }
@@ -774,7 +762,7 @@ const ChatPanel = ({ stage, context }) => {
     try {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, context: context || null }),
+        body: JSON.stringify({ session_id: sessionId, messages: history }),
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `HTTP ${res.status}`); }
       const data = await res.json();
@@ -794,7 +782,8 @@ const ChatPanel = ({ stage, context }) => {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
-        {!active && <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>AI-ассистент включается после распознавания.</p>}
+        {!active && stage !== "result" && <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>AI-ассистент включается после распознавания.</p>}
+        {!active && stage === "result" && !sessionId && <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>Сессия не создана — повторите анализ.</p>}
         {active && messages.length === 0 && <p style={{ margin: 0, color: "var(--mute)", fontSize: 13, fontStyle: "italic" }}>Спросите про решётку, вещество или методы распознавания.</p>}
         {messages.map((m, i) => (
           <div key={i} style={{

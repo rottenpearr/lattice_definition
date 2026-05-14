@@ -67,33 +67,7 @@ def insert_data(cursor, data: dict) -> tuple[int, int]:
           sg_num, sg_hall, sg_hm, cod_id))
     structure_id = cursor.fetchone()[0]
 
-    labels      = vals.get("_atom_site_label", [])
-    symbols     = vals.get("_atom_site_type_symbol", [])
-    oxidations  = vals.get("_atom_type_oxidation_number", [])
-    multipls    = vals.get("_atom_site_symmetry_multiplicity", [])
-    wyckoffs    = vals.get("_atom_site_Wyckoff_symbol", [])
-    occupancies = vals.get("_atom_site_occupancy", [])
-
-    oxidation_idx = 0
-    prev_symbol = symbols[0] if symbols else None
-    for i, label in enumerate(labels):
-        sym = symbols[i] if i < len(symbols) else ""
-        if sym != prev_symbol:
-            oxidation_idx += 1
-            prev_symbol = sym
-        oxi = _float(oxidations[oxidation_idx]) if oxidation_idx < len(oxidations) else None
-        cursor.execute("""
-            INSERT INTO structure_site
-                (structure_id, atom_label, atom_symbol, oxidation,
-                 multiplicity, wyckoff, occupancy)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            structure_id, label, sym, oxi,
-            int(multipls[i]) if i < len(multipls) else None,
-            wyckoffs[i] if i < len(wyckoffs) else None,
-            _float(occupancies[i]) if i < len(occupancies) else 1.0,
-        ))
-
+    # structure_site не используется — координаты читаются из XYZ-файлов напрямую
     return lattice_type_id, structure_id
 
 
