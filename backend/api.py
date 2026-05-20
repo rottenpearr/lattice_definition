@@ -328,7 +328,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
     Запускает выбранные ML-методы и возвращает список MLMethodResult.
     Каждый результат также сохраняется в recognition_result.
     """
-    from cris.core.ml_predict import predict_rf, resolve_lattice_ids
+    from cris.core.ml_predict import predict_catboost, predict_rf, resolve_lattice_ids
 
     results: list[MLMethodResult] = []
 
@@ -358,6 +358,19 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
             confidence=round(top["confidence"] * 100, 2),
             ranking=ranking,
         )
+
+    if "catboost" in methods:
+        try:
+            preds = predict_catboost(normalized)
+            preds = resolve_lattice_ids(preds)
+            mr = _preds_to_result("catboost", preds)
+            results.append(mr)
+            if session_id and preds:
+                _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
+                                         mr.confidence, method="CATBOOST")
+        except Exception as e:
+            logger.warning("CatBoost inference failed: {}", e)
+            results.append(MLMethodResult(method="catboost"))
 
     if "rf" in methods:
         try:

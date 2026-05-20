@@ -169,7 +169,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
-  const [methods,   setMethods]   = React.useState({ db: true, catboost: false, rf: false });
+  const [methods,   setMethods]   = React.useState({ db: true, catboost: true, rf: false });
   const screenshotApiRef = React.useRef(null);
 
   React.useEffect(() => {
