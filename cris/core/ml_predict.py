@@ -20,9 +20,10 @@ from scipy.stats import gaussian_kde
 
 from cris.logger import logger
 
-# ── Пути к модели ─────────────────────────────────────────────────────────────
+# ── Пути к моделям ────────────────────────────────────────────────────────────
 _ROOT = Path(__file__).parent.parent.parent
-_DEFAULT_MODEL = _ROOT / "ML" / "CatBoost" / "catboost_lattice.cbm"
+_DEFAULT_MODEL    = _ROOT / "ML" / "CatBoost" / "catboost_lattice.cbm"
+_DEFAULT_RF_MODEL = _ROOT / "ML" / "rf_optimized_model.pkl"
 
 # ── Маппинг классов модели → name_en в таблице lattice_type ──────────────────
 # Модель обучена на подтипах Браве-решётки; все cubic_* → "cubic" и т.д.
@@ -87,7 +88,7 @@ def _coords_to_feature_vector(normalized_coords: list) -> Optional[np.ndarray]:
 
 
 def _load_model(model_path: Path):
-    """Ленивая загрузка модели с понятным сообщением об ошибке."""
+    """Ленивая загрузка CatBoost модели."""
     try:
         from catboost import CatBoostClassifier
         m = CatBoostClassifier()
@@ -98,6 +99,53 @@ def _load_model(model_path: Path):
         return None
     except Exception as e:
         logger.warning("ml_predict: cannot load model {}: {}", model_path, e)
+        return None
+
+
+def _load_sklearn_model(model_path: Path):
+    """Ленивая загрузка sklearn модели через joblib."""
+    try:
+        import joblib
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return joblib.load(str(model_path))
+    except ImportError:
+        logger.warning("ml_predict: joblib not installed")
+        return None
+    except Exception as e:
+        logger.warning("ml_predict: cannot load sklearn model {}: {}", model_path, e)
+        return None
+
+
+def _coords_to_feature_vector_200(normalized_coords: list) -> Optional[np.ndarray]:
+    """
+    Список [label, x, y, z] → усреднённый KDE-вектор 200-dim.
+    Используется для Random Forest (rf_optimized_model.pkl).
+    """
+    try:
+        from cris.core.spectrum import kde_array
+        from cris.core.vectors import get_lattice_vectors3
+
+        _old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            vectors_dict = get_lattice_vectors3(normalized_coords)
+        finally:
+            sys.stdout = _old_stdout
+
+        ion_arrays = []
+        for distances in vectors_dict.values():
+            counter = dict(Counter(distances))
+            if len(counter) >= 2:
+                arr = kde_array(counter)
+                ion_arrays.append(arr)
+
+        if not ion_arrays:
+            return None
+        return np.mean(ion_arrays, axis=0)
+    except Exception as e:
+        logger.warning("ml_predict: failed to compute 200-dim feature vector: {}", e)
         return None
 
 
@@ -154,6 +202,60 @@ def predict_catboost(
         })
 
     logger.debug("CatBoost prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
+    return results
+
+
+def predict_rf(
+    normalized_coords: list,
+    model_path: Path = _DEFAULT_RF_MODEL,
+    top_k: int = 3,
+) -> list[dict]:
+    """
+    Предсказывает класс через Random Forest (200-dim KDE вектор).
+
+    Args:
+        normalized_coords: список [label, x, y, z] — уже нормализованные
+        model_path:        путь к .pkl файлу
+        top_k:             сколько топ-классов вернуть
+
+    Returns:
+        [{"class": "UC2_phase1", "lattice_name": "UC2_phase1",
+          "lattice_type_id": None, "confidence": 0.52}, ...]
+    """
+    if not model_path.exists():
+        logger.debug("ml_predict: RF model not found: {}", model_path)
+        return []
+
+    model = _load_sklearn_model(model_path)
+    if model is None:
+        return []
+
+    feat = _coords_to_feature_vector_200(normalized_coords)
+    if feat is None:
+        return []
+
+    if len(feat) != model.n_features_in_:
+        logger.warning(
+            "ml_predict: RF feature size mismatch (got {}, need {})",
+            len(feat), model.n_features_in_,
+        )
+        return []
+
+    proba   = model.predict_proba(feat.reshape(1, -1))[0]
+    classes = model.classes_
+
+    top_indices = np.argsort(proba)[::-1][:top_k]
+    results = [
+        {
+            "class":           str(classes[i]),
+            "lattice_name":    _CLASS_TO_LATTICE_EN.get(str(classes[i]), str(classes[i])),
+            "lattice_type_id": None,
+            "confidence":      round(float(proba[i]), 4),
+        }
+        for i in top_indices
+    ]
+
+    logger.debug("RF prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
     return results
 
 

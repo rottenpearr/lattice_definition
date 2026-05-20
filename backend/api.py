@@ -63,6 +63,7 @@ class Ion(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     sites: list[Ion]
+    methods: list[str] = ["db"]   # "db" | "catboost" | "rf"
 
 
 class LatticeResult(BaseModel):
@@ -91,6 +92,14 @@ class RankingItem(BaseModel):
     prob: float
 
 
+class MLMethodResult(BaseModel):
+    method: str                      # "catboost" | "rf"
+    name_en: Optional[str] = None
+    name_ru: Optional[str] = None
+    confidence: float = 0.0
+    ranking: list[RankingItem] = []
+
+
 class AnalyzeResponse(BaseModel):
     success: bool
     message: str = ""
@@ -98,6 +107,7 @@ class AnalyzeResponse(BaseModel):
     lattice: Optional[LatticeResult] = None
     structure: Optional[StructureResult] = None
     lattice_ranking: list[RankingItem] = []
+    ml_results: list[MLMethodResult] = []
 
 
 class ChatMessage(BaseModel):
@@ -240,15 +250,16 @@ def _find_or_create_session(input_hash: str, ion_count: int) -> str:
 
 
 def _save_recognition_result(session_id: str, lattice_type_id: Optional[int],
-                              structure_id: Optional[int], confidence: float):
-    """Сохраняет результат анализа в recognition_result. Метод — GEOMETRIC (поиск по КДЭ-эталонам)."""
+                              structure_id: Optional[int], confidence: float,
+                              method: str = "GEOMETRIC"):
+    """Сохраняет результат анализа в recognition_result."""
     with get_cursor() as cur:
         cur.execute(
             """
             INSERT INTO recognition_result
                 (session_id, method, method_version, rank,
                  predicted_lattice_type_id, predicted_structure_id, confidence)
-            VALUES (%s, 'GEOMETRIC', '1.0', 1, %s, %s, %s)
+            VALUES (%s, %s, '1.0', 1, %s, %s, %s)
             ON CONFLICT (session_id, method, method_version, rank)
             DO UPDATE SET
                 predicted_lattice_type_id = EXCLUDED.predicted_lattice_type_id,
@@ -256,7 +267,7 @@ def _save_recognition_result(session_id: str, lattice_type_id: Optional[int],
                 confidence                = EXCLUDED.confidence,
                 computed_at               = NOW()
             """,
-            (session_id, lattice_type_id, structure_id, confidence)
+            (session_id, method, lattice_type_id, structure_id, confidence)
         )
 
 
@@ -310,6 +321,58 @@ def _load_session_context(session_id: str) -> dict:
             return {}
         cols = [d[0] for d in cur.description]
         return dict(zip(cols, row))
+
+
+def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[str]) -> list[MLMethodResult]:
+    """
+    Запускает выбранные ML-методы и возвращает список MLMethodResult.
+    Каждый результат также сохраняется в recognition_result.
+    """
+    from cris.core.ml_predict import predict_rf, resolve_lattice_ids
+
+    results: list[MLMethodResult] = []
+
+    def _preds_to_result(method: str, preds: list[dict]) -> MLMethodResult:
+        if not preds:
+            return MLMethodResult(method=method)
+        top = preds[0]
+        # Пробуем взять name_ru для lattice_type_id
+        name_ru = None
+        if top.get("lattice_type_id"):
+            try:
+                with get_cursor() as cur:
+                    cur.execute("SELECT name_ru FROM lattice_type WHERE id=%s", (top["lattice_type_id"],))
+                    row = cur.fetchone()
+                    if row:
+                        name_ru = row[0]
+            except Exception:
+                pass
+        ranking = [
+            RankingItem(name_en=p["lattice_name"], name_ru=None, prob=round(p["confidence"] * 100, 1))
+            for p in preds
+        ]
+        return MLMethodResult(
+            method=method,
+            name_en=top["lattice_name"],
+            name_ru=name_ru,
+            confidence=round(top["confidence"] * 100, 2),
+            ranking=ranking,
+        )
+
+    if "rf" in methods:
+        try:
+            preds = predict_rf(normalized)
+            preds = resolve_lattice_ids(preds)
+            mr = _preds_to_result("rf", preds)
+            results.append(mr)
+            if session_id and preds:
+                _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
+                                         mr.confidence, method="RF")
+        except Exception as e:
+            logger.warning("RF inference failed: {}", e)
+            results.append(MLMethodResult(method="rf"))
+
+    return results
 
 
 def _build_system_prompt(ctx: dict) -> str:
@@ -483,11 +546,15 @@ def analyze(body: AnalyzeRequest):
     except Exception:
         session_id = None
 
+    # ── ML методы запускаем всегда, независимо от GEOMETRIC ──
+    ml_results = _run_ml_methods(normalized, body.methods, session_id)
+
     if result is False:
         return AnalyzeResponse(
             success    = False,
             message    = "Совпадающих структур не найдено в эталонной БД",
             session_id = session_id,
+            ml_results = ml_results,
         )
 
     lattice_names, struct_names = result[0]
@@ -514,11 +581,11 @@ def analyze(body: AnalyzeRequest):
         confidence = round(st_prob, 2),
     )
 
-    # ── Сохраняем результат в БД ──────────────────────────────
+    # ── Сохраняем GEOMETRIC результат в БД ───────────────────
     if session_id:
         try:
             _save_recognition_result(
-                session_id    = session_id,
+                session_id      = session_id,
                 lattice_type_id = lattice.id,
                 structure_id    = structure.id,
                 confidence      = lattice.confidence,
@@ -537,6 +604,7 @@ def analyze(body: AnalyzeRequest):
         lattice         = lattice,
         structure       = structure,
         lattice_ranking = ranking,
+        ml_results      = ml_results,
     )
 
 

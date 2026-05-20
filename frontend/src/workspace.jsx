@@ -199,7 +199,10 @@ const WorkspaceScreen = ({ setRoute }) => {
     try {
       const res  = await fetch(`${API_BASE}/api/analyze`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sites: cartSites }),
+        body: JSON.stringify({
+          sites: cartSites,
+          methods: Object.entries(methods).filter(([, v]) => v).map(([k]) => k),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
@@ -608,12 +611,14 @@ const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
     </div>
   );
 
-  const summary   = result?.success ? result.lattice   : null;
-  const structure = result?.success ? result.structure : null;
-  const dbResult  = result?.success ? {
+  const summary        = result?.success ? result.lattice   : null;
+  const structure      = result?.success ? result.structure : null;
+  const dbResult       = result?.success ? {
     name_en: result.lattice?.name_en, name_ru: result.lattice?.name_ru,
     confidence: result.lattice?.confidence, ranking: result.lattice_ranking,
   } : null;
+  const catboostResult = result?.ml_results?.find(r => r.method === "catboost") ?? null;
+  const rfResult       = result?.ml_results?.find(r => r.method === "rf")       ?? null;
 
   return (
     <div>
@@ -652,9 +657,9 @@ const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
       <hr className="hr" style={{ margin: "14px 0" }} />
       {/* [CHANGE 2] WsLabel */}
       <WsLabel>По методам</WsLabel>
-      <MethodResult label="По базе данных" result={dbResult}  active={!!methods?.db} />
-      <MethodResult label="CatBoost"        result={null}      active={!!methods?.catboost} />
-      <MethodResult label="Random Forest"   result={null}      active={!!methods?.rf} />
+      <MethodResult label="По базе данных" result={dbResult}       active={!!methods?.db} />
+      <MethodResult label="CatBoost"        result={catboostResult} active={!!methods?.catboost} />
+      <MethodResult label="Random Forest"   result={rfResult}       active={!!methods?.rf} />
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
