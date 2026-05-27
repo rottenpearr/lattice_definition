@@ -123,6 +123,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     session_id: str                 # UUID из /api/analyze
     messages: list[ChatMessage]     # вся история диалога (фронт хранит локально)
+    result_context: Optional[str] = None  # ML-результаты от фронта (когда нет GEOMETRIC)
 
 
 class ChatResponse(BaseModel):
@@ -412,7 +413,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
     return results
 
 
-def _build_system_prompt(ctx: dict) -> str:
+def _build_system_prompt(ctx: dict, result_context: str = None) -> str:
     """Строит системный промпт из данных БД."""
     lines = [
         "Ты — ИИ-ассистент системы CRIS (Crystal Recognition & Identification System).",
@@ -422,6 +423,9 @@ def _build_system_prompt(ctx: dict) -> str:
     ]
 
     if not ctx:
+        if result_context:
+            lines.append("\n═══ РЕЗУЛЬТАТЫ РАСПОЗНАВАНИЯ ═══")
+            lines.append(result_context)
         return "\n".join(lines)
 
     lines.append("\n═══ ТЕКУЩАЯ СТРУКТУРА ═══")
@@ -491,6 +495,12 @@ def _build_system_prompt(ctx: dict) -> str:
                 lines.append("Свойства: " + "; ".join(f"{k}={v}" for k, v in list(props.items())[:6]))
         except Exception:
             pass
+
+    # ML-результаты от фронтенда (CatBoost, RF) — добавляем всегда, если есть
+    if result_context:
+        lines.append("")
+        lines.append("═══ РЕЗУЛЬТАТЫ ML-МЕТОДОВ ═══")
+        lines.append(result_context)
 
     lines.append(
         "\nОтвечай на вопросы пользователя, опираясь на данные выше."
@@ -668,7 +678,7 @@ def chat(body: ChatRequest):
     except Exception:
         ctx = {}
 
-    system_prompt = _build_system_prompt(ctx)
+    system_prompt = _build_system_prompt(ctx, body.result_context)
 
     # ── Формируем payload для GigaChat ───────────────────────
     gc_messages = [Messages(role=MessagesRole.SYSTEM, content=system_prompt)]

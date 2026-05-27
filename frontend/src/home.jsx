@@ -15,7 +15,7 @@ const Hero = ({ setRoute }) => (
   <section className="bg-lattice" style={{ paddingTop: 96, paddingBottom: 120, borderBottom: "1px solid var(--hairline)" }}>
     <div className="container" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 64, alignItems: "center" }}>
       <div>
-        <Eyebrow>Crystal recognition · v0.4.1</Eyebrow>
+        <Eyebrow>Crystal recognition · v0.4.3</Eyebrow>
         <h1 className="section-title" style={{ fontSize: 72, lineHeight: 1.02, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
           Определяем тип<br />кристаллической<br />решётки<span style={{ color: "var(--cobalt)" }}>.</span>
         </h1>
@@ -47,8 +47,8 @@ const HeroVisual = () => (
       <span>3d viewer · live</span>
       <span style={{ color: "var(--signal)" }}>● matched</span>
     </div>
-    <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 240 }}>
-      <LatticeDiagram size={220} />
+    <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 270 }}>
+      <LatticeDiagram size={250} />
     </div>
     <div style={{ position: "relative", borderTop: "1px solid var(--night-line)", paddingTop: 14, marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--night-mute)" }}>
       <div><div style={{ textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>type</div><div style={{ color: "var(--night-ink)", fontSize: 13 }}>cubic_f · FCC</div></div>
@@ -98,10 +98,10 @@ const LatticeDiagram = ({ size = 220, animated = true }) => {
 /* ---------- Features ---------- */
 const FeaturesSection = () => {
   const features = [
-    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация решётки в куб [0, 2] проходит автоматически." },
+    { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация координат в куб [0, 1] проходит автоматически." },
     { eyebrow: "02 · METHOD", title: "Ансамбль методов, не один", body: "Random Forest, CatBoost и поиск по внутренней базе данных работают параллельно. Доступны ранжирование и достоверность по каждому методу." },
     { eyebrow: "03 · VERDICT", title: "Не только тип, но и структура", body: "Кроме типа кристаллической решётки, система возвращает наиболее вероятную эталонную структуру и ссылки на эталоны в COD и Materials Project." },
-    { eyebrow: "04 · ASK", title: "AI-ассистент в контексте анализа", body: "GigaChat MAX 2 знает базу CRIS и научные источники. Спросите про вещество, метод или интерпретацию результата." },
+    { eyebrow: "04 · ASK", title: "AI-ассистент в контексте анализа", body: "GigaChat-2-Max отвечает на вопросы в контексте сессии. Спросите про вещество, метод или интерпретацию результата." },
     { eyebrow: "05 · 3D", title: "Удобная визуализация", body: "Интерактивная 3D-сцена элементарной ячейки с возможностью вращения и масштабирования прямо в браузере." },
     { eyebrow: "06 · EMBED", title: "Встраиваемая библиотека", body: "Тот же ансамбль доступен как пакет `cris-core`. REST API и Python SDK работают с теми же эталонами." },
   ];
@@ -178,9 +178,9 @@ const DescriptionSection = () => {
 /* ---------- Team ---------- */
 const TeamSection = () => {
   const team = [
-    { initials: "АА", name: "Артюшин", role: "ML-инженер · радиальное распределение, ансамбли" },
-    { initials: "МА", name: "Маркова",  role: "Архитектор БД · поисковик эталонов, COD/MP" },
-    { initials: "ЧЕ", name: "Черняков", role: "Backend + 3D · нейросеть, визуализация, материаловедение" },
+    { initials: "АА", photo: null,                        name: "Артюшин Артём",   role: "Математическое и алгоритмическое обоснование · РФР · KDE · Random Forest" },
+    { initials: "МА", photo: "assets/team/markova.jpg",   name: "Маркова Алёна",   role: "Программная архитектура · серверная часть · веб-клиент · БД · библиотека" },
+    { initials: "ЧМ", photo: "assets/team/chernyakov.jpg",name: "Черняков Матвей", role: "AI/ML-механизмы · RAG · ИИ-ассистент · датасет · CatBoost" },
   ];
   return (
     <section className="section">
@@ -189,7 +189,10 @@ const TeamSection = () => {
         <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
           {team.map((t, i) => (
             <Card pad="lg" key={i}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 16, letterSpacing: ".02em" }}>{t.initials}</div>
+              {t.photo
+                ? <img src={t.photo} alt={t.name} style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                : <div style={{ width: 96, height: 96, borderRadius: 999, background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 22, letterSpacing: ".02em" }}>{t.initials}</div>
+              }
               <div style={{ marginTop: 20, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)" }}>{t.name}</div>
               <div style={{ marginTop: 6, fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.5 }}>{t.role}</div>
             </Card>

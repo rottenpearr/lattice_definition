@@ -505,10 +505,16 @@ const ViewerPipeline = () => (
    [CHANGE 3] RIGHT PANEL — tab switcher replaces draggable divider.
    ══════════════════════════════════════════════════════════ */
 const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId, section, setSection }) => {
-  const [tab, setTab] = React.useState("verdict");
+  const [tab, setTab]                   = React.useState("verdict");
+  const [chatMessages, setChatMessages] = React.useState([]);
 
   React.useEffect(() => {
     if (stage === "result") setTab("verdict");
+  }, [stage]);
+
+  // Сбрасываем историю чата при каждом новом анализе
+  React.useEffect(() => {
+    if (stage === "running") setChatMessages([]);
   }, [stage]);
 
   return (
@@ -532,16 +538,23 @@ const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId, 
         ))}
       </div>
 
-      {/* Content */}
-      {tab === "verdict" ? (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24, minHeight: 0 }}>
-          {stage === "result"
-            ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} section={section} setSection={setSection} />
-            : <VerdictPlaceholder />}
-        </div>
-      ) : (
-        <ChatPanel stage={stage} sessionId={sessionId} />
-      )}
+      {/* Verdict — всегда в DOM, скрываем через display */}
+      <div style={{ display: tab === "verdict" ? "flex" : "none", flex: 1, overflowY: "auto", padding: 24, minHeight: 0, flexDirection: "column" }}>
+        {stage === "result"
+          ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} section={section} setSection={setSection} />
+          : <VerdictPlaceholder />}
+      </div>
+
+      {/* Chat — всегда в DOM, история не теряется при смене таба */}
+      <div style={{ display: tab === "chat" ? "flex" : "none", flex: 1, flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+        <ChatPanel
+          stage={stage}
+          sessionId={sessionId}
+          result={result}
+          messages={chatMessages}
+          setMessages={setChatMessages}
+        />
+      </div>
     </aside>
   );
 };
@@ -565,7 +578,7 @@ const RankingRow = ({ item, top }) => (
   </div>
 );
 
-const MethodResult = ({ label, result, active }) => (
+const MethodResult = ({ label, result, active, emptyText = "Нет данных" }) => (
   <div style={{ border: `1px solid ${active && result ? "var(--cobalt)" : "var(--hairline)"}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--mute)" }}>{label}</span>
@@ -586,7 +599,7 @@ const MethodResult = ({ label, result, active }) => (
         )}
       </>
     ) : active ? (
-      <div style={{ fontSize: 12, color: "var(--mute)" }}>Метод будет подключён позже</div>
+      <div style={{ fontSize: 12, color: "var(--mute)" }}>{emptyText}</div>
     ) : null}
   </div>
 );
@@ -711,8 +724,8 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
           ) : (
             <p style={{ marginTop: 4, color: "var(--mute)", fontSize: 14 }}>{result?.message || "Совпадений в базе не найдено"}</p>
           )}
-          <MethodResult label="По базе данных"      result={dbLatticeResult}  active={!!methods?.db} />
-          <MethodResult label="CatBoost · сингония" result={catboostResult}   active={!!methods?.catboost} />
+          <MethodResult label="По базе данных"      result={dbLatticeResult}  active={!!methods?.db}       emptyText="Нет совпадений в базе данных" />
+          <MethodResult label="CatBoost · сингония" result={catboostResult}   active={!!methods?.catboost} emptyText="Нет данных от модели" />
         </div>
       )}
 
@@ -727,9 +740,9 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
           ) : (
             <p style={{ marginTop: 4, color: "var(--mute)", fontSize: 14 }}>{result?.message || "Совпадений в базе не найдено"}</p>
           )}
-          <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db} />
-          <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance} />
-          <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf} />
+          <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db}                  emptyText="Нет совпадений в базе данных" />
+          <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance}  emptyText="Нет данных от модели" />
+          <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf}                  emptyText="Нет данных от модели" />
         </div>
       )}
 
@@ -816,22 +829,39 @@ const renderWithLatex = (text) => {
 };
 
 /* ── Chat ── */
-const ChatPanel = ({ stage, sessionId }) => {
-  const [messages, setMessages] = React.useState([]);
-  const [input,    setInput]    = React.useState("");
-  const [loading,  setLoading]  = React.useState(false);
-  const [error,    setError]    = React.useState(null);
+const ChatPanel = ({ stage, sessionId, result, messages, setMessages }) => {
+  const [input,   setInput]   = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error,   setError]   = React.useState(null);
   const bottomRef = React.useRef(null);
   const inputRef  = React.useRef(null);
   const active    = stage === "result" && !!sessionId;
 
   React.useEffect(() => {
-    if (stage === "running") { setMessages([]); setError(null); }
+    if (stage === "running") setError(null);
   }, [stage]);
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });
   }, [messages, loading]);
+
+  // Строим строку с ML-результатами для системного промпта (Bug 2 fix)
+  const buildResultContext = () => {
+    if (!result) return null;
+    const parts = [];
+    const ml = result.ml_results || [];
+    if (result.success && result.structure?.name) {
+      parts.push(`База данных: ${result.structure.name}`);
+      if (result.lattice?.name_en) parts.push(`Тип решётки (DB): ${result.lattice.name_en}`);
+    }
+    const cbSubst = ml.find(r => r.method === "catboost_substance");
+    if (cbSubst?.name_en) parts.push(`CatBoost-вещество: ${cbSubst.name_en} (${cbSubst.confidence?.toFixed(1)}%)`);
+    const rf = ml.find(r => r.method === "rf");
+    if (rf?.name_en) parts.push(`Random Forest: ${rf.name_en} (${rf.confidence?.toFixed(1)}%)`);
+    const cbSyng = ml.find(r => r.method === "catboost");
+    if (cbSyng?.name_en) parts.push(`CatBoost-сингония: ${cbSyng.name_en} (${cbSyng.confidence?.toFixed(1)}%)`);
+    return parts.length ? parts.join("\n") : null;
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -842,7 +872,11 @@ const ChatPanel = ({ stage, sessionId }) => {
     try {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, messages: history }),
+        body: JSON.stringify({
+          session_id: sessionId,
+          messages: history,
+          result_context: buildResultContext() || undefined,
+        }),
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `HTTP ${res.status}`); }
       const data = await res.json();

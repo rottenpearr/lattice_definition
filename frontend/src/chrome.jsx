@@ -106,7 +106,7 @@ const Footer = ({ setRoute }) => (
     </div>
     <div className="container" style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid var(--night-line)", display: "flex", justifyContent: "space-between", color: "var(--night-mute)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: ".04em" }}>
       <span>© 2026 CRIS · MIT licence</span>
-      <span>build 2026.05.12 · v0.4.1</span>
+      <span>build 2026.05.12 · v0.4.3</span>
     </div>
   </footer>
 );

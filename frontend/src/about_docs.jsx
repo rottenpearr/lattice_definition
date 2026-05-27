@@ -9,20 +9,20 @@ const AboutScreen = () => (
           Как CRIS распознаёт<br />тип решётки.
         </h1>
         <p style={{ fontSize: 18, color: "var(--ink-soft)", lineHeight: 1.55, maxWidth: 680, margin: 0 }}>
-          Четыре независимых метода голосуют параллельно. Их прогнозы объединяются в ансамблевый ранкинг с явной оценкой согласованности.
+          Входные координаты проходят предобработку и преобразуются в числовой дескриптор, который подаётся в три независимых классификатора. Каждый возвращает свой результат с оценкой достоверности.
         </p>
       </div>
     </section>
     <section className="section-tight">
       <div className="container" style={{ maxWidth: 920 }}>
-        <Eyebrow>Методы распознавания</Eyebrow>
+        <Eyebrow>Пайплайн обработки</Eyebrow>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
           {[
-            { n: "01", t: "Нормализация координат", b: "Минимум сдвигается в начало координат, всё делится на глобальный максимум — получаем куб [0, 1]. Это делает совпадение независимым от масштаба и положения ячейки." },
-            { n: "02", t: "KDE-спектр попарных расстояний", b: "Считаем все попарные расстояния между ионами, прогоняем через гауссов KDE. Получаем непрерывный спектр, устойчивый к небольшим шумам и вакансиям." },
-            { n: "03", t: "Random Forest по KDE-вектору", b: "Дискретизованный KDE-вектор подаётся в RF, обученный на 1240+ эталонных структурах (Materials Project + COD). Возвращает дистрибуцию по 8 типам решёток." },
-            { n: "04", t: "CatBoost-классификатор", b: "Параллельная модель на тех же фичах, но с другим деревьями решений. Используется как проверка-голосование: согласие моделей повышает confidence." },
-            { n: "05", t: "Сравнение с эталонной БД", b: "Top-1 предсказание используется для поиска ближайшей реальной структуры в эталонной БД по L2-расстоянию KDE. Возвращает имя вещества и ссылки на COD/MP." },
+            { n: "01", t: "Нормализация координат", b: "Минимальные координаты сдвигаются в начало, затем все значения делятся на глобальный максимум — ячейка приводится к кубу [0, 1]. Результат не зависит от масштаба и ориентации исходной структуры." },
+            { n: "02", t: "Построение KDE-дескриптора", b: "Для каждого типа иона считаются расстояния до всех остальных. Распределение расстояний сглаживается гауссовым KDE на сетке [0, 2] из 200 точек. Векторы по всем типам ионов усредняются в единый 200-мерный дескриптор." },
+            { n: "03", t: "Классификатор Random Forest", b: "200-мерный вектор подаётся в Random Forest, обученный на эталонных структурах соединений урана. Модель возвращает вероятности принадлежности к известным структурным фазам (UC, U₂C₃ и др.)." },
+            { n: "04", t: "Классификатор CatBoost", b: "Тот же дескриптор подаётся в CatBoost — независимую модель на основе градиентного бустинга. Работает параллельно с RF и возвращает собственный ранкинг типов решёток с оценкой достоверности." },
+            { n: "05", t: "Поиск ближайшего эталона в БД", b: "KDE-дескриптор сравнивается с векторами всех эталонных структур в базе по L2-расстоянию. Ближайшее совпадение возвращается как наиболее вероятное реальное соединение с названием вещества и оценкой близости." },
           ].map((m, i) => (
             <Card pad="lg" key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 24, alignItems: "start" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: ".08em", color: "var(--cobalt)" }}>{m.n}</div>
@@ -37,21 +37,49 @@ const AboutScreen = () => (
     </section>
     <section id="team" className="section" style={{ background: "var(--paper-deep)", borderTop: "1px solid var(--hairline)" }}>
       <div className="container" style={{ maxWidth: 920 }}>
-        <Eyebrow>Подробнее об авторах</Eyebrow>
+        <Eyebrow>Об авторах</Eyebrow>
         <h2 className="section-title" style={{ fontSize: 36, margin: "16px 0 32px", lineHeight: 1.1 }}>Дипломные работы и зоны ответственности</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {[
-            { name: "Артюшин", topic: "«Развитие системы распознавания типов кристаллических решёток с применением методов радиального распределения ближайших соседей и машинного обучения»", area: "ML-инженер · RF / CatBoost · ансамбли · работа с патентом" },
-            { name: "Маркова", topic: "«Внедрение механизмов распознавания типов кристаллических решёток для автоматизации определения методов молекулярно-динамических исследований»", area: "Архитектор БД · поисковик эталонов · интеграция COD / Materials Project" },
-            { name: "Черняков", topic: "«Развитие системы глобального распознавания типов кристаллов с применением методов AI/ML для численного материаловедения»", area: "Backend · собственная нейросеть · 3D-визуализация · математика на numpy" },
+            {
+              name: "Артюшин Артём Александрович",
+              initials: "АА",
+              photo: null,
+              topic: "«Разработка алгоритмов для системы распознавания типов кристаллических решёток с использованием ядерной оценки плотности радиального распределения и машинного обучения»",
+              area: "Математическое и алгоритмическое обоснование метода идентификации · радиальная функция распределения · ядерная оценка плотности · классификатор Random Forest · обучение моделей машинного обучения",
+            },
+            {
+              name: "Маркова Алёна Денисовна",
+              initials: "МА",
+              photo: "assets/team/markova.jpg",
+              topic: "«Разработка программной архитектуры информационной системы CRIS для автоматизированной идентификации типов кристаллических решёток»",
+              area: "Программная архитектура комплекса · серверная часть · веб-клиент · эталонная база данных · встраиваемая программная библиотека",
+            },
+            {
+              name: "Черняков Матвей Сергеевич",
+              initials: "ЧМ",
+              photo: "assets/team/chernyakov.jpg",
+              topic: "«Проектирование и внедрение RAG-системы с применением AI/ML-механизмов в программный комплекс CRIS»",
+              area: "Подсистема AI/ML-механизмов · RAG-обогащение метаданных · диалоговый ИИ-помощник · формирование обучающего датасета · классификатор CatBoost",
+            },
           ].map((a, i) => (
             <Card pad="lg" key={i}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                <h3 className="section-title" style={{ fontSize: 22, margin: 0 }}>{a.name}</h3>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--mute)" }}>diploma · 2026</span>
+              <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                <div style={{ flexShrink: 0 }}>
+                  {a.photo
+                    ? <img src={a.photo} alt={a.name} style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                    : <div style={{ width: 100, height: 100, borderRadius: "50%", background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 24, letterSpacing: ".02em" }}>{a.initials}</div>
+                  }
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                    <h3 className="section-title" style={{ fontSize: 20, margin: 0 }}>{a.name}</h3>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--mute)", whiteSpace: "nowrap" }}>diploma · 2026</span>
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.55, fontStyle: "italic" }}>{a.topic}</p>
+                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--cobalt-deep)", fontFamily: "var(--font-mono)" }}>{a.area}</div>
+                </div>
               </div>
-              <p style={{ margin: "10px 0 0", fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.55 }}>{a.topic}</p>
-              <div style={{ marginTop: 12, fontSize: 13, color: "var(--cobalt-deep)", fontFamily: "var(--font-mono)" }}>{a.area}</div>
             </Card>
           ))}
         </div>
