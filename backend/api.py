@@ -63,7 +63,7 @@ class Ion(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     sites: list[Ion]
-    methods: list[str] = ["db"]   # "db" | "catboost" | "rf"
+    methods: list[str] = ["db"]   # "db" | "catboost" | "catboost_substance" | "rf"
 
 
 class LatticeResult(BaseModel):
@@ -93,7 +93,8 @@ class RankingItem(BaseModel):
 
 
 class MLMethodResult(BaseModel):
-    method: str                      # "catboost" | "rf"
+    method: str                      # "catboost" | "catboost_substance" | "rf"
+    category: str = "crystal_system" # "crystal_system" | "substance"
     name_en: Optional[str] = None
     name_ru: Optional[str] = None
     confidence: float = 0.0
@@ -327,16 +328,21 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
     """
     Запускает выбранные ML-методы и возвращает список MLMethodResult.
     Каждый результат также сохраняется в recognition_result.
+
+    Категории:
+      crystal_system — CatBoost (сингония): "catboost"
+      substance      — CatBoost (вещество): "catboost_substance"; RF: "rf"
     """
-    from cris.core.ml_predict import predict_catboost, predict_rf, resolve_lattice_ids
+    from cris.core.ml_predict import (
+        predict_catboost, predict_catboost_substance, predict_rf, resolve_lattice_ids
+    )
 
     results: list[MLMethodResult] = []
 
-    def _preds_to_result(method: str, preds: list[dict]) -> MLMethodResult:
+    def _preds_to_result(method: str, category: str, preds: list[dict]) -> MLMethodResult:
         if not preds:
-            return MLMethodResult(method=method)
+            return MLMethodResult(method=method, category=category)
         top = preds[0]
-        # Пробуем взять name_ru для lattice_type_id
         name_ru = None
         if top.get("lattice_type_id"):
             try:
@@ -353,6 +359,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
         ]
         return MLMethodResult(
             method=method,
+            category=category,
             name_en=top["lattice_name"],
             name_ru=name_ru,
             confidence=round(top["confidence"] * 100, 2),
@@ -363,27 +370,40 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
         try:
             preds = predict_catboost(normalized)
             preds = resolve_lattice_ids(preds)
-            mr = _preds_to_result("catboost", preds)
+            mr = _preds_to_result("catboost", "crystal_system", preds)
             results.append(mr)
             if session_id and preds:
                 _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
                                          mr.confidence, method="CATBOOST")
         except Exception as e:
             logger.warning("CatBoost inference failed: {}", e)
-            results.append(MLMethodResult(method="catboost"))
+            results.append(MLMethodResult(method="catboost", category="crystal_system"))
+
+    if "catboost_substance" in methods:
+        try:
+            preds = predict_catboost_substance(normalized)
+            preds = resolve_lattice_ids(preds)
+            mr = _preds_to_result("catboost_substance", "substance", preds)
+            results.append(mr)
+            if session_id and preds:
+                _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
+                                         mr.confidence, method="CATBOOST_SUBSTANCE")
+        except Exception as e:
+            logger.warning("CatBoost-substance inference failed: {}", e)
+            results.append(MLMethodResult(method="catboost_substance", category="substance"))
 
     if "rf" in methods:
         try:
             preds = predict_rf(normalized)
             preds = resolve_lattice_ids(preds)
-            mr = _preds_to_result("rf", preds)
+            mr = _preds_to_result("rf", "substance", preds)
             results.append(mr)
             if session_id and preds:
                 _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
                                          mr.confidence, method="RF")
         except Exception as e:
             logger.warning("RF inference failed: {}", e)
-            results.append(MLMethodResult(method="rf"))
+            results.append(MLMethodResult(method="rf", category="substance"))
 
     return results
 

@@ -169,7 +169,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
-  const [methods,   setMethods]   = React.useState({ db: true, catboost: true, rf: false });
+  const [methods,   setMethods]   = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
   const screenshotApiRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -274,9 +274,10 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
       <WsLabel>Методы</WsLabel>
       <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
         {[
-          { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
-          { key: "catboost", label: "CatBoost",         note: "ML на KDE-векторах" },
-          { key: "rf",       label: "Random Forest",    note: "ML на KDE-векторах" },
+          { key: "db",                 label: "По базе данных",       note: "точное совпадение координат" },
+          { key: "catboost",           label: "CatBoost · сингония",  note: "ML, 8 типов кристаллических систем" },
+          { key: "catboost_substance", label: "CatBoost · вещество",  note: "ML, конкретные соединения (UC, UN2…)" },
+          { key: "rf",                 label: "Random Forest",         note: "ML, конкретные соединения" },
         ].map(({ key, label, note }) => (
           <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
             <input
@@ -577,29 +578,44 @@ const MethodResult = ({ label, result, active }) => (
   </div>
 );
 
+/* ── Inner section tab bar ── */
+const SectionTabs = ({ active, onChange }) => (
+  <div style={{ display: "flex", borderBottom: "1px solid var(--hairline)", marginTop: 14, marginBottom: 0 }}>
+    {[["syngony", "Сингония"], ["substance", "По веществу"]].map(([id, label]) => (
+      <button key={id} onClick={() => onChange(id)} style={{
+        padding: "8px 14px 9px", border: "none", background: "transparent",
+        fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active === id ? 600 : 400,
+        color: active === id ? "var(--ink)" : "var(--mute)",
+        borderBottom: `2px solid ${active === id ? "var(--cobalt)" : "transparent"}`,
+        marginBottom: -1, cursor: "pointer", letterSpacing: ".01em",
+        transition: "color var(--t-fast), border-color var(--t-fast)",
+      }}>{label}</button>
+    ))}
+  </div>
+);
+
 const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
-  const [cited, setCited] = React.useState(false);
+  const [cited,   setCited]   = React.useState(false);
+  const [section, setSection] = React.useState("syngony");
+
+  React.useEffect(() => { if (result) setSection("syngony"); }, [result]);
 
   const handleCite = () => {
     if (!result?.success) return;
     const { lattice, structure } = result;
     const activeMethods = [
-      methods?.db       && "DB matching",
-      methods?.catboost && "CatBoost",
-      methods?.rf       && "Random Forest",
+      methods?.db                 && "DB matching",
+      methods?.catboost           && "CatBoost",
+      methods?.catboost_substance && "CatBoost-substance",
+      methods?.rf                 && "Random Forest",
     ].filter(Boolean).join(" + ") || "DB matching";
-
     const lines = [
       [structure?.name, structure?.formula && structure.formula !== structure.name ? `(${structure.formula})` : null, lattice?.name_en ? `, ${lattice.name_en}` : "", structure?.sg_hm ? `, ${structure.sg_hm}` : ""].filter(Boolean).join(" "),
       [structure?.cell_a != null ? `a = ${structure.cell_a.toFixed(3)} Å.` : null, lattice?.confidence != null ? `Confidence: ${lattice.confidence.toFixed(2)}.` : null].filter(Boolean).join(" "),
       structure?.sg_number ? `Space group ${structure.sg_number}.` : null,
       `Identified by CRIS v0.4.3 (${activeMethods}).`,
     ].filter(Boolean).join(" ");
-
-    navigator.clipboard.writeText(lines).then(() => {
-      setCited(true);
-      setTimeout(() => setCited(false), 2000);
-    });
+    navigator.clipboard.writeText(lines).then(() => { setCited(true); setTimeout(() => setCited(false), 2000); });
   };
 
   if (apiError) return (
@@ -611,55 +627,70 @@ const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
     </div>
   );
 
-  const summary        = result?.success ? result.lattice   : null;
-  const structure      = result?.success ? result.structure : null;
-  const dbResult       = result?.success ? {
+  const dbLatticeResult   = result?.success ? {
     name_en: result.lattice?.name_en, name_ru: result.lattice?.name_ru,
     confidence: result.lattice?.confidence, ranking: result.lattice_ranking,
   } : null;
-  const catboostResult = result?.ml_results?.find(r => r.method === "catboost") ?? null;
-  const rfResult       = result?.ml_results?.find(r => r.method === "rf")       ?? null;
+  const dbSubstanceResult = result?.success && result.structure ? {
+    name_en:    result.structure.name,
+    name_ru:    result.structure.formula && result.structure.formula !== result.structure.name ? result.structure.formula : null,
+    confidence: result.structure.confidence,
+    ranking:    [],
+  } : null;
+  const catboostResult          = result?.ml_results?.find(r => r.method === "catboost")           ?? null;
+  const catboostSubstanceResult = result?.ml_results?.find(r => r.method === "catboost_substance") ?? null;
+  const rfResult                = result?.ml_results?.find(r => r.method === "rf")                 ?? null;
+
+  const structure = result?.success ? result.structure : null;
 
   return (
     <div>
-      {/* [CHANGE 2] WsLabel */}
       <WsLabel>Verdict</WsLabel>
-      {summary ? (
-        <>
-          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <h3 className="section-title" style={{ fontSize: 28, margin: 0 }}>{summary.name_en ?? "—"}</h3>
-          </div>
-          {summary.name_ru && <div style={{ marginTop: 4, fontSize: 14, color: "var(--ink-soft)" }}>{summary.name_ru}</div>}
-          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {siteCount > 0        && <Chip tone="info">{siteCount} ions</Chip>}
-            {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
-            {structure?.sg_hm        && <Chip tone="info">{structure.sg_hm}</Chip>}
-          </div>
-          {structure && (
-            <>
-              <hr className="hr" style={{ margin: "14px 0" }} />
-              {/* [CHANGE 2] WsLabel */}
-              <WsLabel>Probable substance</WsLabel>
-              <div style={{ marginTop: 8, fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500 }}>
-                {structure.name ?? "—"}
-                {structure.formula && structure.formula !== structure.name ? ` · ${structure.formula}` : ""}
-              </div>
-              <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {structure.sg_number && <Chip>sg {structure.sg_number}</Chip>}
-              </div>
-            </>
-          )}
-        </>
-      ) : (
-        <p style={{ marginTop: 16, color: "var(--mute)", fontSize: 14 }}>{result?.message || "Совпадающих структур не найдено"}</p>
+
+      {/* Site count chip */}
+      {siteCount > 0 && (
+        <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Chip tone="info">{siteCount} ions</Chip>
+          {structure?.cell_a != null && <Chip tone="info">a = {structure.cell_a.toFixed(3)} Å</Chip>}
+          {structure?.sg_hm         && <Chip tone="info">{structure.sg_hm}</Chip>}
+        </div>
       )}
 
-      <hr className="hr" style={{ margin: "14px 0" }} />
-      {/* [CHANGE 2] WsLabel */}
-      <WsLabel>По методам</WsLabel>
-      <MethodResult label="По базе данных" result={dbResult}       active={!!methods?.db} />
-      <MethodResult label="CatBoost"        result={catboostResult} active={!!methods?.catboost} />
-      <MethodResult label="Random Forest"   result={rfResult}       active={!!methods?.rf} />
+      {/* Section tabs */}
+      <SectionTabs active={section} onChange={setSection} />
+
+      {/* ── СИНГОНИЯ ── */}
+      {section === "syngony" && (
+        <div style={{ marginTop: 14 }}>
+          {dbLatticeResult ? (
+            <>
+              <h3 className="section-title" style={{ fontSize: 26, margin: "0 0 4px" }}>{dbLatticeResult.name_en ?? "—"}</h3>
+              {dbLatticeResult.name_ru && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 8 }}>{dbLatticeResult.name_ru}</div>}
+            </>
+          ) : (
+            <p style={{ marginTop: 4, color: "var(--mute)", fontSize: 14 }}>{result?.message || "Совпадений в базе не найдено"}</p>
+          )}
+          <MethodResult label="По базе данных"      result={dbLatticeResult}  active={!!methods?.db} />
+          <MethodResult label="CatBoost · сингония" result={catboostResult}   active={!!methods?.catboost} />
+        </div>
+      )}
+
+      {/* ── ПО ВЕЩЕСТВУ ── */}
+      {section === "substance" && (
+        <div style={{ marginTop: 14 }}>
+          {dbSubstanceResult ? (
+            <>
+              <h3 className="section-title" style={{ fontSize: 26, margin: "0 0 4px" }}>{dbSubstanceResult.name_en ?? "—"}</h3>
+              {dbSubstanceResult.name_ru && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 8 }}>{dbSubstanceResult.name_ru}</div>}
+            </>
+          ) : (
+            <p style={{ marginTop: 4, color: "var(--mute)", fontSize: 14 }}>{result?.message || "Совпадений в базе не найдено"}</p>
+          )}
+          <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db} />
+          <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance} />
+          <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf} />
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>

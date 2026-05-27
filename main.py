@@ -14,7 +14,7 @@ from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.queries import get_similar_xyz_from_db, check_coords
 from cris.db.repository.recognition import get_or_create_session, save_result
 from cris.db.enrichment.substance_enricher import enrich_substance
-from cris.core.ml_predict import predict_catboost, resolve_lattice_ids
+from cris.core.ml_predict import predict_catboost, predict_catboost_substance, predict_rf, resolve_lattice_ids
 from cris.logger import logger
 from cris.tools.report import save_docx
 
@@ -176,60 +176,95 @@ class MainWindow(QMainWindow):
         coords = get_similar_xyz_from_db(data_dict)
         query_data = check_coords(coords, int(self.ui.combo_box_ions.currentText()))
 
-        if not query_data:
-            QMessageBox.warning(self, "Поиск не дал результатов", "Попробуйте ввести другие значения!")
-            return
-
-        result_lattice_types = sorted(query_data[0][0], key=lambda x: -x[3])
-        result_substances = sorted(query_data[0][1], key=lambda x: -x[2])
-        result_possible_lattice = query_data[1][0]
-        result_possible_lattice_probability = query_data[1][1]
-        result_possible_substance = query_data[2][0]
-        result_possible_substance_probability = query_data[2][1]
-
-        # ── Сохраняем сессию распознавания и результат в БД ──────────────────
+        # ── Сессия создаётся всегда, независимо от DB-матча ──────────────────
+        session = None
         try:
             norm_tuples = [(row[1], row[2], row[3]) for row in normalized_data]
             ion_count   = int(self.ui.combo_box_ions.currentText())
             session = get_or_create_session(ion_count=ion_count, normalized_coords=norm_tuples)
-
-            top_lt_id = result_possible_lattice[0] if result_possible_lattice else None
-            top_st_id = result_possible_substance[0] if result_possible_substance else None
-            save_result(
-                session_id=session.id,
-                method="COORD_MATCH",
-                method_version="1.0",
-                rank=1,
-                lattice_type_id=top_lt_id,
-                structure_id=top_st_id,
-                confidence=round(result_possible_lattice_probability / 100.0, 4),
-            )
-            logger.info("Session saved: id={} lt_id={} st_id={}", session.id[:8], top_lt_id, top_st_id)
         except Exception as e:
-            logger.warning("Could not save recognition session: {}", e)
+            logger.warning("Could not create session: {}", e)
 
-        # ── CatBoost: записываем ML-предсказания в recognition_result ────────
-        try:
-            cb_preds = predict_catboost(normalized_data)
-            if cb_preds:
-                resolve_lattice_ids(cb_preds)
-                for rank, pred in enumerate(cb_preds, start=1):
+        # ── DB-результаты (если нашлось) ──────────────────────────────────────
+        if query_data:
+            result_lattice_types = sorted(query_data[0][0], key=lambda x: -x[3])
+            result_substances    = sorted(query_data[0][1], key=lambda x: -x[2])
+            result_possible_lattice              = query_data[1][0]
+            result_possible_lattice_probability  = query_data[1][1]
+            result_possible_substance            = query_data[2][0]
+            result_possible_substance_probability = query_data[2][1]
+
+            try:
+                if session:
+                    top_lt_id = result_possible_lattice[0] if result_possible_lattice else None
+                    top_st_id = result_possible_substance[0] if result_possible_substance else None
                     save_result(
                         session_id=session.id,
-                        method="CATBOOST",
+                        method="COORD_MATCH",
                         method_version="1.0",
-                        rank=rank,
-                        lattice_type_id=pred["lattice_type_id"],
-                        structure_id=None,   # CatBoost предсказывает тип, не конкретную структуру
-                        confidence=pred["confidence"],
+                        rank=1,
+                        lattice_type_id=top_lt_id,
+                        structure_id=top_st_id,
+                        confidence=round(result_possible_lattice_probability / 100.0, 4),
                     )
-                logger.info(
-                    "CatBoost saved: top={} ({:.0f}%)",
-                    cb_preds[0]["class"],
-                    cb_preds[0]["confidence"] * 100,
-                )
+                    logger.info("Session saved: id={}", session.id[:8])
+            except Exception as e:
+                logger.warning("Could not save recognition session: {}", e)
+        else:
+            result_lattice_types = []
+            result_substances    = []
+            result_possible_lattice              = None
+            result_possible_lattice_probability  = 0.0
+            result_possible_substance            = None
+            result_possible_substance_probability = 0.0
+
+        # ── CatBoost (сингония) ───────────────────────────────────────────────
+        cb_preds = []
+        try:
+            cb_preds = predict_catboost(normalized_data)
+            if cb_preds and session:
+                resolve_lattice_ids(cb_preds)
+                for rank, pred in enumerate(cb_preds, start=1):
+                    save_result(session_id=session.id, method="CATBOOST",
+                                method_version="1.0", rank=rank,
+                                lattice_type_id=pred["lattice_type_id"],
+                                structure_id=None, confidence=pred["confidence"])
+                logger.info("CatBoost: top={} ({:.0f}%)",
+                            cb_preds[0]["class"], cb_preds[0]["confidence"] * 100)
         except Exception as e:
             logger.warning("CatBoost prediction failed: {}", e)
+
+        # ── CatBoost (вещество) ───────────────────────────────────────────────
+        cb_substance_preds = []
+        try:
+            cb_substance_preds = predict_catboost_substance(normalized_data)
+            if cb_substance_preds and session:
+                resolve_lattice_ids(cb_substance_preds)
+                for rank, pred in enumerate(cb_substance_preds, start=1):
+                    save_result(session_id=session.id, method="CATBOOST_SUBSTANCE",
+                                method_version="1.0", rank=rank,
+                                lattice_type_id=pred["lattice_type_id"],
+                                structure_id=None, confidence=pred["confidence"])
+                logger.info("CatBoost-substance: top={} ({:.0f}%)",
+                            cb_substance_preds[0]["class"], cb_substance_preds[0]["confidence"] * 100)
+        except Exception as e:
+            logger.warning("CatBoost-substance prediction failed: {}", e)
+
+        # ── RF (вещество) ─────────────────────────────────────────────────────
+        rf_preds = []
+        try:
+            rf_preds = predict_rf(normalized_data)
+            if rf_preds and session:
+                resolve_lattice_ids(rf_preds)
+                for rank, pred in enumerate(rf_preds, start=1):
+                    save_result(session_id=session.id, method="RF",
+                                method_version="1.0", rank=rank,
+                                lattice_type_id=pred["lattice_type_id"],
+                                structure_id=None, confidence=pred["confidence"])
+                logger.info("RF: top={} ({:.0f}%)",
+                            rf_preds[0]["class"], rf_preds[0]["confidence"] * 100)
+        except Exception as e:
+            logger.warning("RF prediction failed: {}", e)
 
         # ── Запускаем обогащение вещества в фоне (не блокируем UI) ───────────
         if result_possible_substance is not None:
@@ -251,35 +286,58 @@ class MainWindow(QMainWindow):
 
             threading.Thread(target=_bg_enrich, daemon=True).start()
 
-        result_lattice_types = " ".join(list(str(item[1]) + " " + f"{item[3]:.2f}%;" for item in result_lattice_types))
-        result_substances = " ".join(list(str(item[1]) + " " + f"{item[2]:.2f}%;" for item in result_substances))
-        result_possible_lattice_name = str(result_possible_lattice[2]) + " " + f"{result_possible_lattice_probability:.2f}%;"
-        result_possible_lattice_description = str(result_possible_lattice[3])
-        result_possible_substance_name = str(result_possible_substance[1]) + " " + f"({result_possible_substance_probability:.2f}%)"
-        result_possible_substance_description = (f"Длина ребра ячейки по оси a = {str(result_possible_substance[2])}; "
-                                                 f"Длина ребра ячейки по оси b = {str(result_possible_substance[3])}; "
-                                                 f"Длина ребра ячейки по оси c = {str(result_possible_substance[4])}; "
-                                                 f"Объем элементарной ячейки кристалла (куб. Ангстрем) = {str(result_possible_substance[5])}; "
-                                                 f"Угол между осями b и c (альфа) = {str(result_possible_substance[6])}; "
-                                                 f"Угол между осями a и c (бета) = {str(result_possible_substance[7])}; "
-                                                 f"Угол между осями a и b (гамма) = {str(result_possible_substance[8])}; "
-                                                 f"Номер пространственной группы (по МТК) = {str(result_possible_substance[9])}; "
-                                                 f"Пространственная группа (Hall-notation) = {str(result_possible_substance[10])}; "
-                                                 f"Пространственная группа (Hermann-Mauguin notation) = {str(result_possible_substance[11])};")
+        db_lattice_list   = " ".join(f"{item[1]} {item[3]:.2f}%;" for item in result_lattice_types) or "—"
+        db_substance_list = " ".join(f"{item[1]} {item[2]:.2f}%;" for item in result_substances) or "—"
+        if result_possible_lattice:
+            db_lattice_top  = str(result_possible_lattice[2]) + f" {result_possible_lattice_probability:.2f}%"
+            db_lattice_desc = str(result_possible_lattice[3])
+        else:
+            db_lattice_top  = "—"
+            db_lattice_desc = "совпадений в базе не найдено"
+        if result_possible_substance:
+            db_substance_top = str(result_possible_substance[1]) + f" ({result_possible_substance_probability:.2f}%)"
+            db_substance_desc = (
+                f"a={result_possible_substance[2]}, b={result_possible_substance[3]}, "
+                f"c={result_possible_substance[4]}; "
+                f"V={result_possible_substance[5]} Å³; "
+                f"α={result_possible_substance[6]}, β={result_possible_substance[7]}, γ={result_possible_substance[8]}; "
+                f"SG №{result_possible_substance[9]} ({result_possible_substance[11]})"
+            )
+        else:
+            db_substance_top  = "—"
+            db_substance_desc = "—"
 
-        self.image_name = Path("data/images/" + str(result_possible_lattice[1]) + ".png").resolve()
+        def _fmt_ml_ranking(preds: list[dict], top_k: int = 3) -> str:
+            if not preds:
+                return "—"
+            parts = [f"{p['lattice_name']} {p['confidence']*100:.1f}%" for p in preds[:top_k]]
+            return ";  ".join(parts)
+
+        cb_str          = _fmt_ml_ranking(cb_preds)
+        cb_substance_str = _fmt_ml_ranking(cb_substance_preds)
+        rf_str          = _fmt_ml_ranking(rf_preds)
+
+        lattice_img_name = result_possible_lattice[1] if result_possible_lattice else "default"
+        self.image_name = Path("data/images/" + str(lattice_img_name) + ".png").resolve()
 
         if all_filled:
             QMessageBox.information(self, "Успех", "Все координаты введены корректно!")
-            # self.ui.widget_2.show()
             self.ui.button_save.show()
             self.ui.info_lattice.setText(
-                f"<b>Подходящие типы кристаллической решетки:</b> {result_lattice_types}<br>"
-                f"<b>Наиболее вероятный тип:</b> {result_possible_lattice_name}<br>"
-                f"<b>Описание типа:</b> {result_possible_lattice_description}<br>"
-                f"<b>Возможное вещество:</b> {result_substances}<br>"
-                f"<b>Наиболее вероятное вещество:</b> {result_possible_substance_name}<br>"
-                f"<b>Описание вещества:</b> {result_possible_substance_description}"
+                # ── Сингония ──────────────────────────────────────────────────
+                "<b>━━━ СИНГОНИЯ ━━━</b><br>"
+                f"<b>БД — подходящие типы:</b> {db_lattice_list}<br>"
+                f"<b>БД — наиболее вероятный:</b> {db_lattice_top}<br>"
+                f"<b>БД — описание типа:</b> {db_lattice_desc}<br>"
+                f"<b>CatBoost (сингония):</b> {cb_str}<br>"
+                "<br>"
+                # ── По веществу ───────────────────────────────────────────────
+                "<b>━━━ ВЕЩЕСТВО ━━━</b><br>"
+                f"<b>БД — подходящие вещества:</b> {db_substance_list}<br>"
+                f"<b>БД — наиболее вероятное:</b> {db_substance_top}<br>"
+                f"<b>БД — параметры ячейки:</b> {db_substance_desc}<br>"
+                f"<b>CatBoost (вещество):</b> {cb_substance_str}<br>"
+                f"<b>Random Forest:</b> {rf_str}"
             )
             png_label = self.ui.lattice_widget
             image_path = str(self.image_name)

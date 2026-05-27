@@ -22,8 +22,9 @@ from cris.logger import logger
 
 # ── Пути к моделям ────────────────────────────────────────────────────────────
 _ROOT = Path(__file__).parent.parent.parent
-_DEFAULT_MODEL    = _ROOT / "ML" / "CatBoost" / "catboost_lattice.cbm"
-_DEFAULT_RF_MODEL = _ROOT / "ML" / "rf_optimized_model.pkl"
+_DEFAULT_MODEL           = _ROOT / "ML" / "CatBoost" / "catboost_lattice.cbm"
+_DEFAULT_RF_MODEL        = _ROOT / "ML" / "rf_optimized_model.pkl"
+_DEFAULT_SUBSTANCE_MODEL = _ROOT / "ML" / "CatBoost" / "catboost_substance.cbm"
 
 # ── Маппинг классов модели → name_en в таблице lattice_type ──────────────────
 # Модель обучена на подтипах Браве-решётки; все cubic_* → "cubic" и т.д.
@@ -66,18 +67,23 @@ def _coords_to_feature_vector(normalized_coords: list) -> Optional[np.ndarray]:
     try:
         from cris.core.vectors import get_lattice_vectors3
 
-        # Подавляем print() внутри get_lattice_vectors3
+        coords = normalized_coords
+        if len(coords) < 30:
+            coords = _expand_supercell(coords, n=2)
+
         _old_stdout = sys.stdout
         sys.stdout = io.StringIO()
         try:
-            vectors_dict = get_lattice_vectors3(normalized_coords)
+            vectors_dict = get_lattice_vectors3(coords)
         finally:
             sys.stdout = _old_stdout
 
         ion_arrays = []
         for distances in vectors_dict.values():
-            arr = _kde_array_1000(dict(Counter(distances)))
-            ion_arrays.append(arr)
+            counter = dict(Counter(distances))
+            if len(counter) >= 2:
+                arr = _kde_array_1000(counter)
+                ion_arrays.append(arr)
 
         if not ion_arrays:
             return None
@@ -141,9 +147,13 @@ def _expand_supercell(normalized_coords: list, n: int = 2) -> list:
 def _coords_to_feature_vector_200(normalized_coords: list) -> Optional[np.ndarray]:
     """
     Список [label, x, y, z] → усреднённый KDE-вектор 200-dim.
-    Используется для CatBoost и Random Forest.
+    Используется для CatBoost-вещество и Random Forest.
     Для малых структур (< 30 ионов) разворачивает в 2×2×2 супер-ячейку,
     чтобы PBC в get_lattice_vectors3 не схлопывал расстояния в 0.
+
+    Все ионы включаются в усреднение (без фильтра по числу уникальных
+    расстояний) — это соответствует поведению при обучении RF/CatBoost-вещество.
+    Ионы с менее чем 2 расстояниями дают нулевой вектор (np.zeros(200)).
     """
     try:
         from cris.core.spectrum import kde_array
@@ -163,9 +173,11 @@ def _coords_to_feature_vector_200(normalized_coords: list) -> Optional[np.ndarra
         ion_arrays = []
         for distances in vectors_dict.values():
             counter = dict(Counter(distances))
-            if len(counter) >= 2:
+            try:
                 arr = kde_array(counter)
-                ion_arrays.append(arr)
+            except Exception:
+                arr = np.zeros(200)
+            ion_arrays.append(arr)
 
         if not ion_arrays:
             return None
@@ -223,7 +235,7 @@ def predict_catboost(
         results.append({
             "class":           cls_name,
             "lattice_name":    _CLASS_TO_LATTICE_EN.get(cls_name, cls_name),
-            "lattice_type_id": None,   # заполнит resolve_lattice_ids()
+            "lattice_type_id": None,
             "confidence":      round(float(proba[i]), 4),
         })
 
@@ -282,6 +294,57 @@ def predict_rf(
     ]
 
     logger.debug("RF prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
+    return results
+
+
+def predict_catboost_substance(
+    normalized_coords: list,
+    model_path: Path = _DEFAULT_SUBSTANCE_MODEL,
+    top_k: int = 3,
+) -> list[dict]:
+    """
+    Предсказывает конкретное вещество через CatBoost (200-dim KDE вектор).
+    Модель обучается скриптом ML/CatBoost/train_substance.py на тех же данных,
+    что и RF (urановые соединения: UC, UN2, UC2_phase1 и т.д.).
+
+    Returns:
+        [{"class": "UC", "lattice_name": "UC",
+          "lattice_type_id": None, "confidence": 0.85}, ...]
+    """
+    if not model_path.exists():
+        logger.debug("ml_predict: substance model not found: {}", model_path)
+        return []
+
+    model = _load_model(model_path)
+    if model is None:
+        return []
+
+    feat = _coords_to_feature_vector_200(normalized_coords)
+    if feat is None:
+        return []
+
+    if len(feat) != len(model.feature_names_):
+        logger.warning(
+            "ml_predict: substance model feature size mismatch (got {}, need {})",
+            len(feat), len(model.feature_names_)
+        )
+        return []
+
+    proba   = model.predict_proba(feat.reshape(1, -1))[0]
+    classes = model.classes_
+
+    top_indices = np.argsort(proba)[::-1][:top_k]
+    results = []
+    for i in top_indices:
+        cls_name = str(classes[i])
+        results.append({
+            "class":           cls_name,
+            "lattice_name":    _CLASS_TO_LATTICE_EN.get(cls_name, cls_name),
+            "lattice_type_id": None,
+            "confidence":      round(float(proba[i]), 4),
+        })
+
+    logger.debug("CatBoost-substance prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
     return results
 
 
