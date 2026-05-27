@@ -607,7 +607,38 @@ const SectionTabs = ({ active, onChange }) => (
 );
 
 const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSection }) => {
-  const [cited, setCited] = React.useState(false);
+  const [cited,       setCited]       = React.useState(false);
+  const [docxLoading, setDocxLoading] = React.useState(false);
+
+  const handleExportJSON = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = "cris_result.json"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportDOCX = async () => {
+    if (!result || docxLoading) return;
+    setDocxLoading(true);
+    try {
+      const resp = await fetch(`${API_BASE}/api/export/docx`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result),
+      });
+      if (!resp.ok) throw new Error("export failed");
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = "cris_result.docx"; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("DOCX export:", e);
+    } finally {
+      setDocxLoading(false);
+    }
+  };
 
   const handleCite = () => {
     if (!result?.success) return;
@@ -702,8 +733,11 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>JSON</Button>
-        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}>DOCX</Button>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}
+          onClick={handleExportJSON} disabled={!result}>JSON</Button>
+        <Button variant="quiet" size="sm" icon={<IconDownload size={14} />}
+          onClick={handleExportDOCX} disabled={!result || docxLoading}>
+          {docxLoading ? "…" : "DOCX"}</Button>
         <Button variant="ghost" size="sm" icon={<IconCopy size={14} />}
           onClick={handleCite} disabled={!result?.success}>
           {cited ? "Скопировано!" : "Цитата"}
