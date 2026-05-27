@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 __version__ = "0.4.3"
-__all__ = ["identify", "CrisResult"]
+__all__ = ["identify", "load_xyz", "CrisResult"]
 
 
 @dataclass
@@ -66,6 +66,44 @@ class CrisResult:
         if self.db_match_name:
             parts.append(f"db={self.db_match_name!r}")
         return f"CrisResult({', '.join(parts) or 'no prediction'})"
+
+
+def load_xyz(path: str | "Path") -> list[dict]:
+    """
+    Читает XYZ-файл и возвращает список ионов для передачи в identify().
+
+    Формат XYZ:
+        <число атомов>
+        <комментарий>
+        <символ>  <x>  <y>  <z>
+        ...
+
+    Args:
+        path: путь к .xyz файлу (str или Path)
+
+    Returns:
+        Список dict: [{"label": "Na", "x": 0.0, "y": 0.0, "z": 0.0}, ...]
+
+    Examples:
+        >>> from cris import identify, load_xyz
+        >>> sites = load_xyz("NaCl.xyz")
+        >>> result = identify(sites)
+    """
+    from pathlib import Path as _Path
+
+    lines = _Path(path).read_text(encoding="utf-8").splitlines()
+    atom_count = int(lines[0].strip())
+    sites = []
+    for line in lines[2 : 2 + atom_count]:
+        parts = line.split()
+        if len(parts) >= 4:
+            sites.append({
+                "label": parts[0],
+                "x": float(parts[1]),
+                "y": float(parts[2]),
+                "z": float(parts[3]),
+            })
+    return sites
 
 
 def identify(
