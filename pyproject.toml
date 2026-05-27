@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cris-core"
+version = "0.4.3"
+description = "Crystal Recognition & Identification System — core library"
+requires-python = ">=3.11"
+readme = "readme.md"
+license = { text = "MIT" }
+keywords = ["crystallography", "machine-learning", "materials-science", "lattice"]
+
+# Минимальные зависимости для ML-методов (без DB и веб-сервера)
+dependencies = [
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "scikit-learn>=1.3.0",
+    "catboost>=1.2",
+    "loguru>=0.7.0",
+]
+
+[project.optional-dependencies]
+# + PostgreSQL (для метода "db")
+db = [
+    "psycopg2-binary>=2.9.9",
+    "python-dotenv>=1.0.0",
+]
+# + FastAPI-сервер
+server = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "python-multipart>=0.0.9",
+    "python-dotenv>=1.0.0",
+    "psycopg2-binary>=2.9.9",
+    "gigachat>=0.1.28",
+    "python-docx>=1.1.0",
+]
+# Всё сразу
+full = [
+    "cris-core[db,server]",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cris*"]
+
+[tool.setuptools.package-data]
+"cris" = ["py.typed"]
