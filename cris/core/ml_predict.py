@@ -124,51 +124,20 @@ def _load_sklearn_model(model_path: Path):
         return None
 
 
-def _expand_supercell(normalized_coords: list, n: int = 2) -> list:
-    """
-    Разворачивает нормализованные координаты [0,1] в n×n×n супер-ячейку.
-    Нужно для малых единичных ячеек, где после нормализации координаты
-    попадают точно в 0 и 1 — PBC схлопывает все расстояния в 0.
-    """
-    expanded = []
-    for ix in range(n):
-        for iy in range(n):
-            for iz in range(n):
-                for item in normalized_coords:
-                    expanded.append([
-                        item[0],
-                        (item[1] + ix) / n,
-                        (item[2] + iy) / n,
-                        (item[3] + iz) / n,
-                    ])
-    return expanded
-
 
 def _coords_to_feature_vector_200(normalized_coords: list) -> Optional[np.ndarray]:
     """
     Список [label, x, y, z] → усреднённый KDE-вектор 200-dim.
-    Используется для CatBoost-вещество и Random Forest.
-    Для малых структур (< 30 ионов) разворачивает в 2×2×2 супер-ячейку,
-    чтобы PBC в get_lattice_vectors3 не схлопывал расстояния в 0.
+    Используется для CatBoost и Random Forest.
 
-    Все ионы включаются в усреднение (без фильтра по числу уникальных
-    расстояний) — это соответствует поведению при обучении RF/CatBoost-вещество.
-    Ионы с менее чем 2 расстояниями дают нулевой вектор (np.zeros(200)).
+    Использует get_lattice_vectors2 — без PBC, только уникальные позиции ионов.
+    Это соответствует pipeline обучения обеих моделей (spectrum.py тоже использует v2).
     """
     try:
         from cris.core.spectrum import kde_array
-        from cris.core.vectors import get_lattice_vectors3
+        from cris.core.vectors import get_lattice_vectors2
 
-        coords = normalized_coords
-        if len(coords) < 30:
-            coords = _expand_supercell(coords, n=2)
-
-        _old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            vectors_dict = get_lattice_vectors3(coords)
-        finally:
-            sys.stdout = _old_stdout
+        vectors_dict = get_lattice_vectors2(normalized_coords)
 
         ion_arrays = []
         for distances in vectors_dict.values():
