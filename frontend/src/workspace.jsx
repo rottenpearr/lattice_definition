@@ -175,7 +175,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
-  const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
+  const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true, automl: true });
   const [methodSection,  setMethodSection]  = React.useState("substance");
   const [resultSection,  setResultSection]  = React.useState("substance");
   const screenshotApiRef = React.useRef(null);
@@ -272,6 +272,7 @@ const SECTION_METHODS = {
     { key: "db",                 label: "По базе данных",      note: "точное совпадение координат" },
     { key: "catboost_substance", label: "CatBoost",            note: "ML, конкретные соединения (UC, UN2…)" },
     { key: "rf",                 label: "Random Forest",       note: "ML, конкретные соединения" },
+    { key: "automl",             label: "AutoML (ExtraTrees)", note: "ML, FLAML — конкретные соединения" },
   ],
   syngony: [
     { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
@@ -700,6 +701,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
   const catboostResult          = result?.ml_results?.find(r => r.method === "catboost")           ?? null;
   const catboostSubstanceResult = result?.ml_results?.find(r => r.method === "catboost_substance") ?? null;
   const rfResult                = result?.ml_results?.find(r => r.method === "rf")                 ?? null;
+  const automlResult            = result?.ml_results?.find(r => r.method === "automl")             ?? null;
 
   const structure = result?.success ? result.structure : null;
 
@@ -749,6 +751,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
           <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db}                  emptyText="Нет совпадений в базе данных" />
           <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance}  emptyText="Нет данных от модели" />
           <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf}                  emptyText="Нет данных от модели" />
+          <MethodResult label="AutoML (ExtraTrees)" result={automlResult}            active={!!methods?.automl}              emptyText="Нет данных от модели" />
         </div>
       )}
 
