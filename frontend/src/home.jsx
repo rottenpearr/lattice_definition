@@ -51,71 +51,41 @@ const HeroVisual = () => (
       <LatticeDiagram size={250} />
     </div>
     <div style={{ position: "relative", borderTop: "1px solid var(--night-line)", paddingTop: 14, marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--night-mute)" }}>
-      <div><div style={{ textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>тип</div><div style={{ color: "var(--night-ink)", fontSize: 13 }}>FCC · кубическая ГЦК</div></div>
       <div><div style={{ textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>совпадение</div><div style={{ color: "var(--night-ink)", fontSize: 13 }}>UN · mp-2731</div></div>
+      <div><div style={{ textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>сингония</div><div style={{ color: "var(--night-ink)", fontSize: 13 }}>FCC · кубическая</div></div>
       <div><div style={{ textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 2 }}>уверенность</div><div style={{ color: "var(--signal)", fontSize: 13 }}>0.87</div></div>
     </div>
   </div>
 );
 
 const LatticeDiagram = ({ size = 220, animated = true }) => {
-  // FCC unit cell: 8 corners + 6 face-centre atoms
+  // 2x2x2 isometric lattice
+  const nodes = [];
+  for (let z = 0; z < 2; z++) for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) {
+    nodes.push([x, y, z]);
+  }
   const project = ([x, y, z]) => {
     const sx = (x - z) * 60 + size / 2;
     const sy = (x + z) * 30 + y * -60 + size / 2 + 30;
     return [sx, sy];
   };
-
-  // Corners of the unit cell
-  const corners = [];
-  for (let z = 0; z < 2; z++) for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) {
-    corners.push([x, y, z]);
-  }
-
-  // 6 face-centre atoms (FCC positions)
-  const faceCentres = [
-    [0.5, 0.5, 0],   // top face
-    [0.5, 0.5, 1],   // bottom face
-    [0.5, 0,   0.5], // front face
-    [0.5, 1,   0.5], // back face
-    [0,   0.5, 0.5], // left face
-    [1,   0.5, 0.5], // right face
-  ];
-
-  // Cube-frame edges (corners only, for a clean outline)
   const edges = [];
-  for (let i = 0; i < corners.length; i++) for (let j = i + 1; j < corners.length; j++) {
-    const [a, b, c] = corners[i], [d, e, f] = corners[j];
-    if (Math.abs(a - d) + Math.abs(b - e) + Math.abs(c - f) === 1) edges.push([corners[i], corners[j]]);
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const [a, b, c] = nodes[i], [d, e, f] = nodes[j];
+    if (Math.abs(a - d) + Math.abs(b - e) + Math.abs(c - f) === 1) edges.push([nodes[i], nodes[j]]);
   }
-
-  // Index 0 → (0.5,0.5,0) — top face centre is the "detected" highlighted atom
-  const highlightIdx = 0;
-
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Cube-frame edges */}
       {edges.map(([n1, n2], i) => {
         const [x1, y1] = project(n1), [x2, y2] = project(n2);
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.28)" strokeWidth="1" />;
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />;
       })}
-      {/* Corner atoms — cobalt blue */}
-      {corners.map((n, i) => {
+      {nodes.map((n, i) => {
         const [cx, cy] = project(n);
+        const highlight = i === 5;
         return (
-          <circle key={`c${i}`} cx={cx} cy={cy} r={5}
-                  fill="var(--cobalt)"
-                  stroke="rgba(255,255,255,0.4)"
-                  strokeWidth="1.5" />
-        );
-      })}
-      {/* Face-centre atoms — slightly lighter, one pulsing green */}
-      {faceCentres.map((n, i) => {
-        const [cx, cy] = project(n);
-        const highlight = i === highlightIdx;
-        return (
-          <circle key={`f${i}`} cx={cx} cy={cy} r={highlight ? 7 : 5}
-                  fill={highlight ? "var(--signal)" : "rgba(100,140,255,0.9)"}
+          <circle key={i} cx={cx} cy={cy} r={highlight ? 7 : 5}
+                  fill={highlight ? "var(--signal)" : "var(--cobalt)"}
                   stroke={highlight ? "var(--signal)" : "rgba(255,255,255,0.4)"}
                   strokeWidth="1.5"
                   style={animated && highlight ? { animation: "node-pulse 1.6s ease-in-out infinite" } : {}} />
