@@ -170,6 +170,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
   const [methods,   setMethods]   = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
+  const [section,   setSection]   = React.useState("substance");
   const screenshotApiRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -244,6 +245,7 @@ const WorkspaceScreen = ({ setRoute }) => {
           file={file} onFileLoad={handleFileLoad} onFileClear={handleFileClear}
           sites={sites} setSites={setSites}
           methods={methods} setMethods={setMethods}
+          section={section} setSection={setSection}
           onStart={start}
         />
         <WsCenter
@@ -251,16 +253,27 @@ const WorkspaceScreen = ({ setRoute }) => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={section} setSection={setSection} />
       </div>
     </div>
   );
 };
 
 /* ── LEFT PANEL ── */
-const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, methods, setMethods, onStart }) => (
+const SECTION_METHODS = {
+  substance: [
+    { key: "db",                 label: "По базе данных",      note: "точное совпадение координат" },
+    { key: "catboost_substance", label: "CatBoost",            note: "ML, конкретные соединения (UC, UN2…)" },
+    { key: "rf",                 label: "Random Forest",       note: "ML, конкретные соединения" },
+  ],
+  syngony: [
+    { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
+    { key: "catboost", label: "CatBoost",         note: "ML, 8 типов кристаллических систем" },
+  ],
+};
+
+const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, sites, setSites, methods, setMethods, section, setSection, onStart }) => (
   <aside style={{ borderRight: "1px solid var(--hairline)", padding: 24, overflowY: "auto", background: "var(--paper)" }}>
-    {/* [CHANGE 2] WsLabel instead of <Eyebrow>01 · Input</Eyebrow> */}
     <WsLabel>Input</WsLabel>
     <h3 className="section-title" style={{ fontSize: 22, margin: "10px 0 18px", lineHeight: 1.2 }}>Структура для распознавания</h3>
     <div style={{ marginBottom: 16 }}>
@@ -269,16 +282,15 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
     {mode === "file"
       ? <FileInput file={file} onFileLoad={onFileLoad} onClear={onFileClear} />
       : <ManualInput sites={sites} setSites={setSites} />}
+
     <div style={{ marginTop: 20, padding: 16, background: "var(--card)", borderRadius: 10, border: "1px solid var(--hairline)" }}>
-      {/* [CHANGE 2] WsLabel instead of <Eyebrow>Методы распознавания</Eyebrow> */}
       <WsLabel>Методы</WsLabel>
-      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-        {[
-          { key: "db",                 label: "По базе данных",       note: "точное совпадение координат" },
-          { key: "catboost",           label: "CatBoost · сингония",  note: "ML, 8 типов кристаллических систем" },
-          { key: "catboost_substance", label: "CatBoost · вещество",  note: "ML, конкретные соединения (UC, UN2…)" },
-          { key: "rf",                 label: "Random Forest",         note: "ML, конкретные соединения" },
-        ].map(({ key, label, note }) => (
+
+      {/* Section tabs inside the card */}
+      <SectionTabs active={section} onChange={setSection} />
+
+      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {SECTION_METHODS[section].map(({ key, label, note }) => (
           <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
             <input
               type="checkbox" checked={!!methods[key]}
@@ -293,6 +305,7 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
         ))}
       </div>
     </div>
+
     <div style={{ marginTop: 24 }}>
       <Button variant="primary" size="lg" iconRight={<IconArrowRight size={16} />} onClick={onStart}
         disabled={stage === "running"} style={{ width: "100%" }}>
@@ -490,10 +503,9 @@ const ViewerPipeline = () => (
 /* ══════════════════════════════════════════════════════════
    [CHANGE 3] RIGHT PANEL — tab switcher replaces draggable divider.
    ══════════════════════════════════════════════════════════ */
-const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId }) => {
+const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId, section, setSection }) => {
   const [tab, setTab] = React.useState("verdict");
 
-  /* Auto-switch to verdict when a new result arrives */
   React.useEffect(() => {
     if (stage === "result") setTab("verdict");
   }, [stage]);
@@ -523,7 +535,7 @@ const WsRightPanel = ({ stage, result, apiError, siteCount, methods, sessionId }
       {tab === "verdict" ? (
         <div style={{ flex: 1, overflowY: "auto", padding: 24, minHeight: 0 }}>
           {stage === "result"
-            ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} />
+            ? <VerdictBlock result={result} apiError={apiError} siteCount={siteCount} methods={methods} section={section} setSection={setSection} />
             : <VerdictPlaceholder />}
         </div>
       ) : (
@@ -581,7 +593,7 @@ const MethodResult = ({ label, result, active }) => (
 /* ── Inner section tab bar ── */
 const SectionTabs = ({ active, onChange }) => (
   <div style={{ display: "flex", borderBottom: "1px solid var(--hairline)", marginTop: 14, marginBottom: 0 }}>
-    {[["syngony", "Сингония"], ["substance", "По веществу"]].map(([id, label]) => (
+    {[["substance", "По веществу"], ["syngony", "Сингония"]].map(([id, label]) => (
       <button key={id} onClick={() => onChange(id)} style={{
         padding: "8px 14px 9px", border: "none", background: "transparent",
         fontFamily: "var(--font-body)", fontSize: 12, fontWeight: active === id ? 600 : 400,
@@ -594,11 +606,8 @@ const SectionTabs = ({ active, onChange }) => (
   </div>
 );
 
-const VerdictBlock = ({ result, apiError, siteCount, methods }) => {
-  const [cited,   setCited]   = React.useState(false);
-  const [section, setSection] = React.useState("syngony");
-
-  React.useEffect(() => { if (result) setSection("syngony"); }, [result]);
+const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSection }) => {
+  const [cited, setCited] = React.useState(false);
 
   const handleCite = () => {
     if (!result?.success) return;
