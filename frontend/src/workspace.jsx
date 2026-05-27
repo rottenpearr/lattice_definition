@@ -169,8 +169,9 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
-  const [methods,   setMethods]   = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
-  const [section,   setSection]   = React.useState("substance");
+  const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
+  const [methodSection,  setMethodSection]  = React.useState("substance");
+  const [resultSection,  setResultSection]  = React.useState("substance");
   const screenshotApiRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -245,7 +246,7 @@ const WorkspaceScreen = ({ setRoute }) => {
           file={file} onFileLoad={handleFileLoad} onFileClear={handleFileClear}
           sites={sites} setSites={setSites}
           methods={methods} setMethods={setMethods}
-          section={section} setSection={setSection}
+          section={methodSection} setSection={setMethodSection}
           onStart={start}
         />
         <WsCenter
@@ -253,7 +254,7 @@ const WorkspaceScreen = ({ setRoute }) => {
           onScreenshot={handleScreenshot}
           onViewerReady={(api) => { screenshotApiRef.current = api; }}
         />
-        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={section} setSection={setSection} />
+        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={resultSection} setSection={setResultSection} />
       </div>
     </div>
   );
