@@ -120,6 +120,12 @@ const WorkspaceHeader = ({ stage, result, file, onReset, setRoute }) => {
     ? { dot: "var(--signal)", label: "computing", color: "var(--signal)", pulse: true }
     : { dot: "rgba(255,255,255,0.22)", label: "idle", color: "rgba(255,255,255,0.35)" };
 
+  const handleGoHome = () => {
+    const isDirty = file !== null || stage === "running" || stage === "result";
+    if (isDirty && !window.confirm("Данные текущего анализа не сохранятся.\nВыйти из Workspace?")) return;
+    setRoute?.("home");
+  };
+
   return (
     <header style={{
       height: 56, background: "var(--ink)",
@@ -127,8 +133,8 @@ const WorkspaceHeader = ({ stage, result, file, onReset, setRoute }) => {
       display: "flex", alignItems: "center",
       padding: "0 20px", gap: 16, flexShrink: 0, zIndex: 50,
     }}>
-      {/* Logo — click to go home */}
-      <div onClick={() => setRoute?.("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8, userSelect: "none" }}>
+      {/* Logo — click to go home (with dirty-check confirmation) */}
+      <div onClick={handleGoHome} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8, userSelect: "none" }}>
         <Logo size={24} color="var(--night-ink)" node="var(--signal)" />
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, letterSpacing: "-0.015em", color: "var(--night-ink)" }}>CRIS</span>
       </div>
