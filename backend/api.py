@@ -13,8 +13,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
+import io
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -63,7 +67,7 @@ class Ion(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     sites: list[Ion]
-    methods: list[str] = ["db"]   # "db" | "catboost" | "rf"
+    methods: list[str] = ["db"]   # "db" | "catboost" | "catboost_substance" | "rf"
 
 
 class LatticeResult(BaseModel):
@@ -93,7 +97,8 @@ class RankingItem(BaseModel):
 
 
 class MLMethodResult(BaseModel):
-    method: str                      # "catboost" | "rf"
+    method: str                      # "catboost" | "catboost_substance" | "rf"
+    category: str = "crystal_system" # "crystal_system" | "substance"
     name_en: Optional[str] = None
     name_ru: Optional[str] = None
     confidence: float = 0.0
@@ -327,16 +332,21 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
     """
     Запускает выбранные ML-методы и возвращает список MLMethodResult.
     Каждый результат также сохраняется в recognition_result.
+
+    Категории:
+      crystal_system — CatBoost (сингония): "catboost"
+      substance      — CatBoost (вещество): "catboost_substance"; RF: "rf"
     """
-    from cris.core.ml_predict import predict_catboost, predict_rf, resolve_lattice_ids
+    from cris.core.ml_predict import (
+        predict_catboost, predict_catboost_substance, predict_rf, resolve_lattice_ids
+    )
 
     results: list[MLMethodResult] = []
 
-    def _preds_to_result(method: str, preds: list[dict]) -> MLMethodResult:
+    def _preds_to_result(method: str, category: str, preds: list[dict]) -> MLMethodResult:
         if not preds:
-            return MLMethodResult(method=method)
+            return MLMethodResult(method=method, category=category)
         top = preds[0]
-        # Пробуем взять name_ru для lattice_type_id
         name_ru = None
         if top.get("lattice_type_id"):
             try:
@@ -353,6 +363,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
         ]
         return MLMethodResult(
             method=method,
+            category=category,
             name_en=top["lattice_name"],
             name_ru=name_ru,
             confidence=round(top["confidence"] * 100, 2),
@@ -363,27 +374,40 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
         try:
             preds = predict_catboost(normalized)
             preds = resolve_lattice_ids(preds)
-            mr = _preds_to_result("catboost", preds)
+            mr = _preds_to_result("catboost", "crystal_system", preds)
             results.append(mr)
             if session_id and preds:
                 _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
                                          mr.confidence, method="CATBOOST")
         except Exception as e:
             logger.warning("CatBoost inference failed: {}", e)
-            results.append(MLMethodResult(method="catboost"))
+            results.append(MLMethodResult(method="catboost", category="crystal_system"))
+
+    if "catboost_substance" in methods:
+        try:
+            preds = predict_catboost_substance(normalized)
+            preds = resolve_lattice_ids(preds)
+            mr = _preds_to_result("catboost_substance", "substance", preds)
+            results.append(mr)
+            if session_id and preds:
+                _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
+                                         mr.confidence, method="CATBOOST_SUBSTANCE")
+        except Exception as e:
+            logger.warning("CatBoost-substance inference failed: {}", e)
+            results.append(MLMethodResult(method="catboost_substance", category="substance"))
 
     if "rf" in methods:
         try:
             preds = predict_rf(normalized)
             preds = resolve_lattice_ids(preds)
-            mr = _preds_to_result("rf", preds)
+            mr = _preds_to_result("rf", "substance", preds)
             results.append(mr)
             if session_id and preds:
                 _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
                                          mr.confidence, method="RF")
         except Exception as e:
             logger.warning("RF inference failed: {}", e)
-            results.append(MLMethodResult(method="rf"))
+            results.append(MLMethodResult(method="rf", category="substance"))
 
     return results
 
@@ -677,3 +701,83 @@ def chat(body: ChatRequest):
         _save_chat_messages(body.session_id, user_msg, reply)
 
     return ChatResponse(reply=reply, model=_GC_MODEL)
+
+
+@app.post("/api/export/docx")
+def export_docx(body: AnalyzeResponse):
+    """
+    Генерирует минимальный DOCX-отчёт по результатам анализа.
+    Принимает тот же объект, что возвращает /api/analyze.
+    """
+    try:
+        from docx import Document
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+    except ImportError:
+        raise HTTPException(status_code=500, detail="python-docx не установлен")
+
+    doc = Document()
+
+    # ── Заголовок ─────────────────────────────────────────────
+    h = doc.add_heading("CRIS — Результат распознавания", 0)
+    h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    meta = doc.add_paragraph()
+    meta.add_run(f"Дата: {datetime.now().strftime('%d.%m.%Y %H:%M')}").italic = True
+    if body.session_id:
+        doc.add_paragraph(f"Сессия: {body.session_id}")
+
+    # ── По веществу ───────────────────────────────────────────
+    doc.add_heading("По веществу", 1)
+
+    p = doc.add_paragraph()
+    p.add_run("База данных: ").bold = True
+    if body.success and body.structure and body.structure.name:
+        p.add_run(f"{body.structure.name} (уверенность: {body.structure.confidence:.2f})")
+    else:
+        p.add_run("совпадений не найдено")
+
+    for mr in body.ml_results:
+        if mr.category != "substance":
+            continue
+        labels = {"catboost_substance": "CatBoost · вещество", "rf": "Random Forest"}
+        p = doc.add_paragraph()
+        p.add_run(f"{labels.get(mr.method, mr.method)}: ").bold = True
+        if mr.name_en:
+            p.add_run(f"{mr.name_en} ({mr.confidence:.1f}%)")
+            for item in mr.ranking[:3]:
+                doc.add_paragraph(f"    {item.name_en}: {item.prob:.1f}%")
+        else:
+            p.add_run("нет данных")
+
+    # ── Сингония ──────────────────────────────────────────────
+    doc.add_heading("Сингония", 1)
+
+    p = doc.add_paragraph()
+    p.add_run("База данных: ").bold = True
+    if body.success and body.lattice and body.lattice.name_en:
+        p.add_run(f"{body.lattice.name_en} (уверенность: {body.lattice.confidence:.2f})")
+    else:
+        p.add_run("совпадений не найдено")
+
+    for mr in body.ml_results:
+        if mr.category != "crystal_system":
+            continue
+        p = doc.add_paragraph()
+        p.add_run("CatBoost · сингония: ").bold = True
+        if mr.name_en:
+            p.add_run(f"{mr.name_en} ({mr.confidence:.1f}%)")
+            for item in mr.ranking[:3]:
+                doc.add_paragraph(f"    {item.name_en}: {item.prob:.1f}%")
+        else:
+            p.add_run("нет данных")
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": "attachment; filename=cris_result.docx"},
+    )
