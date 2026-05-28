@@ -25,6 +25,7 @@ _ROOT = Path(__file__).parent.parent.parent
 _DEFAULT_MODEL           = _ROOT / "ML" / "CatBoost" / "catboost_lattice.cbm"
 _DEFAULT_RF_MODEL        = _ROOT / "ML" / "rf_optimized_model.pkl"
 _DEFAULT_SUBSTANCE_MODEL = _ROOT / "ML" / "CatBoost" / "catboost_substance.cbm"
+_DEFAULT_AUTOML_MODEL    = _ROOT / "ML" / "AutoML" / "extra_trees.pkl"
 
 # ── Маппинг классов модели → name_en в таблице lattice_type ──────────────────
 # Модель обучена на подтипах Браве-решётки; все cubic_* → "cubic" и т.д.
@@ -314,6 +315,55 @@ def predict_catboost_substance(
         })
 
     logger.debug("CatBoost-substance prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
+    return results
+
+
+def predict_automl(
+    normalized_coords: list,
+    model_path: Path = _DEFAULT_AUTOML_MODEL,
+    top_k: int = 3,
+) -> list[dict]:
+    """
+    Предсказывает конкретное вещество через AutoML (FLAML ExtraTrees, 200-dim KDE вектор).
+
+    Returns:
+        [{"class": "UC", "lattice_name": "UC",
+          "lattice_type_id": None, "confidence": 0.85}, ...]
+    """
+    if not model_path.exists():
+        logger.debug("ml_predict: AutoML model not found: {}", model_path)
+        return []
+
+    model = _load_sklearn_model(model_path)
+    if model is None:
+        return []
+
+    feat = _coords_to_feature_vector_200(normalized_coords)
+    if feat is None:
+        return []
+
+    if len(feat) != model.n_features_in_:
+        logger.warning(
+            "ml_predict: AutoML feature size mismatch (got {}, need {})",
+            len(feat), model.n_features_in_,
+        )
+        return []
+
+    proba   = model.predict_proba(feat.reshape(1, -1))[0]
+    classes = model.classes_
+
+    top_indices = np.argsort(proba)[::-1][:top_k]
+    results = [
+        {
+            "class":           str(classes[i]),
+            "lattice_name":    _CLASS_TO_LATTICE_EN.get(str(classes[i]), str(classes[i])),
+            "lattice_type_id": None,
+            "confidence":      round(float(proba[i]), 4),
+        }
+        for i in top_indices
+    ]
+
+    logger.debug("AutoML prediction: top={} conf={}", results[0]["class"], results[0]["confidence"])
     return results
 
 

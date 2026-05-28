@@ -339,7 +339,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
       substance      — CatBoost (вещество): "catboost_substance"; RF: "rf"
     """
     from cris.core.ml_predict import (
-        predict_catboost, predict_catboost_substance, predict_rf, resolve_lattice_ids
+        predict_catboost, predict_catboost_substance, predict_rf, predict_automl, resolve_lattice_ids
     )
 
     results: list[MLMethodResult] = []
@@ -409,6 +409,19 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
         except Exception as e:
             logger.warning("RF inference failed: {}", e)
             results.append(MLMethodResult(method="rf", category="substance"))
+
+    if "automl" in methods:
+        try:
+            preds = predict_automl(normalized)
+            preds = resolve_lattice_ids(preds)
+            mr = _preds_to_result("automl", "substance", preds)
+            results.append(mr)
+            if session_id and preds:
+                _save_recognition_result(session_id, preds[0].get("lattice_type_id"), None,
+                                         mr.confidence, method="AUTOML")
+        except Exception as e:
+            logger.warning("AutoML inference failed: {}", e)
+            results.append(MLMethodResult(method="automl", category="substance"))
 
     return results
 
@@ -750,7 +763,7 @@ def export_docx(body: AnalyzeResponse):
     for mr in body.ml_results:
         if mr.category != "substance":
             continue
-        labels = {"catboost_substance": "CatBoost · вещество", "rf": "Random Forest"}
+        labels = {"catboost_substance": "CatBoost · вещество", "rf": "Random Forest", "automl": "AutoML (ExtraTrees)"}
         p = doc.add_paragraph()
         p.add_run(f"{labels.get(mr.method, mr.method)}: ").bold = True
         if mr.name_en:

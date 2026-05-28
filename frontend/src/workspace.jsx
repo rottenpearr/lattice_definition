@@ -175,7 +175,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [sessionId, setSessionId] = React.useState(null);
   const [result,    setResult]    = React.useState(null);
   const [apiError,  setApiError]  = React.useState(null);
-  const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true });
+  const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true, automl: true });
   const [methodSection,  setMethodSection]  = React.useState("substance");
   const [resultSection,  setResultSection]  = React.useState("substance");
   const screenshotApiRef = React.useRef(null);
@@ -272,6 +272,7 @@ const SECTION_METHODS = {
     { key: "db",                 label: "По базе данных",      note: "точное совпадение координат" },
     { key: "catboost_substance", label: "CatBoost",            note: "ML, конкретные соединения (UC, UN2…)" },
     { key: "rf",                 label: "Random Forest",       note: "ML, конкретные соединения" },
+    { key: "automl",             label: "AutoML (ExtraTrees)", note: "ML, FLAML — конкретные соединения" },
   ],
   syngony: [
     { key: "db",       label: "По базе данных",  note: "точное совпадение координат" },
@@ -584,17 +585,20 @@ const RankingRow = ({ item, top }) => (
   </div>
 );
 
-const MethodResult = ({ label, result, active, emptyText = "Нет данных" }) => (
-  <div style={{ border: `1px solid ${active && result ? "var(--cobalt)" : "var(--hairline)"}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
+const MethodResult = ({ label, result, active, emptyText = "Нет данных" }) => {
+  // считаем результат «пустым» если нет ни имени, ни предсказаний (модель не смогла загрузиться)
+  const hasData = result && (result.name_en || (result.ranking && result.ranking.length > 0));
+  return (
+  <div style={{ border: `1px solid ${active && hasData ? "var(--cobalt)" : "var(--hairline)"}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--mute)" }}>{label}</span>
       {!active
         ? <Chip tone="default">не выбран</Chip>
-        : !result
+        : !hasData
         ? <Chip tone="warn">нет данных</Chip>
         : <Chip tone="ok" dot>{result.confidence != null ? result.confidence.toFixed(2) : "—"}</Chip>}
     </div>
-    {active && result ? (
+    {active && hasData ? (
       <>
         <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{result.name_en ?? "—"}</div>
         {result.name_ru && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{result.name_ru}</div>}
@@ -608,7 +612,8 @@ const MethodResult = ({ label, result, active, emptyText = "Нет данных"
       <div style={{ fontSize: 12, color: "var(--mute)" }}>{emptyText}</div>
     ) : null}
   </div>
-);
+  );
+};
 
 /* ── Inner section tab bar ── */
 const SectionTabs = ({ active, onChange }) => (
@@ -700,6 +705,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
   const catboostResult          = result?.ml_results?.find(r => r.method === "catboost")           ?? null;
   const catboostSubstanceResult = result?.ml_results?.find(r => r.method === "catboost_substance") ?? null;
   const rfResult                = result?.ml_results?.find(r => r.method === "rf")                 ?? null;
+  const automlResult            = result?.ml_results?.find(r => r.method === "automl")             ?? null;
 
   const structure = result?.success ? result.structure : null;
 
@@ -749,6 +755,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
           <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db}                  emptyText="Нет совпадений в базе данных" />
           <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance}  emptyText="Нет данных от модели" />
           <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf}                  emptyText="Нет данных от модели" />
+          <MethodResult label="AutoML (ExtraTrees)" result={automlResult}            active={!!methods?.automl}              emptyText="Модель недоступна (требуется переобучение)" />
         </div>
       )}
 
