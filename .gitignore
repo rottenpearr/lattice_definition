@@ -188,6 +188,10 @@ catboost_info/
 # Application logs
 logs/
 
+# Временные/одноразовые скрипты (не для репо)
+_TEST_*.py
+_test_*.py
+
 # Node / frontend
 node_modules/
 frontend/node_modules/

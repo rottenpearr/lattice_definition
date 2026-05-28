@@ -2,13 +2,12 @@ import os
 from collections import Counter
 from pathlib import Path
 
-import matplotlib
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 from scipy.stats import gaussian_kde
 
-from cris.db.connection import get_cursor
+# matplotlib / seaborn импортируются лениво внутри plot_spectra()
+# и create_all_spectrum_plots() — они нужны только для визуализации,
+# а не для kde_array(), которая используется в ML-пайплайне.
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.core.vectors import get_lattice_vectors2
 
@@ -32,6 +31,7 @@ def create_all_spectrum_plots():
     Строит спектры для всех эталонных структур в БД.
     Координаты читаются из XYZ-файлов (reference_structure.xyz_path).
     """
+    from cris.db.connection import get_cursor
     try:
         with get_cursor() as cur:
             cur.execute("""
@@ -88,6 +88,10 @@ def plot_spectra(data, ion, substance_id, vector_id, cmap="plasma", background="
     background : str
         Цвет фона графиков
     """
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
     outdir += f"/spectrum_{str(substance_id)}"
     os.makedirs(outdir, exist_ok=True)
 

@@ -1,16 +1,65 @@
 """
 Основная логика поиска эталонных структур по нормализованным координатам.
 Координаты читаются напрямую из XYZ-файлов — таблица structure_site не используется.
+
+Два метода поиска:
+  check_coords()     — точное сравнение координат (работает только при совпадении числа атомов)
+  check_coords_kde() — косинусное сходство KDE-векторов (инвариантно к суперячейкам,
+                       сдвигам, поворотам; используется как fallback)
 """
 from collections import Counter
 from pathlib import Path
+
+import numpy as np
 
 from cris.db.connection import get_cursor
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.logger import logger
 
-_ROOT = Path(__file__).parent.parent.parent   # корень проекта
-_COORD_TOLERANCE = 1e-4                        # допуск при сравнении координат
+_ROOT            = Path(__file__).parent.parent.parent   # корень проекта
+_COORD_TOLERANCE = 1e-4                                   # допуск при сравнении координат
+_KDE_THRESHOLD   = 0.80                                   # минимальное косинусное сходство
+
+# ── KDE-кеш эталонных структур ────────────────────────────────────────────────
+# Заполняется один раз при первом вызове check_coords_kde, потом переиспользуется.
+# struct_id → (lattice_type_id, kde_vector_200dim)
+_KDE_CACHE: dict[int, tuple[int, np.ndarray]] = {}
+_KDE_CACHE_READY = False
+
+
+def _build_kde_cache() -> None:
+    """
+    Загружает KDE-векторы всех эталонных структур в память.
+    Вызывается один раз — при первом обращении к check_coords_kde.
+    """
+    global _KDE_CACHE, _KDE_CACHE_READY
+    from cris.core.ml_predict import _coords_to_feature_vector_200
+
+    try:
+        with get_cursor() as cur:
+            cur.execute("""
+                SELECT id, lattice_type_id, xyz_path
+                FROM reference_structure
+                WHERE xyz_path IS NOT NULL AND xyz_path != ''
+            """)
+            structures = cur.fetchall()
+    except Exception as e:
+        logger.error("_build_kde_cache: DB load failed: {}", e)
+        return
+
+    built = 0
+    for struct_id, lt_id, xyz_rel_path in structures:
+        normalized = _normalize_xyz(_ROOT / xyz_rel_path)
+        if normalized is None:
+            continue
+        vec = _coords_to_feature_vector_200(normalized)
+        if vec is None:
+            continue
+        _KDE_CACHE[struct_id] = (lt_id, vec)
+        built += 1
+
+    _KDE_CACHE_READY = True
+    logger.debug("_build_kde_cache: ready, {} / {} structures cached", built, len(structures))
 
 
 # ── Вспомогательные функции ───────────────────────────────────────────────────
@@ -36,6 +85,112 @@ def _normalize_xyz(xyz_path: Path) -> list[list] | None:
     except Exception as e:
         logger.warning("_normalize_xyz: failed for {}: {}", xyz_path, e)
         return None
+
+
+# ── Вспомогательный запрос: детали структуры и типа решётки ─────────────────
+
+def _fetch_struct_info(struct_id: int, lt_id: int, struct_prob: float, lt_prob: float):
+    """
+    Возвращает [[lattice_names, struct_names], [lattice_info, lt_prob], [struct_info, st_prob]]
+    — тот же формат что и check_coords.
+    """
+    lattice_info   = None
+    structure_info = None
+    lattice_names  = []
+    struct_names   = []
+
+    try:
+        with get_cursor() as cur:
+            cur.execute(
+                "SELECT id, name_en, name_ru, description FROM lattice_type WHERE id = %s",
+                (lt_id,)
+            )
+            row = cur.fetchone()
+            if row:
+                lattice_info = row
+                lattice_names.append([row[0], row[2], row[1], lt_prob])
+
+            cur.execute("""
+                SELECT id, name, cell_length_a, cell_length_b, cell_length_c,
+                       cell_volume, cell_angle_alpha, cell_angle_beta, cell_angle_gamma,
+                       sg_number, sg_hall, sg_hm, doi, formula
+                FROM reference_structure WHERE id = %s
+            """, (struct_id,))
+            row = cur.fetchone()
+            if row:
+                structure_info = row
+                struct_names.append([row[0], row[1], struct_prob])
+    except Exception as e:
+        logger.error("_fetch_struct_info failed: {}", e)
+
+    return [
+        [lattice_names, struct_names],
+        [lattice_info,   lt_prob],
+        [structure_info, struct_prob],
+    ]
+
+
+# ── KDE-поиск: косинусное сходство векторов распределения расстояний ─────────
+
+def check_coords_kde(normalized_coords: list, top_k: int = 1):
+    """
+    Ищет эталонную структуру по сходству KDE-векторов (200-dim).
+
+    Преимущества перед check_coords:
+      - Работает с суперячейками (вектор инвариантен к числу атомов)
+      - Устойчив к сдвигу и небольшому повороту
+      - Не требует точного числа атомов
+
+    KDE-векторы эталонов хранятся в памяти (_KDE_CACHE) и вычисляются
+    один раз при первом вызове — последующие запросы работают без I/O.
+
+    Порог сходства: _KDE_THRESHOLD (по умолчанию 0.80).
+    Возвращает тот же формат что и check_coords, или False если ничего не найдено.
+    """
+    global _KDE_CACHE_READY
+    if not _KDE_CACHE_READY:
+        logger.debug("check_coords_kde: building KDE cache...")
+        _build_kde_cache()
+
+    if not _KDE_CACHE:
+        return False
+
+    from cris.core.ml_predict import _coords_to_feature_vector_200
+
+    # KDE-вектор входной структуры
+    input_vec = _coords_to_feature_vector_200(normalized_coords)
+    if input_vec is None:
+        logger.warning("check_coords_kde: failed to compute KDE vector for input")
+        return False
+
+    norm_input = np.linalg.norm(input_vec)
+    if norm_input == 0:
+        return False
+
+    # Косинусное сходство против всех эталонов из кеша (без I/O)
+    scores = []
+    for struct_id, (lt_id, ref_vec) in _KDE_CACHE.items():
+        norm_ref = np.linalg.norm(ref_vec)
+        if norm_ref == 0:
+            continue
+        similarity = float(np.dot(input_vec, ref_vec) / (norm_input * norm_ref))
+        scores.append((struct_id, lt_id, similarity))
+
+    if not scores:
+        return False
+
+    scores.sort(key=lambda x: x[2], reverse=True)
+    best_struct_id, best_lt_id, best_sim = scores[0]
+
+    logger.debug("check_coords_kde: best match struct_id={} sim={:.3f}", best_struct_id, best_sim)
+
+    if best_sim < _KDE_THRESHOLD:
+        logger.debug("check_coords_kde: best similarity {:.3f} below threshold {}", best_sim, _KDE_THRESHOLD)
+        return False
+
+    return _fetch_struct_info(best_struct_id, best_lt_id,
+                              struct_prob=round(best_sim * 100, 1),
+                              lt_prob=round(best_sim * 100, 1))
 
 
 # ── Основная функция поиска ───────────────────────────────────────────────────
@@ -90,7 +245,8 @@ def check_coords(coordinates: dict, ion_amount: int):
         if normalized is None:
             continue
 
-        if len(normalized) != ion_amount:
+        # Разрешаем суперячейки: входных атомов должно быть кратно числу атомов эталона
+        if ion_amount % len(normalized) != 0:
             continue
 
         ref_coords = [(float(r[1]), float(r[2]), float(r[3])) for r in normalized]
@@ -106,7 +262,9 @@ def check_coords(coordinates: dict, ion_amount: int):
                     break  # один голос за структуру на одну входную координату
 
     if not matched_lattices:
-        return False
+        logger.debug("check_coords: no exact match, falling back to KDE search")
+        coord_list = list(coordinates.values())
+        return check_coords_kde(coord_list)
 
     # 2. Считаем вероятности
     lattice_counts = Counter(matched_lattices)

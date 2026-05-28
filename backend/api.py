@@ -112,6 +112,7 @@ class AnalyzeResponse(BaseModel):
     lattice: Optional[LatticeResult] = None
     structure: Optional[StructureResult] = None
     lattice_ranking: list[RankingItem] = []
+    structure_ranking: list[RankingItem] = []
     ml_results: list[MLMethodResult] = []
 
 
@@ -658,13 +659,19 @@ def analyze(body: AnalyzeRequest):
         key=lambda x: -x.prob,
     )
 
+    struct_ranking = sorted(
+        [RankingItem(name_en=st[1], name_ru=None, prob=round(st[2], 2)) for st in struct_names],
+        key=lambda x: -x.prob,
+    )
+
     return AnalyzeResponse(
-        success         = True,
-        session_id      = session_id,
-        lattice         = lattice,
-        structure       = structure,
-        lattice_ranking = ranking,
-        ml_results      = ml_results,
+        success           = True,
+        session_id        = session_id,
+        lattice           = lattice,
+        structure         = structure,
+        lattice_ranking   = ranking,
+        structure_ranking = struct_ranking,
+        ml_results        = ml_results,
     )
 
 
