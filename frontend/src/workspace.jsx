@@ -585,17 +585,20 @@ const RankingRow = ({ item, top }) => (
   </div>
 );
 
-const MethodResult = ({ label, result, active, emptyText = "Нет данных" }) => (
-  <div style={{ border: `1px solid ${active && result ? "var(--cobalt)" : "var(--hairline)"}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
+const MethodResult = ({ label, result, active, emptyText = "Нет данных" }) => {
+  // считаем результат «пустым» если нет ни имени, ни предсказаний (модель не смогла загрузиться)
+  const hasData = result && (result.name_en || (result.ranking && result.ranking.length > 0));
+  return (
+  <div style={{ border: `1px solid ${active && hasData ? "var(--cobalt)" : "var(--hairline)"}`, borderRadius: 8, padding: "12px 14px", marginTop: 10 }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--mute)" }}>{label}</span>
       {!active
         ? <Chip tone="default">не выбран</Chip>
-        : !result
+        : !hasData
         ? <Chip tone="warn">нет данных</Chip>
         : <Chip tone="ok" dot>{result.confidence != null ? result.confidence.toFixed(2) : "—"}</Chip>}
     </div>
-    {active && result ? (
+    {active && hasData ? (
       <>
         <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{result.name_en ?? "—"}</div>
         {result.name_ru && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{result.name_ru}</div>}
@@ -609,7 +612,8 @@ const MethodResult = ({ label, result, active, emptyText = "Нет данных"
       <div style={{ fontSize: 12, color: "var(--mute)" }}>{emptyText}</div>
     ) : null}
   </div>
-);
+  );
+};
 
 /* ── Inner section tab bar ── */
 const SectionTabs = ({ active, onChange }) => (
@@ -751,7 +755,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
           <MethodResult label="По базе данных"      result={dbSubstanceResult}      active={!!methods?.db}                  emptyText="Нет совпадений в базе данных" />
           <MethodResult label="CatBoost · вещество" result={catboostSubstanceResult} active={!!methods?.catboost_substance}  emptyText="Нет данных от модели" />
           <MethodResult label="Random Forest"        result={rfResult}                active={!!methods?.rf}                  emptyText="Нет данных от модели" />
-          <MethodResult label="AutoML (ExtraTrees)" result={automlResult}            active={!!methods?.automl}              emptyText="Нет данных от модели" />
+          <MethodResult label="AutoML (ExtraTrees)" result={automlResult}            active={!!methods?.automl}              emptyText="Модель недоступна (требуется переобучение)" />
         </div>
       )}
 
