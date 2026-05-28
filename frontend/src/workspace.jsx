@@ -673,6 +673,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
       methods?.catboost           && "CatBoost",
       methods?.catboost_substance && "CatBoost-substance",
       methods?.rf                 && "Random Forest",
+      methods?.automl             && "AutoML (ExtraTrees)",
     ].filter(Boolean).join(" + ") || "DB matching";
     const lines = [
       [structure?.name, structure?.formula && structure.formula !== structure.name ? `(${structure.formula})` : null, lattice?.name_en ? `, ${lattice.name_en}` : "", structure?.sg_hm ? `, ${structure.sg_hm}` : ""].filter(Boolean).join(" "),
@@ -700,7 +701,7 @@ const VerdictBlock = ({ result, apiError, siteCount, methods, section, setSectio
     name_en:    result.structure.name,
     name_ru:    result.structure.formula && result.structure.formula !== result.structure.name ? result.structure.formula : null,
     confidence: result.structure.confidence,
-    ranking:    [],
+    ranking:    result.structure_ranking ?? [],
   } : null;
   const catboostResult          = result?.ml_results?.find(r => r.method === "catboost")           ?? null;
   const catboostSubstanceResult = result?.ml_results?.find(r => r.method === "catboost_substance") ?? null;
