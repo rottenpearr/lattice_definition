@@ -20,6 +20,47 @@ _ROOT            = Path(__file__).parent.parent.parent   # корень прое
 _COORD_TOLERANCE = 1e-4                                   # допуск при сравнении координат
 _KDE_THRESHOLD   = 0.80                                   # минимальное косинусное сходство
 
+# ── KDE-кеш эталонных структур ────────────────────────────────────────────────
+# Заполняется один раз при первом вызове check_coords_kde, потом переиспользуется.
+# struct_id → (lattice_type_id, kde_vector_200dim)
+_KDE_CACHE: dict[int, tuple[int, np.ndarray]] = {}
+_KDE_CACHE_READY = False
+
+
+def _build_kde_cache() -> None:
+    """
+    Загружает KDE-векторы всех эталонных структур в память.
+    Вызывается один раз — при первом обращении к check_coords_kde.
+    """
+    global _KDE_CACHE, _KDE_CACHE_READY
+    from cris.core.ml_predict import _coords_to_feature_vector_200
+
+    try:
+        with get_cursor() as cur:
+            cur.execute("""
+                SELECT id, lattice_type_id, xyz_path
+                FROM reference_structure
+                WHERE xyz_path IS NOT NULL AND xyz_path != ''
+            """)
+            structures = cur.fetchall()
+    except Exception as e:
+        logger.error("_build_kde_cache: DB load failed: {}", e)
+        return
+
+    built = 0
+    for struct_id, lt_id, xyz_rel_path in structures:
+        normalized = _normalize_xyz(_ROOT / xyz_rel_path)
+        if normalized is None:
+            continue
+        vec = _coords_to_feature_vector_200(normalized)
+        if vec is None:
+            continue
+        _KDE_CACHE[struct_id] = (lt_id, vec)
+        built += 1
+
+    _KDE_CACHE_READY = True
+    logger.debug("_build_kde_cache: ready, {} / {} structures cached", built, len(structures))
+
 
 # ── Вспомогательные функции ───────────────────────────────────────────────────
 
@@ -100,9 +141,20 @@ def check_coords_kde(normalized_coords: list, top_k: int = 1):
       - Устойчив к сдвигу и небольшому повороту
       - Не требует точного числа атомов
 
+    KDE-векторы эталонов хранятся в памяти (_KDE_CACHE) и вычисляются
+    один раз при первом вызове — последующие запросы работают без I/O.
+
     Порог сходства: _KDE_THRESHOLD (по умолчанию 0.80).
     Возвращает тот же формат что и check_coords, или False если ничего не найдено.
     """
+    global _KDE_CACHE_READY
+    if not _KDE_CACHE_READY:
+        logger.debug("check_coords_kde: building KDE cache...")
+        _build_kde_cache()
+
+    if not _KDE_CACHE:
+        return False
+
     from cris.core.ml_predict import _coords_to_feature_vector_200
 
     # KDE-вектор входной структуры
@@ -115,38 +167,12 @@ def check_coords_kde(normalized_coords: list, top_k: int = 1):
     if norm_input == 0:
         return False
 
-    # Загружаем все эталоны с xyz_path
-    try:
-        with get_cursor() as cur:
-            cur.execute("""
-                SELECT rs.id, rs.lattice_type_id, rs.xyz_path
-                FROM reference_structure rs
-                WHERE rs.xyz_path IS NOT NULL AND rs.xyz_path != ''
-            """)
-            structures = cur.fetchall()
-    except Exception as e:
-        logger.error("check_coords_kde: DB load failed: {}", e)
-        return False
-
-    if not structures:
-        return False
-
-    # Считаем косинусное сходство для каждого эталона
+    # Косинусное сходство против всех эталонов из кеша (без I/O)
     scores = []
-    for struct_id, lt_id, xyz_rel_path in structures:
-        xyz_path = _ROOT / xyz_rel_path
-        normalized_ref = _normalize_xyz(xyz_path)
-        if normalized_ref is None:
-            continue
-
-        ref_vec = _coords_to_feature_vector_200(normalized_ref)
-        if ref_vec is None:
-            continue
-
+    for struct_id, (lt_id, ref_vec) in _KDE_CACHE.items():
         norm_ref = np.linalg.norm(ref_vec)
         if norm_ref == 0:
             continue
-
         similarity = float(np.dot(input_vec, ref_vec) / (norm_input * norm_ref))
         scores.append((struct_id, lt_id, similarity))
 
