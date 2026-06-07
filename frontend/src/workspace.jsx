@@ -386,11 +386,11 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
 );
 
 const EXAMPLES = [
-  { label: "β-UC₂  cubic · 12 атомов",       filename: "UC2_mp-1008642.xyz"  },
-  { label: "UB₄    tetragonal · 20 атомов",   filename: "UB4_mp-619.xyz"      },
-  { label: "UO₂    tetragonal · 6 атомов",    filename: "UO2_mp-865305.xyz"   },
-  { label: "UBr₄   monoclinic · 10 атомов",   filename: "UBr4_mp-27153.xyz"   },
-  { label: "UF₄    monoclinic · 30 атомов",   filename: "UF4_mp-287.xyz"      },
+  { label: "β-UC₂",  filename: "UC2_mp-1008642.xyz" },
+  { label: "UB₄",    filename: "UB4_mp-619.xyz"     },
+  { label: "UO₂",    filename: "UO2_mp-865305.xyz"  },
+  { label: "UBr₄",   filename: "UBr4_mp-27153.xyz"  },
+  { label: "UF₄",    filename: "UF4_mp-287.xyz"     },
 ];
 
 const FileInput = ({ file, onFileLoad, onClear }) => {
