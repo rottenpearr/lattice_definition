@@ -386,8 +386,9 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
 );
 
 const EXAMPLES = [
-  { label: "Пример №1", filename: "UC2_mp-1008642.xyz" },
-  { label: "Пример №2", filename: "UC_mp-2489.xyz" },
+  { label: "Пример №1", filename: "UC2_mp-1102444.xyz" },
+  { label: "Пример №2", filename: "U2C3_mp-2625.xyz" },
+  { label: "Пример №3", filename: "U2N3_mp-973.xyz" },
 ];
 
 const FileInput = ({ file, onFileLoad, onClear }) => {

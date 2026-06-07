@@ -816,7 +816,7 @@ def export_docx(body: AnalyzeResponse):
 # ── Примеры структур ──────────────────────────────────────────────────────────
 
 _EXAMPLES_DIR = Path(__file__).parent.parent / "data" / "structures" / "micro" / "source"
-_ALLOWED_EXAMPLES = {"UC2_mp-1008642.xyz", "UC_mp-2489.xyz"}
+_ALLOWED_EXAMPLES = {"UC2_mp-1102444.xyz", "U2C3_mp-2625.xyz", "U2N3_mp-973.xyz"}
 
 
 @app.get("/api/example/{filename}")

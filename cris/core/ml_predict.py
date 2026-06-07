@@ -27,6 +27,11 @@ _DEFAULT_RF_MODEL        = _ROOT / "ML" / "rf_optimized_model.pkl"
 _DEFAULT_SUBSTANCE_MODEL = _ROOT / "ML" / "CatBoost" / "catboost_substance.cbm"
 _DEFAULT_AUTOML_MODEL    = _ROOT / "ML" / "AutoML" / "extra_trees.pkl"
 
+# ── v2: переобученные модели с правильным усреднением (200-dim, v3 PBC) ───────
+_DEFAULT_RF_MODEL_V2        = _ROOT / "ML" / "rf_optimized_model_v2.pkl"
+_DEFAULT_SUBSTANCE_MODEL_V2 = _ROOT / "ML" / "CatBoost" / "catboost_substance_v2.cbm"
+_DEFAULT_AUTOML_MODEL_V2    = _ROOT / "ML" / "AutoML" / "extra_trees_v2.pkl"
+
 # ── Маппинг классов модели → name_en в таблице lattice_type ──────────────────
 # Модель обучена на подтипах Браве-решётки; все cubic_* → "cubic" и т.д.
 _CLASS_TO_LATTICE_EN: dict[str, str] = {
@@ -129,16 +134,23 @@ def _load_sklearn_model(model_path: Path):
 def _coords_to_feature_vector_200(normalized_coords: list) -> Optional[np.ndarray]:
     """
     Список [label, x, y, z] → усреднённый KDE-вектор 200-dim.
-    Используется для CatBoost и Random Forest.
+    Используется для CatBoost, Random Forest и AutoML.
 
-    Использует get_lattice_vectors2 — без PBC, только уникальные позиции ионов.
-    Это соответствует pipeline обучения обеих моделей (spectrum.py тоже использует v2).
+    Использует get_lattice_vectors3 — с периодическими граничными условиями (PBC),
+    все ионы (без дедупликации). Соответствует pipeline обучения всех моделей
+    (generate_dataset.py также использует v3).
     """
     try:
         from cris.core.spectrum import kde_array
-        from cris.core.vectors import get_lattice_vectors2
+        from cris.core.vectors import get_lattice_vectors3
 
-        vectors_dict = get_lattice_vectors2(normalized_coords)
+        # Подавляем print()-вывод из get_lattice_vectors3
+        _old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            vectors_dict = get_lattice_vectors3(normalized_coords)
+        finally:
+            sys.stdout = _old_stdout
 
         ion_arrays = []
         for distances in vectors_dict.values():
@@ -215,7 +227,7 @@ def predict_catboost(
 
 def predict_rf(
     normalized_coords: list,
-    model_path: Path = _DEFAULT_RF_MODEL,
+    model_path: Path = _DEFAULT_RF_MODEL_V2,
     top_k: int = 3,
 ) -> list[dict]:
     """
@@ -269,7 +281,7 @@ def predict_rf(
 
 def predict_catboost_substance(
     normalized_coords: list,
-    model_path: Path = _DEFAULT_SUBSTANCE_MODEL,
+    model_path: Path = _DEFAULT_SUBSTANCE_MODEL_V2,
     top_k: int = 3,
 ) -> list[dict]:
     """
@@ -320,7 +332,7 @@ def predict_catboost_substance(
 
 def predict_automl(
     normalized_coords: list,
-    model_path: Path = _DEFAULT_AUTOML_MODEL,
+    model_path: Path = _DEFAULT_AUTOML_MODEL_V2,
     top_k: int = 3,
 ) -> list[dict]:
     """
