@@ -816,13 +816,7 @@ def export_docx(body: AnalyzeResponse):
 # ── Примеры структур ──────────────────────────────────────────────────────────
 
 _EXAMPLES_DIR = Path(__file__).parent.parent / "data" / "structures" / "micro" / "source"
-_ALLOWED_EXAMPLES = {
-    "UC2_mp-1008642.xyz",   # β-UC₂  cubic     12 atoms
-    "UB4_mp-619.xyz",       # UB₄    tetragonal 20 atoms
-    "UO2_mp-865305.xyz",    # UO₂    tetragonal  6 atoms
-    "UBr4_mp-27153.xyz",    # UBr₄   monoclinic 10 atoms
-    "UF4_mp-287.xyz",       # UF₄    monoclinic 30 atoms
-}
+_ALLOWED_EXAMPLES = {"UC2_mp-1102444.xyz", "U2C3_mp-2625.xyz", "U2N3_mp-973.xyz"}
 
 
 @app.get("/api/example/{filename}")
