@@ -332,7 +332,7 @@ def predict_catboost_substance(
 
 def predict_automl(
     normalized_coords: list,
-    model_path: Path = _DEFAULT_AUTOML_MODEL_V2,
+    model_path: Path = _DEFAULT_AUTOML_MODEL,
     top_k: int = 3,
 ) -> list[dict]:
     """
