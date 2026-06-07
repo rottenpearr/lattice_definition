@@ -178,7 +178,7 @@ const DescriptionSection = () => {
 /* ---------- Team ---------- */
 const TeamSection = () => {
   const team = [
-    { initials: "АА", photo: null,                        name: "Артюшин Артём",   role: "Математическое и алгоритмическое обоснование · РФР · KDE · Random Forest" },
+    { initials: "АА", photo: "assets/team/artyushin.jpg", name: "Артюшин Артём",   role: "Математическое и алгоритмическое обоснование · РФР · KDE · Random Forest" },
     { initials: "МА", photo: "assets/team/markova.jpg",   name: "Маркова Алёна",   role: "Программная архитектура · серверная часть · веб-клиент · БД · библиотека" },
     { initials: "ЧМ", photo: "assets/team/chernyakov.jpg",name: "Черняков Матвей", role: "AI/ML-механизмы · RAG · ИИ-ассистент · датасет · CatBoost" },
   ];
