@@ -18,7 +18,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -811,3 +811,20 @@ def export_docx(body: AnalyzeResponse):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": "attachment; filename=cris_result.docx"},
     )
+
+
+# ── Примеры структур ──────────────────────────────────────────────────────────
+
+_EXAMPLES_DIR = Path(__file__).parent.parent / "data" / "structures" / "micro" / "source"
+_ALLOWED_EXAMPLES = {"UC2_mp-1008642.xyz", "UC_mp-2489.xyz"}
+
+
+@app.get("/api/example/{filename}")
+def get_example(filename: str):
+    """Отдаёт содержимое одного из разрешённых примеров XYZ в виде plain text."""
+    if filename not in _ALLOWED_EXAMPLES:
+        raise HTTPException(status_code=404, detail="Example not found")
+    path = _EXAMPLES_DIR / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Example file not found on disk")
+    return PlainTextResponse(content=path.read_text(encoding="utf-8"))

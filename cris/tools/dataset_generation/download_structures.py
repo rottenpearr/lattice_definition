@@ -372,6 +372,93 @@ def download_structures(api_key: str, limit: int = 50,
     print(f"Папка XYZ: {OUT_DIR}")
 
 
+def download_by_ids(api_key: str, mp_ids: list[str], dry_run: bool = False) -> None:
+    """Скачивает конкретные структуры по списку MP ID."""
+    from mp_api.client import MPRester
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    saved = updated = skipped = 0
+
+    conn = psycopg2.connect(**db_config) if not dry_run else None
+    cur  = conn.cursor() if conn else None
+
+    try:
+        with MPRester(api_key=api_key) as mpr:
+            for mp_id in mp_ids:
+                mp_id = mp_id.strip()
+                print(f"\nСкачиваю {mp_id}...")
+                try:
+                    structure = mpr.get_structure_by_material_id(mp_id, conventional_unit_cell=True)
+                except Exception as e:
+                    print(f"  Ошибка: {e}"); skipped += 1; continue
+
+                # Метаданные симметрии
+                try:
+                    docs = mpr.materials.search(
+                        material_ids=[mp_id],
+                        fields=["formula_pretty", "symmetry"],
+                    )
+                    doc = docs[0] if docs else None
+                except Exception:
+                    doc = None
+
+                formula_pretty = doc.formula_pretty if doc else structure.formula
+                sym            = doc.symmetry       if doc else None
+                sg_hm     = sym.symbol      if sym else None
+                sg_number = int(sym.number) if sym and sym.number else None
+                cs        = sym.crystal_system.value if sym and hasattr(sym.crystal_system, "value") \
+                            else (str(sym.crystal_system) if sym else None)
+
+                lat      = structure.lattice
+                cell_a, cell_b, cell_c = float(lat.a), float(lat.b), float(lat.c)
+                cell_vol = float(lat.volume)
+                alpha, beta, gamma = float(lat.alpha), float(lat.beta), float(lat.gamma)
+                n_atoms  = len(structure.sites)
+
+                safe_formula = formula_pretty.replace(" ", "")
+                filename     = f"{safe_formula}_{mp_id}.xyz"
+                filepath     = OUT_DIR / filename
+                xyz_path_rel = str(filepath.relative_to(_ROOT)).replace("\\", "/")
+                source_url   = f"https://materialsproject.org/materials/{mp_id}"
+                comment      = f"{formula_pretty} {mp_id} sg={sg_hm or 'unknown'}"
+
+                print(f"  {formula_pretty}  {n_atoms} атомов  sg={sg_hm}")
+
+                if filepath.exists():
+                    print(f"  XYZ уже есть: {filename}")
+                elif not dry_run:
+                    structure_to_xyz(structure, filepath, comment)
+                    print(f"  XYZ сохранён: {filename}")
+                else:
+                    print(f"  [DRY RUN] XYZ: {filename}")
+
+                if dry_run:
+                    saved += 1; continue
+
+                try:
+                    lt_id = _get_lattice_type_id(cur, cs)
+                    struct_id, created = _upsert_structure(
+                        cur, mp_id=mp_id, name=formula_pretty, formula=formula_pretty,
+                        lattice_type_id=lt_id,
+                        cell_a=cell_a, cell_b=cell_b, cell_c=cell_c, cell_vol=cell_vol,
+                        angle_alpha=alpha, angle_beta=beta, angle_gamma=gamma,
+                        sg_number=sg_number, sg_hm=sg_hm,
+                        xyz_path_rel=xyz_path_rel, source_url=source_url,
+                    )
+                    conn.commit()
+                    action = "INSERT" if created else "UPDATE"
+                    print(f"  DB {action}: id={struct_id}")
+                    saved += 1 if created else 0
+                    updated += 0 if created else 1
+                except Exception as e:
+                    conn.rollback(); print(f"  Ошибка БД: {e}"); skipped += 1
+    finally:
+        if cur:  cur.close()
+        if conn: conn.close()
+
+    print(f"\nГотово: вставлено={saved}, обновлено={updated}, пропущено={skipped}.")
+
+
 def convert_cif(cif_path: Path, out_dir: Path = None) -> None:
     """Конвертирует один CIF-файл в XYZ с раскрытием симметрии."""
     out_dir = out_dir or OUT_DIR
@@ -387,12 +474,17 @@ if __name__ == "__main__":
     parser.add_argument("--api-key", default=None, help="MP API ключ (или MP_API_KEY в .env)")
     parser.add_argument("--limit",   type=int, default=50, help="Максимум структур (по умолчанию 50)")
     parser.add_argument("--formula", type=str, default=None, help="Фильтр по формуле, например 'UC'")
+    parser.add_argument("--mp-id",   type=str, nargs="+", default=None,
+                        help="Один или несколько MP ID, например --mp-id mp-1568 mp-2489")
     parser.add_argument("--dry-run", action="store_true", help="Показать план без записи в БД/файлы")
     parser.add_argument("--cif",     type=str, default=None, help="Путь к CIF-файлу для локальной конвертации")
     args = parser.parse_args()
 
     if args.cif:
         convert_cif(Path(args.cif))
+    elif args.mp_id:
+        key = load_api_key(args.api_key)
+        download_by_ids(key, args.mp_id, dry_run=args.dry_run)
     else:
         key = load_api_key(args.api_key)
         download_structures(

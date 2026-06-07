@@ -108,7 +108,7 @@ function parseXYZ(text) {
    [CHANGE 1] WORKSPACE HEADER — replaces global nav + toolbar.
    Dark, compact, tool-mode. Logo navigates back to home.
    ══════════════════════════════════════════════════════════ */
-const WorkspaceHeader = ({ stage, result, file, onReset, setRoute }) => {
+const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => {
   const confidence = result?.lattice?.confidence;
   const matched    = result?.success;
 
@@ -141,7 +141,7 @@ const WorkspaceHeader = ({ stage, result, file, onReset, setRoute }) => {
       <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.12)", flexShrink: 0 }} />
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>workspace</span>
       <div style={{ flex: 1 }} />
-      <Button variant="ghost" size="sm" onDark icon={<IconHelp size={14} />}>Подсказка</Button>
+      <Button variant="ghost" size="sm" onDark icon={<IconHelp size={14} />} onClick={onHelp}>Подсказка</Button>
       <Button variant="ghost" size="sm" onDark icon={<IconRotate size={14} />} onClick={onReset}>Сбросить</Button>
     </header>
   );
@@ -178,6 +178,7 @@ const WorkspaceScreen = ({ setRoute }) => {
   const [methods,        setMethods]        = React.useState({ db: true, catboost: true, catboost_substance: true, rf: true, automl: true });
   const [methodSection,  setMethodSection]  = React.useState("substance");
   const [resultSection,  setResultSection]  = React.useState("substance");
+  const [showHelp,       setShowHelp]       = React.useState(false);
   const screenshotApiRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -223,7 +224,11 @@ const WorkspaceScreen = ({ setRoute }) => {
     }
   };
 
-  const reset = () => { setStage("input"); setResult(null); setApiError(null); setSessionId(null); };
+  const reset = () => {
+    setStage("input"); setResult(null); setApiError(null); setSessionId(null);
+    setFile(null); setSites([]); setCell(DEFAULT_CELL); setCoordType("frac");
+    setMode("file");
+  };
 
   const handleScreenshot = () => {
     if (!screenshotApiRef.current) return;
@@ -244,8 +249,8 @@ const WorkspaceScreen = ({ setRoute }) => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <WorkspaceHeader stage={stage} result={result} file={file} onReset={reset} setRoute={setRoute} />
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", position: "relative" }}>
+      <WorkspaceHeader stage={stage} result={result} file={file} onReset={reset} onHelp={() => setShowHelp(true)} setRoute={setRoute} />
       <div style={{ display: "grid", gridTemplateColumns: "360px 1fr 380px", flex: 1, minHeight: 0 }}>
         <WsLeftPanel
           stage={stage} mode={mode} setMode={setMode}
@@ -262,6 +267,63 @@ const WorkspaceScreen = ({ setRoute }) => {
         />
         <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={resultSection} setSection={setResultSection} />
       </div>
+
+      {/* ── Help overlay ── */}
+      {showHelp && (
+        <div
+          onClick={() => setShowHelp(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(10,14,28,0.72)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "var(--paper)", borderRadius: 16, padding: "36px 40px",
+              maxWidth: 520, width: "90%", boxShadow: "0 24px 64px rgba(0,0,0,0.35)",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setShowHelp(false)}
+              style={{ position: "absolute", top: 16, right: 16, background: "transparent", border: "none", cursor: "pointer", color: "var(--mute)", padding: 4 }}
+            >
+              <IconClose size={18} />
+            </button>
+
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, marginBottom: 4 }}>
+              Как пользоваться воркспейсом
+            </div>
+            <div style={{ fontSize: 12, color: "var(--mute)", fontFamily: "var(--font-mono)", marginBottom: 24 }}>CRIS · краткая инструкция</div>
+
+            <ol style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                { title: "Загрузите структуру", text: "Перетащите CIF или XYZ-файл в левую панель, нажмите «выберите файл» или выберите один из готовых примеров. Также можно ввести координаты вручную через вкладку «Ручной ввод»." },
+                { title: "Проверьте 3D-вид", text: "Центральная панель отображает атомы в реальном времени. Используйте мышь для вращения, колёсико для масштаба. Кнопка «screenshot» сохраняет снимок." },
+                { title: "Выберите методы", text: "В левой панели выберите методы распознавания — по базе данных, ML-моделям (сингония / вещество) или их комбинацию. Затем нажмите «Распознать решётку»." },
+                { title: "Читайте результаты", text: "В правой панели появятся результаты по всем выбранным методам. Переключайте вкладки «Вещество» и «Сингония» для просмотра соответствующих выводов." },
+                { title: "Сброс и экспорт", text: "«Сбросить» (верхняя панель) очищает все данные. Кнопка DOCX в правой панели экспортирует отчёт." },
+              ].map((item, i) => (
+                <li key={i} style={{ paddingLeft: 4 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{item.title}</span>
+                  <div style={{ fontSize: 13, color: "var(--mute)", marginTop: 3, lineHeight: 1.5 }}>{item.text}</div>
+                </li>
+              ))}
+            </ol>
+
+            <div style={{ marginTop: 28, textAlign: "right" }}>
+              <button
+                onClick={() => setShowHelp(false)}
+                style={{ background: "var(--cobalt)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              >
+                Понятно
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -323,10 +385,16 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
   </aside>
 );
 
+const EXAMPLES = [
+  { label: "Пример №1", filename: "UC2_mp-1008642.xyz" },
+  { label: "Пример №2", filename: "UC_mp-2489.xyz" },
+];
+
 const FileInput = ({ file, onFileLoad, onClear }) => {
   const inputRef = React.useRef(null);
   const [dragOver,    setDragOver]    = React.useState(false);
   const [parseError,  setParseError]  = React.useState(null);
+  const [loadingEx,   setLoadingEx]   = React.useState(null);
 
   const processFile = (f) => {
     if (!f) return;
@@ -353,6 +421,24 @@ const FileInput = ({ file, onFileLoad, onClear }) => {
   const onDragLeave = ()  => setDragOver(false);
   const onInputChange = (e) => { processFile(e.target.files[0]); e.target.value = ""; };
 
+  const loadExample = async (filename, label) => {
+    setLoadingEx(filename);
+    setParseError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/example/${filename}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const parsed = parseXYZ(text);
+      if (parsed.sites.length === 0) { setParseError("Пример не содержит атомов"); return; }
+      const byteLen = new TextEncoder().encode(text).length;
+      if (onFileLoad) onFileLoad({ file: { name: filename, size: byteLen }, ...parsed });
+    } catch (err) {
+      setParseError("Не удалось загрузить пример: " + err.message);
+    } finally {
+      setLoadingEx(null);
+    }
+  };
+
   return (
     <div>
       <div
@@ -373,6 +459,26 @@ const FileInput = ({ file, onFileLoad, onClear }) => {
         <div style={{ fontSize: 11, color: "var(--mute)", fontFamily: "var(--font-mono)" }}>до 1000 ионов · fractional · Wyckoff</div>
       </div>
       <input ref={inputRef} type="file" accept=".cif,.xyz" style={{ display: "none" }} onChange={onInputChange} />
+
+      {/* Example links */}
+      <div style={{ marginTop: 8, display: "flex", gap: 12, justifyContent: "center" }}>
+        {EXAMPLES.map(({ label, filename }) => (
+          <button
+            key={filename}
+            onClick={() => loadExample(filename, label)}
+            disabled={loadingEx !== null}
+            style={{
+              background: "transparent", border: "none", padding: 0,
+              color: "var(--cobalt)", fontSize: 12, cursor: loadingEx ? "default" : "pointer",
+              textDecoration: "underline", fontFamily: "var(--font-sans)",
+              opacity: loadingEx && loadingEx !== filename ? 0.4 : 1,
+              transition: "opacity .15s",
+            }}
+          >
+            {loadingEx === filename ? "Загрузка…" : label}
+          </button>
+        ))}
+      </div>
       {parseError && (
         <div style={{ marginTop: 8, fontSize: 12, color: "#e53e3e", padding: "8px 12px", background: "rgba(229,62,62,0.07)", borderRadius: 6, border: "1px solid rgba(229,62,62,0.18)" }}>
           ⚠ {parseError}
