@@ -1118,5 +1118,25 @@
     "source_url": "https://materialsproject.org/materials/mp-1008642",
     "lattice_name_en": "cubic",
     "lattice_name_ru": "кубическая"
+  },
+  {
+    "id": 57,
+    "name": "U2C3",
+    "formula": "U2C3",
+    "mp_id": "mp-2625",
+    "xyz_path": "data/structures/micro/source/U2C3_mp-2625.xyz",
+    "lattice_type_id": 8,
+    "sg_number": 220,
+    "sg_hm": "I-43d",
+    "cell_length_a": 8.083542,
+    "cell_length_b": 8.083542,
+    "cell_length_c": 8.083542,
+    "cell_volume": 528.20807,
+    "cell_angle_alpha": 90.0,
+    "cell_angle_beta": 90.0,
+    "cell_angle_gamma": 90.0,
+    "source_url": "https://materialsproject.org/materials/mp-2625",
+    "lattice_name_en": "cubic",
+    "lattice_name_ru": "кубическая"
   }
 ]
