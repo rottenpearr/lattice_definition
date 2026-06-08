@@ -146,8 +146,8 @@ const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => 
         </>
       )}
       <div style={{ flex: 1 }} />
-      {/* Status chip — только когда есть что показать */}
-      {!isMobileHdr && stage !== "idle" && (
+      {/* Status chip */}
+      {!isMobileHdr && (
         <div style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: "var(--font-mono)", fontSize: 11, color: status.color }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: status.dot, flexShrink: 0,
             ...(status.pulse ? { animation: "pulse-signal 1.4s infinite var(--ease-in-out)" } : {}) }} />
@@ -502,9 +502,9 @@ const WsLeftPanel = ({ stage, mode, setMode, file, onFileLoad, onFileClear, site
 );
 
 const EXAMPLES = [
-  { label: "Пример №1", filename: "UC2_mp-1102444.xyz"  },
-  { label: "Пример №2", filename: "U2C3_mp-2625.xyz"    },
-  { label: "Пример №3", filename: "U2N3_mp-973.xyz"     },
+  { label: "UC₂",  filename: "UC2_mp-1102444.xyz" },
+  { label: "UO₂",  filename: "UO2_mp-865305.xyz"  },
+  { label: "U₂N₃", filename: "U2N3_mp-973.xyz"    },
 ];
 
 const FileInput = ({ file, onFileLoad, onClear }) => {
