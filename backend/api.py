@@ -19,6 +19,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 
@@ -49,8 +50,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -828,3 +829,10 @@ def get_example(filename: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Example file not found on disk")
     return PlainTextResponse(content=path.read_text(encoding="utf-8"))
+
+
+# ── Статика фронтенда (должна быть ПОСЛЕДНЕЙ) ─────────────────────────────────
+# Все /api/* маршруты уже определены выше — mount перехватывает только остальное
+_FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+if _FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="static")
