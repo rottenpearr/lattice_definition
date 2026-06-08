@@ -32,6 +32,41 @@ _DEFAULT_RF_MODEL_V2        = _ROOT / "ML" / "rf_optimized_model_v2.pkl"
 _DEFAULT_SUBSTANCE_MODEL_V2 = _ROOT / "ML" / "CatBoost" / "catboost_substance_v2.cbm"
 _DEFAULT_AUTOML_MODEL_V2    = _ROOT / "ML" / "AutoML" / "extra_trees_v2.pkl"
 
+# ── Кеш загруженных моделей (заполняется один раз, живёт весь процесс) ────────
+_CACHED_CATBOOST:          object = None
+_CACHED_CATBOOST_SUBSTANCE: object = None
+_CACHED_RF:                object = None
+_CACHED_AUTOML:            object = None
+
+
+def _get_catboost_model():
+    global _CACHED_CATBOOST
+    if _CACHED_CATBOOST is None:
+        _CACHED_CATBOOST = _load_model(_DEFAULT_MODEL)
+    return _CACHED_CATBOOST
+
+
+def _get_catboost_substance_model():
+    global _CACHED_CATBOOST_SUBSTANCE
+    if _CACHED_CATBOOST_SUBSTANCE is None:
+        _CACHED_CATBOOST_SUBSTANCE = _load_model(_DEFAULT_SUBSTANCE_MODEL_V2)
+    return _CACHED_CATBOOST_SUBSTANCE
+
+
+def _get_rf_model():
+    global _CACHED_RF
+    if _CACHED_RF is None:
+        _CACHED_RF = _load_sklearn_model(_DEFAULT_RF_MODEL_V2)
+    return _CACHED_RF
+
+
+def _get_automl_model():
+    global _CACHED_AUTOML
+    if _CACHED_AUTOML is None:
+        _CACHED_AUTOML = _load_sklearn_model(_DEFAULT_AUTOML_MODEL)
+    return _CACHED_AUTOML
+
+
 # ── Маппинг классов модели → name_en в таблице lattice_type ──────────────────
 # Модель обучена на подтипах Браве-решётки; все cubic_* → "cubic" и т.д.
 _CLASS_TO_LATTICE_EN: dict[str, str] = {
@@ -173,30 +208,17 @@ def predict_catboost(
     normalized_coords: list,
     model_path: Path = _DEFAULT_MODEL,
     top_k: int = 3,
+    feat_vec: Optional[np.ndarray] = None,
 ) -> list[dict]:
     """
     Предсказывает тип решётки через CatBoost.
-
-    Args:
-        normalized_coords: список [label, x, y, z] — уже нормализованные
-        model_path:        путь к .cbm файлу
-        top_k:             сколько топ-классов вернуть
-
-    Returns:
-        Список словарей (отсортированных по убыванию confidence):
-        [{"class": "cubic_f", "lattice_name": "cubic",
-          "lattice_type_id": None, "confidence": 0.87}, ...]
-        lattice_type_id заполняется отдельно через resolve_lattice_ids().
+    Если feat_vec передан — пропускает вычисление дескриптора (быстрый путь).
     """
-    if not model_path.exists():
-        logger.debug("ml_predict: model file not found: {}", model_path)
-        return []
-
-    model = _load_model(model_path)
+    model = _get_catboost_model()
     if model is None:
         return []
 
-    feat = _coords_to_feature_vector_200(normalized_coords)
+    feat = feat_vec if feat_vec is not None else _coords_to_feature_vector_200(normalized_coords)
     if feat is None:
         return []
 
@@ -207,7 +229,7 @@ def predict_catboost(
         )
         return []
 
-    proba  = model.predict_proba(feat.reshape(1, -1))[0]
+    proba   = model.predict_proba(feat.reshape(1, -1))[0]
     classes = model.classes_
 
     top_indices = np.argsort(proba)[::-1][:top_k]
@@ -229,28 +251,17 @@ def predict_rf(
     normalized_coords: list,
     model_path: Path = _DEFAULT_RF_MODEL_V2,
     top_k: int = 3,
+    feat_vec: Optional[np.ndarray] = None,
 ) -> list[dict]:
     """
     Предсказывает класс через Random Forest (200-dim KDE вектор).
-
-    Args:
-        normalized_coords: список [label, x, y, z] — уже нормализованные
-        model_path:        путь к .pkl файлу
-        top_k:             сколько топ-классов вернуть
-
-    Returns:
-        [{"class": "UC2_phase1", "lattice_name": "UC2_phase1",
-          "lattice_type_id": None, "confidence": 0.52}, ...]
+    Если feat_vec передан — пропускает вычисление дескриптора (быстрый путь).
     """
-    if not model_path.exists():
-        logger.debug("ml_predict: RF model not found: {}", model_path)
-        return []
-
-    model = _load_sklearn_model(model_path)
+    model = _get_rf_model()
     if model is None:
         return []
 
-    feat = _coords_to_feature_vector_200(normalized_coords)
+    feat = feat_vec if feat_vec is not None else _coords_to_feature_vector_200(normalized_coords)
     if feat is None:
         return []
 
@@ -283,25 +294,17 @@ def predict_catboost_substance(
     normalized_coords: list,
     model_path: Path = _DEFAULT_SUBSTANCE_MODEL_V2,
     top_k: int = 3,
+    feat_vec: Optional[np.ndarray] = None,
 ) -> list[dict]:
     """
     Предсказывает конкретное вещество через CatBoost (200-dim KDE вектор).
-    Модель обучается скриптом ML/CatBoost/train_substance.py на тех же данных,
-    что и RF (urановые соединения: UC, UN2, UC2_phase1 и т.д.).
-
-    Returns:
-        [{"class": "UC", "lattice_name": "UC",
-          "lattice_type_id": None, "confidence": 0.85}, ...]
+    Если feat_vec передан — пропускает вычисление дескриптора (быстрый путь).
     """
-    if not model_path.exists():
-        logger.debug("ml_predict: substance model not found: {}", model_path)
-        return []
-
-    model = _load_model(model_path)
+    model = _get_catboost_substance_model()
     if model is None:
         return []
 
-    feat = _coords_to_feature_vector_200(normalized_coords)
+    feat = feat_vec if feat_vec is not None else _coords_to_feature_vector_200(normalized_coords)
     if feat is None:
         return []
 
@@ -334,23 +337,17 @@ def predict_automl(
     normalized_coords: list,
     model_path: Path = _DEFAULT_AUTOML_MODEL,
     top_k: int = 3,
+    feat_vec: Optional[np.ndarray] = None,
 ) -> list[dict]:
     """
     Предсказывает конкретное вещество через AutoML (FLAML ExtraTrees, 200-dim KDE вектор).
-
-    Returns:
-        [{"class": "UC", "lattice_name": "UC",
-          "lattice_type_id": None, "confidence": 0.85}, ...]
+    Если feat_vec передан — пропускает вычисление дескриптора (быстрый путь).
     """
-    if not model_path.exists():
-        logger.debug("ml_predict: AutoML model not found: {}", model_path)
-        return []
-
-    model = _load_sklearn_model(model_path)
+    model = _get_automl_model()
     if model is None:
         return []
 
-    feat = _coords_to_feature_vector_200(normalized_coords)
+    feat = feat_vec if feat_vec is not None else _coords_to_feature_vector_200(normalized_coords)
     if feat is None:
         return []
 

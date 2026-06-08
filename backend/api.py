@@ -339,12 +339,25 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
     Категории:
       crystal_system — CatBoost (сингония): "catboost"
       substance      — CatBoost (вещество): "catboost_substance"; RF: "rf"
+
+    Оптимизация: 200-dim KDE-вектор вычисляется один раз и передаётся
+    во все методы через feat_vec — повторные вычисления не выполняются.
     """
     from cris.core.ml_predict import (
-        predict_catboost, predict_catboost_substance, predict_rf, predict_automl, resolve_lattice_ids
+        predict_catboost, predict_catboost_substance, predict_rf, predict_automl,
+        resolve_lattice_ids, _coords_to_feature_vector_200,
     )
 
     results: list[MLMethodResult] = []
+
+    # Вычисляем 200-dim KDE-вектор один раз для всех методов
+    feat_vec = None
+    ml_methods = [m for m in methods if m in ("catboost", "catboost_substance", "rf", "automl")]
+    if ml_methods:
+        try:
+            feat_vec = _coords_to_feature_vector_200(normalized)
+        except Exception as e:
+            logger.warning("_run_ml_methods: failed to compute feature vector: {}", e)
 
     def _preds_to_result(method: str, category: str, preds: list[dict]) -> MLMethodResult:
         if not preds:
@@ -375,7 +388,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
 
     if "catboost" in methods:
         try:
-            preds = predict_catboost(normalized)
+            preds = predict_catboost(normalized, feat_vec=feat_vec)
             preds = resolve_lattice_ids(preds)
             mr = _preds_to_result("catboost", "crystal_system", preds)
             results.append(mr)
@@ -388,7 +401,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
 
     if "catboost_substance" in methods:
         try:
-            preds = predict_catboost_substance(normalized)
+            preds = predict_catboost_substance(normalized, feat_vec=feat_vec)
             preds = resolve_lattice_ids(preds)
             mr = _preds_to_result("catboost_substance", "substance", preds)
             results.append(mr)
@@ -401,7 +414,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
 
     if "rf" in methods:
         try:
-            preds = predict_rf(normalized)
+            preds = predict_rf(normalized, feat_vec=feat_vec)
             preds = resolve_lattice_ids(preds)
             mr = _preds_to_result("rf", "substance", preds)
             results.append(mr)
@@ -414,7 +427,7 @@ def _run_ml_methods(normalized: list, methods: list[str], session_id: Optional[s
 
     if "automl" in methods:
         try:
-            preds = predict_automl(normalized)
+            preds = predict_automl(normalized, feat_vec=feat_vec)
             preds = resolve_lattice_ids(preds)
             mr = _preds_to_result("automl", "substance", preds)
             results.append(mr)
