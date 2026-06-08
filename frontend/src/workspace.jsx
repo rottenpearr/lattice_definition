@@ -109,6 +109,17 @@ function parseXYZ(text) {
    Dark, compact, tool-mode. Logo navigates back to home.
    ══════════════════════════════════════════════════════════ */
 const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => {
+  const confidence = result?.lattice?.confidence;
+  const matched    = result?.success;
+
+  const status = stage === "result"
+    ? matched
+      ? { dot: "#34C472", label: `${result.lattice?.name_en ?? "matched"} · ${confidence != null ? confidence.toFixed(2) : "—"}`, color: "#34C472" }
+      : { dot: "#C8841A", label: "no match", color: "#C8841A" }
+    : stage === "running"
+    ? { dot: "var(--signal)", label: "computing", color: "var(--signal)", pulse: true }
+    : { dot: "rgba(255,255,255,0.22)", label: "idle", color: "rgba(255,255,255,0.35)" };
+
   const isMobileHdr = useIsMobile();
 
   const handleGoHome = () => {
@@ -135,6 +146,14 @@ const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => 
         </>
       )}
       <div style={{ flex: 1 }} />
+      {/* Status chip — только когда есть что показать */}
+      {!isMobileHdr && stage !== "idle" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: "var(--font-mono)", fontSize: 11, color: status.color }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: status.dot, flexShrink: 0,
+            ...(status.pulse ? { animation: "pulse-signal 1.4s infinite var(--ease-in-out)" } : {}) }} />
+          {status.label}
+        </div>
+      )}
       <Button variant="ghost" size="sm" onDark icon={<IconHelp size={16} />} onClick={onHelp}
         style={{ padding: "8px" }} title="Подсказка" />
       <Button variant="ghost" size="sm" onDark icon={<IconRotate size={16} />} onClick={onReset}
