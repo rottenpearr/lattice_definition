@@ -120,6 +120,8 @@ const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => 
     ? { dot: "var(--signal)", label: "computing", color: "var(--signal)", pulse: true }
     : { dot: "rgba(255,255,255,0.22)", label: "idle", color: "rgba(255,255,255,0.35)" };
 
+  const isMobileHdr = useIsMobile();
+
   const handleGoHome = () => {
     const isDirty = file !== null || stage === "running" || stage === "result";
     if (isDirty && !window.confirm("Данные текущего анализа не сохранятся.\nВыйти из Workspace?")) return;
@@ -131,18 +133,31 @@ const WorkspaceHeader = ({ stage, result, file, onReset, onHelp, setRoute }) => 
       height: 56, background: "var(--ink)",
       borderBottom: "1px solid rgba(255,255,255,0.07)",
       display: "flex", alignItems: "center",
-      padding: "0 20px", gap: 16, flexShrink: 0, zIndex: 50,
+      padding: "0 16px", gap: 12, flexShrink: 0, zIndex: 50,
     }}>
-      {/* Logo — click to go home (with dirty-check confirmation) */}
-      <div onClick={handleGoHome} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8, userSelect: "none" }}>
+      <div onClick={handleGoHome} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8, userSelect: "none", flexShrink: 0 }}>
         <Logo size={24} color="var(--night-ink)" node="var(--signal)" />
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17, letterSpacing: "-0.015em", color: "var(--night-ink)" }}>CRIS</span>
       </div>
-      <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.12)", flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>workspace</span>
+      {!isMobileHdr && (
+        <>
+          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.12)", flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>workspace</span>
+        </>
+      )}
       <div style={{ flex: 1 }} />
-      <Button variant="ghost" size="sm" onDark icon={<IconHelp size={14} />} onClick={onHelp}>Подсказка</Button>
-      <Button variant="ghost" size="sm" onDark icon={<IconRotate size={14} />} onClick={onReset}>Сбросить</Button>
+      {/* Status chip */}
+      {!isMobileHdr && (
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: "var(--font-mono)", fontSize: 11, color: status.color }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: status.dot, flexShrink: 0,
+            ...(status.pulse ? { animation: "pulse-signal 1.4s infinite var(--ease-in-out)" } : {}) }} />
+          {status.label}
+        </div>
+      )}
+      <Button variant="ghost" size="sm" onDark icon={<IconHelp size={16} />} onClick={onHelp}
+        style={{ padding: "8px" }} title="Подсказка" />
+      <Button variant="ghost" size="sm" onDark icon={<IconRotate size={16} />} onClick={onReset}
+        style={{ padding: "8px" }} title="Сбросить" />
     </header>
   );
 };
@@ -166,6 +181,9 @@ const WsLabel = ({ children }) => (
    WORKSPACE SCREEN
    ══════════════════════════════════════════════════════════ */
 const WorkspaceScreen = ({ setRoute }) => {
+  const isMobile   = useIsMobile();
+  const [mobileTab, setMobileTab] = React.useState("input"); // "input" | "viewer" | "results"
+
   const [stage, setStage]         = React.useState("input");
   const [mode,  setMode]          = React.useState("file");
   const [file,  setFile]          = React.useState(null);
@@ -221,13 +239,15 @@ const WorkspaceScreen = ({ setRoute }) => {
       setApiError(e.message);
     } finally {
       setStage("result");
+      // На мобиле автоматически переходим на вкладку результатов
+      setMobileTab("results");
     }
   };
 
   const reset = () => {
     setStage("input"); setResult(null); setApiError(null); setSessionId(null);
     setFile(null); setSites([]); setCell(DEFAULT_CELL); setCoordType("frac");
-    setMode("file");
+    setMode("file"); setMobileTab("input");
   };
 
   const handleScreenshot = () => {
@@ -248,25 +268,121 @@ const WorkspaceScreen = ({ setRoute }) => {
     setFile(null); setSites(DEFAULT_SITES); setCell(DEFAULT_CELL); setCoordType("frac");
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", position: "relative" }}>
-      <WorkspaceHeader stage={stage} result={result} file={file} onReset={reset} onHelp={() => setShowHelp(true)} setRoute={setRoute} />
-      <div style={{ display: "grid", gridTemplateColumns: "360px 1fr 380px", flex: 1, minHeight: 0 }}>
-        <WsLeftPanel
-          stage={stage} mode={mode} setMode={setMode}
-          file={file} onFileLoad={handleFileLoad} onFileClear={handleFileClear}
-          sites={sites} setSites={setSites}
-          methods={methods} setMethods={setMethods}
-          section={methodSection} setSection={setMethodSection}
-          onStart={start}
-        />
-        <WsCenter
-          stage={stage} sites={sites} cell={cell} coordType={coordType}
-          onScreenshot={handleScreenshot}
-          onViewerReady={(api) => { screenshotApiRef.current = api; }}
-        />
-        <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={resultSection} setSection={setResultSection} />
+  /* ── Переключение таба + resize-триггер для Three.js ── */
+  const switchTab = (tab) => {
+    setMobileTab(tab);
+    if (tab === "viewer") {
+      // Three.js ResizeObserver сработает, но дополнительный dispatch гарантирует корректный размер
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    }
+  };
+
+  /* ── Мобильный tab-bar ── */
+  const MobileTabBar = () => {
+    const tabs = [
+      { id: "input",   icon: <IconLayers size={20} />,  label: "Данные"    },
+      { id: "viewer",  icon: <IconCube size={20} />,    label: "3D"        },
+      { id: "results", icon: <IconChart size={20} />,   label: "Результат" },
+    ];
+    return (
+      <div style={{
+        display: "flex", borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--ink)", flexShrink: 0, zIndex: 40,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => switchTab(t.id)}
+            style={{
+              flex: 1, border: "none", background: "transparent", cursor: "pointer",
+              padding: "10px 4px 10px", display: "flex", flexDirection: "column",
+              alignItems: "center", gap: 4,
+              color: mobileTab === t.id ? "var(--signal)" : "rgba(255,255,255,0.4)",
+              transition: "color 0.15s",
+            }}>
+            {t.icon}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: ".06em", textTransform: "uppercase" }}>{t.label}</span>
+          </button>
+        ))}
       </div>
+    );
+  };
+
+  return (
+    /* 100dvh учитывает адресную строку браузера на iOS/Android */
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", minHeight: "-webkit-fill-available", position: "relative" }}>
+      <WorkspaceHeader stage={stage} result={result} file={file} onReset={reset} onHelp={() => setShowHelp(true)} setRoute={setRoute} />
+
+      {/* ── Панели ── */}
+      {isMobile ? (
+        /* Мобиль: все панели в одном стеке, visibility переключается (НЕ display:none!) */
+        /* Это критично для Three.js — display:none убивает WebGL размеры */
+        <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+
+          {/* Панель данных (Input) */}
+          <div style={{
+            position: "absolute", inset: 0,
+            visibility: mobileTab === "input" ? "visible" : "hidden",
+            pointerEvents: mobileTab === "input" ? "auto" : "none",
+            display: "flex", flexDirection: "column",
+            overflowY: "auto", zIndex: mobileTab === "input" ? 2 : 1,
+          }}>
+            <WsLeftPanel stage={stage} mode={mode} setMode={setMode}
+              file={file} onFileLoad={handleFileLoad} onFileClear={handleFileClear}
+              sites={sites} setSites={setSites}
+              methods={methods} setMethods={setMethods}
+              section={methodSection} setSection={setMethodSection}
+              onStart={start}
+            />
+          </div>
+
+          {/* Панель 3D — всегда в DOM, только visibility меняется */}
+          <div style={{
+            position: "absolute", inset: 0,
+            visibility: mobileTab === "viewer" ? "visible" : "hidden",
+            pointerEvents: mobileTab === "viewer" ? "auto" : "none",
+            display: "flex", flexDirection: "column",
+            zIndex: mobileTab === "viewer" ? 2 : 1,
+          }}>
+            <WsCenter stage={stage} sites={sites} cell={cell} coordType={coordType}
+              onScreenshot={handleScreenshot}
+              onViewerReady={(api) => { screenshotApiRef.current = api; }}
+            />
+          </div>
+
+          {/* Панель результатов */}
+          <div style={{
+            position: "absolute", inset: 0,
+            visibility: mobileTab === "results" ? "visible" : "hidden",
+            pointerEvents: mobileTab === "results" ? "auto" : "none",
+            display: "flex", flexDirection: "column",
+            overflowY: "auto", zIndex: mobileTab === "results" ? 2 : 1,
+          }}>
+            <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={resultSection} setSection={setResultSection} />
+          </div>
+
+        </div>
+      ) : (
+        /* Десктоп: 3 колонки */
+        <div style={{ display: "grid", gridTemplateColumns: "360px 1fr 380px", flex: 1, minHeight: 0 }}>
+          <WsLeftPanel
+            stage={stage} mode={mode} setMode={setMode}
+            file={file} onFileLoad={handleFileLoad} onFileClear={handleFileClear}
+            sites={sites} setSites={setSites}
+            methods={methods} setMethods={setMethods}
+            section={methodSection} setSection={setMethodSection}
+            onStart={start}
+          />
+          <WsCenter
+            stage={stage} sites={sites} cell={cell} coordType={coordType}
+            onScreenshot={handleScreenshot}
+            onViewerReady={(api) => { screenshotApiRef.current = api; }}
+          />
+          <WsRightPanel stage={stage} result={result} apiError={apiError} siteCount={sites.length} methods={methods} sessionId={sessionId} section={resultSection} setSection={setResultSection} />
+        </div>
+      )}
+
+      {/* ── Мобильный tab-bar внизу ── */}
+      {isMobile && <MobileTabBar />}
 
       {/* ── Help overlay ── */}
       {showHelp && (
@@ -554,7 +670,8 @@ const WsCenter = ({ stage, sites, cell, coordType, onScreenshot, onViewerReady }
   const handleZoomOut = () => viewerApiRef.current?.zoomOut?.();
 
   return (
-    <section className="viewer" style={{ position: "relative", color: "var(--night-ink)" }}>
+    /* flex:1 нужен на мобиле — section находится в flex-колонке и без него схлопывается до 0px */
+    <section className="viewer" style={{ position: "relative", color: "var(--night-ink)", flex: 1, minHeight: 0 }}>
       <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "space-between", zIndex: 5, pointerEvents: "none" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--night-mute)" }}>
           3D viewer · {stage === "result" ? "result" : normSites.length > 0 ? `preview · ${normSites.length} sites · ${coordType}` : "—"}

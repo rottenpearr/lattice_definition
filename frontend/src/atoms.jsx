@@ -2,6 +2,17 @@
    CRIS — Atoms: Button, Eyebrow, Chip, Card, Field, Seg, etc.
    ============================================================ */
 
+/* ── Responsive hook — shared across all screens ── */
+const useIsMobile = (breakpoint = 768) => {
+  const [mobile, setMobile] = React.useState(() => window.innerWidth < breakpoint);
+  React.useEffect(() => {
+    const h = () => setMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', h, { passive: true });
+    return () => window.removeEventListener('resize', h);
+  }, [breakpoint]);
+  return mobile;
+};
+
 const Button = ({ variant = "primary", size = "md", icon, iconRight, children, onDark = false, ...rest }) => {
   const cls = [
     "btn",
@@ -96,4 +107,4 @@ const Wordmark = ({ color = "var(--ink)", node = "var(--cobalt)" }) => (
   </div>
 );
 
-Object.assign(window, { Button, Eyebrow, Chip, Card, Field, Seg, KV, SectionTitle, Logo, Wordmark });
+Object.assign(window, { useIsMobile, Button, Eyebrow, Chip, Card, Field, Seg, KV, SectionTitle, Logo, Wordmark });

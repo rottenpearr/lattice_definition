@@ -1,11 +1,13 @@
 /* CRIS — About + Docs */
 
-const AboutScreen = () => (
+const AboutScreen = () => {
+  const isMobile = useIsMobile();
+  return (
   <main>
-    <section className="bg-lattice" style={{ padding: "80px 0 64px", borderBottom: "1px solid var(--hairline)" }}>
+    <section className="bg-lattice" style={{ padding: isMobile ? "60px 0 40px" : "80px 0 64px", borderBottom: "1px solid var(--hairline)" }}>
       <div className="container" style={{ maxWidth: 920 }}>
         <Eyebrow>О проекте</Eyebrow>
-        <h1 className="section-title" style={{ fontSize: 56, lineHeight: 1.04, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
+        <h1 className="section-title" style={{ fontSize: isMobile ? 36 : 56, lineHeight: 1.04, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
           Как CRIS распознаёт<br />тип решётки.
         </h1>
         <p style={{ fontSize: 18, color: "var(--ink-soft)", lineHeight: 1.55, maxWidth: 680, margin: 0 }}>
@@ -64,20 +66,20 @@ const AboutScreen = () => (
             },
           ].map((a, i) => (
             <Card pad="lg" key={i}>
-              <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 20, alignItems: isMobile ? "flex-start" : "flex-start" }}>
                 <div style={{ flexShrink: 0 }}>
                   {a.photo
-                    ? <img src={a.photo} alt={a.name} style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
-                    : <div style={{ width: 100, height: 100, borderRadius: "50%", background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 24, letterSpacing: ".02em" }}>{a.initials}</div>
+                    ? <img src={a.photo} alt={a.name} style={{ width: isMobile ? 80 : 100, height: isMobile ? 80 : 100, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                    : <div style={{ width: isMobile ? 80 : 100, height: isMobile ? 80 : 100, borderRadius: "50%", background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 24, letterSpacing: ".02em" }}>{a.initials}</div>
                   }
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                    <h3 className="section-title" style={{ fontSize: 20, margin: 0 }}>{a.name}</h3>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--mute)", whiteSpace: "nowrap" }}>diploma · 2026</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "baseline", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 4 : 12 }}>
+                    <h3 className="section-title" style={{ fontSize: isMobile ? 17 : 20, margin: 0 }}>{a.name}</h3>
+                    {!isMobile && <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--mute)", whiteSpace: "nowrap" }}>diploma · 2026</span>}
                   </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.55, fontStyle: "italic" }}>{a.topic}</p>
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--cobalt-deep)", fontFamily: "var(--font-mono)" }}>{a.area}</div>
+                  <p style={{ margin: "8px 0 0", fontSize: isMobile ? 13 : 14, color: "var(--ink-soft)", lineHeight: 1.55, fontStyle: "italic" }}>{a.topic}</p>
+                  <div style={{ marginTop: 10, fontSize: 12, color: "var(--cobalt-deep)", fontFamily: "var(--font-mono)" }}>{a.area}</div>
                 </div>
               </div>
             </Card>
@@ -86,13 +88,16 @@ const AboutScreen = () => (
       </div>
     </section>
   </main>
-);
+  );
+};
 
-const DocsScreen = () => (
+const DocsScreen = () => {
+  const isMobile = useIsMobile();
+  return (
   <main style={{ background: "var(--paper)" }}>
-    <div className="container" style={{ maxWidth: 1080, padding: "64px 32px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 56 }}>
-        <aside style={{ position: "sticky", top: 96, alignSelf: "start" }}>
+    <div className="container" style={{ maxWidth: 1080, padding: isMobile ? "40px 20px" : "64px 32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", gap: isMobile ? 24 : 56 }}>
+        <aside style={isMobile ? { marginBottom: 8 } : { position: "sticky", top: 96, alignSelf: "start" }}>
           <Eyebrow>Документация</Eyebrow>
           <nav style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 8, fontSize: 14 }}>
             {["Quick start", "Установка", "Python API", "REST API", "Форматы данных", "GitHub", "Глоссарий"].map((s, i) => (
@@ -100,9 +105,9 @@ const DocsScreen = () => (
             ))}
           </nav>
         </aside>
-        <article>
+        <article style={{ minWidth: 0, overflowX: "hidden" }}>
           <Eyebrow>Quick start</Eyebrow>
-          <h1 className="section-title" style={{ fontSize: 44, lineHeight: 1.05, margin: "16px 0 16px" }}>
+          <h1 className="section-title" style={{ fontSize: isMobile ? 28 : 44, lineHeight: 1.05, margin: "16px 0 16px" }}>
             От установки до первого вердикта за 3 минуты.
           </h1>
           <p style={{ fontSize: 17, color: "var(--ink-soft)", lineHeight: 1.55, margin: "0 0 32px" }}>
@@ -154,7 +159,8 @@ verdict.top(5)`}</CodeBlock>
       </div>
     </div>
   </main>
-);
+  );
+};
 
 const DocStep = ({ n, title, children }) => (
   <div style={{ marginBottom: 32 }}>
@@ -167,8 +173,8 @@ const DocStep = ({ n, title, children }) => (
 );
 
 const CodeBlock = ({ children }) => (
-  <pre style={{ background: "var(--ink)", color: "var(--night-ink)", padding: "16px 18px", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1.55, overflowX: "auto", margin: 0 }}>
-    <code>{children}</code>
+  <pre style={{ background: "var(--ink)", color: "var(--night-ink)", padding: "16px 18px", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1.55, overflowX: "auto", margin: 0, maxWidth: "100%", boxSizing: "border-box" }}>
+    <code style={{ display: "block", minWidth: 0 }}>{children}</code>
   </pre>
 );
 

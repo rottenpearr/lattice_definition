@@ -11,33 +11,38 @@ const HomeScreen = ({ setRoute }) => (
 );
 
 /* ---------- Hero ---------- */
-const Hero = ({ setRoute }) => (
-  <section className="bg-lattice" style={{ paddingTop: 96, paddingBottom: 120, borderBottom: "1px solid var(--hairline)" }}>
-    <div className="container" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 64, alignItems: "center" }}>
+const Hero = ({ setRoute }) => {
+  const isMobile = useIsMobile();
+  return (
+  <section className="bg-lattice" style={{ paddingTop: isMobile ? 80 : 96, paddingBottom: isMobile ? 64 : 120, borderBottom: "1px solid var(--hairline)" }}>
+    <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr", gap: isMobile ? 32 : 64, alignItems: "center" }}>
       <div>
         <Eyebrow>Crystal recognition · v0.4.3</Eyebrow>
-        <h1 className="section-title" style={{ fontSize: 72, lineHeight: 1.02, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
+        <h1 className="section-title" style={{ fontSize: isMobile ? 42 : 72, lineHeight: 1.02, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
           Определяем тип<br />кристаллической<br />решётки<span style={{ color: "var(--cobalt)" }}>.</span>
         </h1>
-        <p style={{ fontSize: 19, color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: 540, margin: 0 }}>
+        <p style={{ fontSize: isMobile ? 16 : 19, color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: 540, margin: 0 }}>
           Загрузите CIF/XYZ или введите координаты ионов вручную. Система определит тип кристаллической решётки, найдёт ближайшую эталонную структуру и построит 3D-визуализацию ячейки.
         </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-          <Button variant="primary" size="lg" iconRight={<IconArrowRight size={16} />} onClick={() => setRoute("workspace")}>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, marginTop: 32 }}>
+          <Button variant="primary" size="lg" iconRight={<IconArrowRight size={16} />} onClick={() => setRoute("workspace")}
+            style={isMobile ? { width: "100%", justifyContent: "center" } : {}}>
             Перейти в workspace
           </Button>
-          <Button variant="secondary" size="lg" icon={<IconBook size={16} />} onClick={() => setRoute("docs")}>
+          <Button variant="secondary" size="lg" icon={<IconBook size={16} />} onClick={() => setRoute("docs")}
+            style={isMobile ? { width: "100%", justifyContent: "center" } : {}}>
             Быстрый старт
           </Button>
         </div>
-        <div style={{ marginTop: 32, display: "flex", gap: 28, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: ".06em", color: "var(--mute)", textTransform: "uppercase" }}>
+        <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: isMobile ? 12 : 28, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".06em", color: "var(--mute)", textTransform: "uppercase" }}>
           <span>● 3 метода распознавания</span><span>● 1240+ эталонных структур</span><span>● открытый исходный код</span>
         </div>
       </div>
-      <HeroVisual />
+      {!isMobile && <HeroVisual />}
     </div>
   </section>
-);
+  );
+};
 
 const HeroVisual = () => (
   <div style={{ background: "var(--night)", borderRadius: 14, padding: 24, position: "relative", overflow: "hidden",
@@ -97,6 +102,7 @@ const LatticeDiagram = ({ size = 220, animated = true }) => {
 
 /* ---------- Features ---------- */
 const FeaturesSection = () => {
+  const isMobile = useIsMobile();
   const features = [
     { eyebrow: "01 · INPUT", title: "Любой источник данных", body: "CIF, XYZ или ручной ввод координат. Поддерживаются макроструктуры до 1000 ионов, нормализация координат в куб [0, 1] проходит автоматически." },
     { eyebrow: "02 · METHOD", title: "Ансамбль методов, не один", body: "Random Forest, CatBoost и поиск по внутренней базе данных работают параллельно. Доступны ранжирование и достоверность по каждому методу." },
@@ -109,7 +115,7 @@ const FeaturesSection = () => {
     <section className="section">
       <div className="container">
         <SectionTitle eyebrow="Ключевые особенности" title="Шесть причин использовать CRIS" lead="Всё, что нужно для распознавания решётки в рабочем процессе — от загрузки до встраивания в свой пайплайн." />
-        <div style={{ marginTop: 56, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+        <div style={{ marginTop: 56, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 24 }}>
           {features.map((f, i) => (
             <Card pad="lg" key={i}>
               <Eyebrow>{f.eyebrow}</Eyebrow>
@@ -147,12 +153,13 @@ const DescriptionSection = () => {
     { n: sessionCount, l: "сессий распознавания" },
   ];
 
+  const isMobile = useIsMobile();
   return (
     <section className="section-tight" style={{ background: "var(--paper-deep)", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)" }}>
-      <div className="container" style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 64, alignItems: "center" }}>
+      <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1.1fr", gap: isMobile ? 32 : 64, alignItems: "center" }}>
         <div>
           <Eyebrow>Что это и зачем</Eyebrow>
-          <h2 className="section-title" style={{ fontSize: 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
+          <h2 className="section-title" style={{ fontSize: isMobile ? 30 : 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
             Кристаллография<br />без часов ручной работы.
           </h2>
           <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
@@ -165,7 +172,7 @@ const DescriptionSection = () => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {statCards.map((s, i) => (
             <Card pad="lg" key={i}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 500, letterSpacing: "-0.022em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.n}</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 36 : 44, fontWeight: 500, letterSpacing: "-0.022em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.n}</div>
               <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--mute)" }}>{s.l}</div>
             </Card>
           ))}
@@ -177,6 +184,7 @@ const DescriptionSection = () => {
 
 /* ---------- Team ---------- */
 const TeamSection = () => {
+  const isMobile = useIsMobile();
   const team = [
     { initials: "АА", photo: "assets/team/artyushin.jpg", name: "Артюшин Артём",   role: "Математическое и алгоритмическое обоснование · РФР · KDE · Random Forest" },
     { initials: "МА", photo: "assets/team/markova.jpg",   name: "Маркова Алёна",   role: "Программная архитектура · серверная часть · веб-клиент · БД · библиотека" },
@@ -186,15 +194,17 @@ const TeamSection = () => {
     <section className="section">
       <div className="container">
         <SectionTitle eyebrow="Команда" title="Авторы" lead="CRIS — результат трёх дипломных работ в области численного материаловедения и распознавания." />
-        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 24 }}>
           {team.map((t, i) => (
-            <Card pad="lg" key={i}>
+            <Card pad="lg" key={i} style={isMobile ? { display: "flex", gap: 20, alignItems: "center" } : {}}>
               {t.photo
-                ? <img src={t.photo} alt={t.name} style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
-                : <div style={{ width: 96, height: 96, borderRadius: 999, background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 22, letterSpacing: ".02em" }}>{t.initials}</div>
+                ? <img src={t.photo} alt={t.name} style={{ width: isMobile ? 72 : 96, height: isMobile ? 72 : 96, borderRadius: "50%", objectFit: "cover", objectPosition: "top center", display: "block", flexShrink: 0 }} />
+                : <div style={{ width: isMobile ? 72 : 96, height: isMobile ? 72 : 96, borderRadius: 999, background: "var(--ink)", color: "var(--paper)", display: "grid", placeItems: "center", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 22, letterSpacing: ".02em", flexShrink: 0 }}>{t.initials}</div>
               }
-              <div style={{ marginTop: 20, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)" }}>{t.name}</div>
-              <div style={{ marginTop: 6, fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.5 }}>{t.role}</div>
+              <div style={isMobile ? { flex: 1 } : {}}>
+                <div style={{ marginTop: isMobile ? 0 : 20, fontFamily: "var(--font-display)", fontSize: isMobile ? 18 : 22, fontWeight: 500, color: "var(--ink)" }}>{t.name}</div>
+                <div style={{ marginTop: 6, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{t.role}</div>
+              </div>
             </Card>
           ))}
         </div>
@@ -204,26 +214,32 @@ const TeamSection = () => {
 };
 
 /* ---------- Embed / GitHub ---------- */
-const EmbedSection = ({ setRoute }) => (
+const EmbedSection = ({ setRoute }) => {
+  const isMobile = useIsMobile();
+  return (
   <section className="section" style={{ background: "var(--ink)", color: "var(--night-ink)" }}>
-    <div className="container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
+    <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 32 : 64, alignItems: "center" }}>
       <div>
         <div className="eyebrow" style={{ color: "var(--night-mute)" }}>
           <style>{`.eyebrow{color:var(--night-mute);} .eyebrow::before{background:var(--signal);}`}</style>
           Open source · MIT
         </div>
-        <h2 className="section-title" style={{ fontSize: 44, color: "var(--night-ink)", margin: "20px 0 20px", letterSpacing: "-0.022em", lineHeight: 1.05 }}>
-          Встройте CRIS<br />в свой исследовательский пайплайн.
+        <h2 className="section-title" style={{ fontSize: isMobile ? 30 : 44, color: "var(--night-ink)", margin: "20px 0 20px", letterSpacing: "-0.022em", lineHeight: 1.05 }}>
+          Встройте CRIS<br />в свой пайплайн.
         </h2>
-        <p style={{ fontSize: 16, color: "var(--night-mute)", lineHeight: 1.6, margin: 0, maxWidth: 480 }}>
+        <p style={{ fontSize: 15, color: "var(--night-mute)", lineHeight: 1.6, margin: 0 }}>
           Тот же ансамбль распознавания доступен как Python-пакет и REST API. Один интерфейс — для веб-приложения и для batch-режима на кластере.
         </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-          <Button variant="primary" size="lg" icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>github.com/rottenpearr/lattice_definition</Button>
-          <Button variant="secondary" size="lg" onDark icon={<IconBook size={16} />} onClick={() => setRoute("docs")}>Документация</Button>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, marginTop: 28 }}>
+          <Button variant="primary" size={isMobile ? "md" : "lg"} icon={<IconGithub size={16} />} iconRight={<IconArrowUpRight size={14} />}
+            style={isMobile ? { justifyContent: "center" } : {}}
+            onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>GitHub</Button>
+          <Button variant="secondary" size={isMobile ? "md" : "lg"} onDark icon={<IconBook size={16} />}
+            style={isMobile ? { justifyContent: "center" } : {}}
+            onClick={() => setRoute("docs")}>Документация</Button>
         </div>
       </div>
-      <div style={{ background: "var(--night-elev)", borderRadius: 10, border: "1px solid var(--night-line)", padding: 20, fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--night-ink)" }}>
+      <div style={{ background: "var(--night-elev)", borderRadius: 10, border: "1px solid var(--night-line)", padding: 20, fontFamily: "var(--font-mono)", fontSize: isMobile ? 12 : 13, color: "var(--night-ink)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", color: "var(--night-mute)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 16 }}>
           <span>$ install + use</span>
           <span style={{ display: "inline-flex", gap: 6, alignItems: "center", color: "var(--signal)" }}><IconCopy size={12}/>copy</span>
@@ -239,6 +255,7 @@ const EmbedSection = ({ setRoute }) => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 Object.assign(window, { HomeScreen, LatticeDiagram });

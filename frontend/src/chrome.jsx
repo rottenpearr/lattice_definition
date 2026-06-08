@@ -5,7 +5,9 @@
 const HEADER_H = 64;
 
 const Header = ({ route, setRoute }) => {
-  const [hidden, setHidden] = React.useState(false);
+  const isMobile = useIsMobile();
+  const [hidden,   setHidden]   = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const lastY = React.useRef(0);
 
   /* Hide on scroll-down, reveal on scroll-up or near top */
@@ -28,6 +30,7 @@ const Header = ({ route, setRoute }) => {
   /* Always show header when route changes */
   React.useEffect(() => {
     setHidden(false);
+    setMenuOpen(false);
     lastY.current = window.scrollY;
   }, [route]);
 
@@ -37,12 +40,13 @@ const Header = ({ route, setRoute }) => {
     { id: "docs",  label: "Документация" },
   ];
 
+  const navigate = (id) => { setRoute(id); setMenuOpen(false); };
+
   return (
     <header style={{
       position:   "fixed",
       top: 0, left: 0, right: 0,
       zIndex:     50,
-      height:     HEADER_H,
       background: "rgba(242,239,232,0.92)",
       backdropFilter: "blur(12px)",
       borderBottom: "1px solid var(--hairline)",
@@ -50,34 +54,84 @@ const Header = ({ route, setRoute }) => {
       transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
       willChange: "transform",
     }}>
+      {/* ── Main bar ── */}
       <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: HEADER_H }}>
-        <a onClick={() => setRoute("home")} style={{ cursor: "pointer" }}><Wordmark /></a>
-        <nav style={{ display: "flex", gap: 28 }}>
-          {items.map(i => (
-            <span
-              key={i.id}
-              className={`nav-link ${route === i.id ? "active" : ""}`}
-              onClick={() => setRoute(i.id)}
-              style={{ cursor: "pointer" }}
-            >
-              {i.label}
-            </span>
-          ))}
-        </nav>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Button variant="ghost" size="sm" icon={<IconGithub size={16} />} onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>GitHub</Button>
-          <Button variant="primary" size="sm" iconRight={<IconArrowRight size={14} />} onClick={() => setRoute("workspace")}>
-            Открыть workspace
-          </Button>
-        </div>
+        <a onClick={() => navigate("home")} style={{ cursor: "pointer" }}><Wordmark /></a>
+
+        {/* Desktop nav */}
+        {!isMobile && (
+          <nav style={{ display: "flex", gap: 28 }}>
+            {items.map(i => (
+              <span key={i.id} className={`nav-link ${route === i.id ? "active" : ""}`}
+                onClick={() => navigate(i.id)} style={{ cursor: "pointer" }}>
+                {i.label}
+              </span>
+            ))}
+          </nav>
+        )}
+
+        {/* Desktop buttons */}
+        {!isMobile && (
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Button variant="ghost" size="sm" icon={<IconGithub size={16} />}
+              onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>GitHub</Button>
+            <Button variant="primary" size="sm" iconRight={<IconArrowRight size={14} />}
+              onClick={() => navigate("workspace")}>Открыть workspace</Button>
+          </div>
+        )}
+
+        {/* Mobile hamburger */}
+        {isMobile && (
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 8, color: "var(--ink)", display: "flex", alignItems: "center" }}
+            aria-label="Меню"
+          >
+            {menuOpen ? <IconClose size={22} /> : <IconMenu size={22} />}
+          </button>
+        )}
       </div>
+
+      {/* ── Mobile dropdown menu ── */}
+      {isMobile && menuOpen && (
+        <div style={{
+          background: "rgba(242,239,232,0.98)", backdropFilter: "blur(12px)",
+          borderTop: "1px solid var(--hairline)",
+          padding: "12px 0 20px",
+        }}>
+          <div className="container" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {items.map(i => (
+              <span key={i.id}
+                onClick={() => navigate(i.id)}
+                style={{
+                  display: "block", padding: "13px 0",
+                  fontSize: 16, fontWeight: route === i.id ? 600 : 400,
+                  color: route === i.id ? "var(--ink)" : "var(--ink-soft)",
+                  borderBottom: "1px solid var(--hairline)", cursor: "pointer",
+                }}>
+                {i.label}
+              </span>
+            ))}
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <Button variant="primary" iconRight={<IconArrowRight size={14} />}
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => navigate("workspace")}>Открыть workspace</Button>
+              <Button variant="ghost" icon={<IconGithub size={16} />}
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => window.open("https://github.com/rottenpearr/lattice_definition", "_blank")}>GitHub</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
 
-const Footer = ({ setRoute }) => (
+const Footer = ({ setRoute }) => {
+  const isMobile = useIsMobile();
+  return (
   <footer style={{ background: "var(--ink)", color: "var(--night-ink)", padding: "64px 0 32px" }}>
-    <div className="container" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48 }}>
+    <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "2fr 1fr 1fr 1fr", gap: isMobile ? 32 : 48 }}>
       <div>
         <Wordmark color="var(--night-ink)" node="var(--signal)" />
         <p style={{ marginTop: 16, fontSize: 14, color: "var(--night-mute)", lineHeight: 1.6, maxWidth: 360 }}>
@@ -109,7 +163,8 @@ const Footer = ({ setRoute }) => (
       <span>build 2026.05.12 · v0.4.3</span>
     </div>
   </footer>
-);
+  );
+};
 
 const FooterCol = ({ title, links }) => (
   <div>
