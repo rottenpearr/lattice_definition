@@ -176,7 +176,7 @@ reports/*
 /data/csv_kde/
 /data/structures/micro/generated/
 /data/structures/macro/generated/
-/data/structures/micro/source/
+# micro/source — XYZ files are tracked in git (Railway has ephemeral filesystem)
 /data/structures/macro/source/
 
 # CatBoost training artifacts

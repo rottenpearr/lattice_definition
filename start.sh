@@ -32,29 +32,19 @@ except Exception as e:
     print(f'  WARN: {e}')
 "
 
-# 4. Скачиваем эталонные структуры если таблица пустая
-echo "[4/4] Reference structures..."
-python -c "
-import psycopg2, sys, subprocess
-from cris.db.config import db_config
-try:
-    conn = psycopg2.connect(**db_config)
-    cur = conn.cursor()
-    cur.execute('SELECT COUNT(*) FROM reference_structure')
-    count = cur.fetchone()[0]
-    cur.close(); conn.close()
-    if count > 0:
-        print(f'  Already have {count} structures, skipping download')
-        sys.exit(0)
-    print('  Table empty, downloading from Materials Project...')
-    for formula in ['UC2', 'U2C3', 'U2N3']:
-        print(f'  Downloading {formula}...')
-        subprocess.run([sys.executable, '-m',
-            'cris.tools.dataset_generation.download_structures',
-            '--formula', formula], check=False)
-except Exception as e:
-    print(f'  WARN: {e}')
-"
+# 4. Заполняем reference_structure из локального манифеста (не нужен MP_API_KEY)
+echo "[4/4] Reference structures (local seed)..."
+python -m cris.db.schema.seed_local_structures || echo "  WARN: seed_local_structures failed, continuing"
+
+# 5. Опционально: скачиваем новые структуры из Materials Project если есть ключ
+if [ -n "${MP_API_KEY}" ]; then
+  echo "[5/5] MP download (key found)..."
+  for formula in UC2 U2C3 U2N3; do
+    python -m cris.tools.dataset_generation.download_structures --formula "$formula" || true
+  done
+else
+  echo "[5/5] MP_API_KEY not set — skipping MP download (local structures only)"
+fi
 
 echo "Starting server..."
 exec uvicorn backend.api:app --host 0.0.0.0 --port ${PORT:-8002}
