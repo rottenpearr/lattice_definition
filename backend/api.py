@@ -23,6 +23,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 
+from loguru import logger
+
 from cris.core.coordinates import shift_coordinates, normalize_coordinates
 from cris.db.connection import get_cursor
 from cris.db.queries import check_coords
@@ -55,6 +57,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _warm_up_cache():
+    """
+    Строим struct-кеш и загружаем ML-модели при старте сервера —
+    до приёма первого запроса. Иначе первый /api/analyze тратит 50+ с
+    на KDE-вычисления и Railway отдаёт 'upstream error' по таймауту.
+    """
+    from cris.db.queries import _build_struct_cache
+    from cris.core.ml_predict import (
+        _get_catboost_model, _get_catboost_substance_model,
+        _get_rf_model, _get_automl_model,
+    )
+    logger.info("startup: building struct cache...")
+    _build_struct_cache()
+    logger.info("startup: loading ML models...")
+    _get_catboost_model()
+    _get_catboost_substance_model()
+    _get_rf_model()
+    _get_automl_model()
+    logger.info("startup: warm-up complete")
 
 
 # ── Схемы ─────────────────────────────────────────────────────────────────────
