@@ -242,6 +242,17 @@ const LatticeViewer3D = ({ sites = [], cell = null, coordType = "frac", onReady,
     };
     renderer.domElement.addEventListener("mousemove", onMouseMove);
 
+    /* ── Reset camera API ──────────────────────────────── */
+    // Save state right after fitCamera so resetCamera can restore it
+    const initialCamPos = camera.position.clone();
+    const initialTarget = controls.target.clone();
+
+    const resetCamera = () => {
+      camera.position.copy(initialCamPos);
+      controls.target.copy(initialTarget);
+      controls.update();
+    };
+
     /* ── Zoom API ───────────────────────────────────────── */
     const initialDist = camera.position.distanceTo(controls.target);
 
@@ -269,7 +280,7 @@ const LatticeViewer3D = ({ sites = [], cell = null, coordType = "frac", onReady,
       renderer.render(scene, camera);
       return renderer.domElement.toDataURL("image/png");
     };
-    if (onReady) onReady({ screenshot: takeScreenshot, zoomIn, zoomOut });
+    if (onReady) onReady({ screenshot: takeScreenshot, zoomIn, zoomOut, resetCamera });
 
     /* ── Resize ─────────────────────────────────────────── */
     const onResize = () => {

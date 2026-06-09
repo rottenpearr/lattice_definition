@@ -378,9 +378,11 @@ const WorkspaceScreen = ({ setRoute }) => {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: "var(--paper)", borderRadius: 16, padding: "36px 40px",
+              background: "var(--paper)", borderRadius: 16,
+              padding: "clamp(20px, 5vw, 36px) clamp(20px, 5vw, 40px)",
               maxWidth: 520, width: "90%", boxShadow: "0 24px 64px rgba(0,0,0,0.35)",
               position: "relative",
+              maxHeight: "90vh", overflowY: "auto",
             }}
           >
             <button
@@ -659,7 +661,7 @@ const WsCenter = ({ stage, sites, cell, coordType, onScreenshot, onViewerReady }
         </div>
         <div style={{ display: "flex", gap: 8, pointerEvents: "all" }}>
           <DarkChip icon={<IconCamera size={12} />} onClick={onScreenshot}>screenshot</DarkChip>
-          <DarkChip icon={<IconRotate size={12} />}>reset view</DarkChip>
+          <DarkChip icon={<IconRotate size={12} />} onClick={() => viewerApiRef.current?.resetCamera?.()}>reset view</DarkChip>
         </div>
       </div>
 
