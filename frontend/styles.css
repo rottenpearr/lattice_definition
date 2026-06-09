@@ -20,8 +20,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
-  /* Предотвращает сдвиг контента при появлении вертикального скроллбара */
-  scrollbar-gutter: stable;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -37,11 +35,20 @@ button { font: inherit; }
 /* ===== Container ===== */
 .container {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 32px;
+  box-sizing: border-box;
 }
 @media (max-width: 720px) {
   .container { padding: 0 20px; }
+}
+
+/* Prevent any text from ever causing horizontal overflow */
+p, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 /* ===== Eyebrow ===== */

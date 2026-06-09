@@ -18,7 +18,7 @@ const Hero = ({ setRoute }) => {
     <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr", gap: isMobile ? 32 : 64, alignItems: "center" }}>
       <div>
         <Eyebrow>Crystal recognition · v0.4.3</Eyebrow>
-        <h1 className="section-title" style={{ fontSize: isMobile ? 42 : 72, lineHeight: 1.02, margin: "20px 0 24px", letterSpacing: "-0.025em" }}>
+        <h1 className="section-title" style={{ fontSize: isMobile ? 36 : 72, lineHeight: 1.05, margin: "20px 0 24px", letterSpacing: "-0.025em", wordBreak: "break-word" }}>
           Определяем тип<br />кристаллической<br />решётки<span style={{ color: "var(--cobalt)" }}>.</span>
         </h1>
         <p style={{ fontSize: isMobile ? 16 : 19, color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: 540, margin: 0 }}>
@@ -162,10 +162,10 @@ const DescriptionSection = () => {
           <h2 className="section-title" style={{ fontSize: isMobile ? 30 : 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
             Кристаллография<br />без часов ручной работы.
           </h2>
-          <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0, overflowWrap: "break-word" }}>
             Распознавание типа решётки по позициям атомов — рутинная, но утомительная задача в материаловедении и MD-исследованиях. CRIS делает её одним запросом: подайте координаты, получите тип, эталон и оценку достоверности.
           </p>
-          <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, marginTop: 16 }}>
+          <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, marginTop: 16, overflowWrap: "break-word" }}>
             Веб-сервис нужен научному сообществу как открытая, воспроизводимая альтернатива закрытым коммерческим пакетам — с прозрачным датасетом, открытыми весами моделей и полным аудит-логом каждого распознавания.
           </p>
         </div>
