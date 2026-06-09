@@ -51,6 +51,16 @@ p, h1, h2, h3, h4, h5, h6 {
   min-width: 0;
 }
 
+/* Grid/flex children must be allowed to shrink below content size */
+.container > * {
+  min-width: 0;
+}
+
+/* Each section is its own overflow boundary — nothing leaks sideways */
+section, .section, .section-tight {
+  overflow-x: hidden;
+}
+
 /* ===== Eyebrow ===== */
 .eyebrow {
   font-family: var(--font-mono);

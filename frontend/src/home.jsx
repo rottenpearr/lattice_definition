@@ -159,7 +159,7 @@ const DescriptionSection = () => {
       <div className="container" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1.1fr", gap: isMobile ? 32 : 64, alignItems: "center" }}>
         <div>
           <Eyebrow>Что это и зачем</Eyebrow>
-          <h2 className="section-title" style={{ fontSize: isMobile ? 30 : 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
+          <h2 className="section-title" style={{ fontSize: isMobile ? 26 : 40, lineHeight: 1.08, margin: "16px 0 20px" }}>
             Кристаллография<br />без часов ручной работы.
           </h2>
           <p style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0, overflowWrap: "break-word" }}>
@@ -171,9 +171,9 @@ const DescriptionSection = () => {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {statCards.map((s, i) => (
-            <Card pad="lg" key={i}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 36 : 44, fontWeight: 500, letterSpacing: "-0.022em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.n}</div>
-              <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--mute)" }}>{s.l}</div>
+            <Card pad={isMobile ? undefined : "lg"} key={i}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 28 : 44, fontWeight: 500, letterSpacing: "-0.022em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.n}</div>
+              <div style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: isMobile ? ".04em" : ".08em", textTransform: "uppercase", color: "var(--mute)", overflowWrap: "break-word", wordBreak: "break-word" }}>{s.l}</div>
             </Card>
           ))}
         </div>
